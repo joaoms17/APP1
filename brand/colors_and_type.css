@@ -1,0 +1,218 @@
+/* ============================================================
+   HAIRSTYLED BY JOANA — Foundations: Color & Type
+   Hairstylist de casamento · Lisboa
+   Fonts are SELF-HOSTED from /fonts (see @font-face below) — no CDN needed.
+   When importing from a subfolder, the relative url() paths resolve from THIS
+   file's location, so keep colors_and_type.css and the fonts/ folder siblings.
+   ============================================================ */
+
+/* ---- Cormorant Garamond (serif display) ---- */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('fonts/CormorantGaramond-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('fonts/CormorantGaramond-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  src: url('fonts/CormorantGaramond-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+/* ---- Jost (sans — corpo + etiquetas) ---- */
+@font-face {
+  font-family: 'Jost';
+  src: url('fonts/Jost-Light.ttf') format('truetype');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Jost';
+  src: url('fonts/Jost-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Jost';
+  src: url('fonts/Jost-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+/* ---- Pinyon Script (SÓ assinatura/nome decorativo) ---- */
+@font-face {
+  font-family: 'Pinyon Script';
+  src: url('fonts/PinyonScript-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ---- BRAND PALETTE (raw) ---- */
+  --terracotta:        #A9744F;  /* primária */
+  --terracotta-dark:   #8C5C3C;  /* ênfase / hover */
+  --sage:              #93A07E;  /* acento botânico */
+  --sage-light:        #C7CFB9;  /* fundos suaves */
+  --gold:              #C8A86B;  /* detalhe — joia */
+  --paper:             #F5EFE6;  /* fundo base (NUNCA #fff puro) */
+  --paper-warm:        #EFE7DA;  /* fundo alternativo, ligeiro contraste */
+  --paper-card:        #FBF7F0;  /* superfície de cartão, creme claro */
+  --ink:               #4A3F35;  /* texto corpo */
+  --ink-soft:          #6E6155;  /* texto secundário / legendas */
+  --near-black:        #2E2820;  /* títulos */
+
+  /* ---- SEMANTIC SURFACES ---- */
+  --bg:                var(--paper);
+  --bg-alt:            var(--paper-warm);
+  --surface:           var(--paper-card);
+  --surface-sage:      var(--sage-light);
+
+  /* ---- SEMANTIC TEXT ---- */
+  --fg1:               var(--near-black);  /* títulos */
+  --fg2:               var(--ink);         /* corpo */
+  --fg3:               var(--ink-soft);    /* secundário */
+  --fg-on-terracotta:  var(--paper-card);
+  --fg-on-sage:        var(--near-black);
+
+  /* ---- SEMANTIC ACCENTS ---- */
+  --accent:            var(--terracotta);
+  --accent-hover:      var(--terracotta-dark);
+  --accent-botanic:    var(--sage);
+  --accent-jewel:      var(--gold);
+
+  /* ---- HAIRLINES & BORDERS ---- */
+  --line:              rgba(74, 63, 53, 0.16);   /* separador fino sobre papel */
+  --line-strong:       rgba(74, 63, 53, 0.28);
+  --line-sage:         rgba(147, 160, 126, 0.5);
+
+  /* ---- TYPE FAMILIES ---- */
+  --serif-display:     'Cormorant Garamond', 'Cormorant', Georgia, serif;
+  --script:            'Pinyon Script', 'Snell Roundhand', cursive;  /* SÓ assinatura/nome */
+  --sans:              'Jost', 'Futura', 'Century Gothic', sans-serif; /* corpo + etiquetas */
+
+  /* ---- ETIQUETA (label) — Jost MAIÚSCULAS, tracking largo ---- */
+  --label-spacing:     0.34em;
+  --label-weight:      400;
+
+  /* ---- RADII ---- */
+  --radius:            18px;   /* cartões, imagens, contentores */
+  --radius-sm:         12px;
+  --radius-pill:       50px;   /* botões em pílula */
+  --radius-circle:     50%;    /* molduras de foto circulares */
+
+  /* ---- SPACING (base 8) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --space-6: 64px;
+  --space-7: 96px;
+  --space-8: 128px;
+
+  /* ---- SHADOWS — soft, warm, low ---- */
+  --shadow-sm:  0 2px 8px rgba(74, 63, 53, 0.06);
+  --shadow-md:  0 8px 28px rgba(74, 63, 53, 0.09);
+  --shadow-lg:  0 18px 50px rgba(74, 63, 53, 0.12);
+
+  /* ---- MOTION ---- */
+  --ease:        cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-soft:   cubic-bezier(0.33, 0.0, 0.2, 1);
+  --dur:         420ms;
+  --dur-fast:    220ms;
+}
+
+/* ============================================================
+   BASE ELEMENT STYLES (opt-in via these classes / selectors)
+   ============================================================ */
+
+.ds-h1, .ds-h2, .ds-h3, .ds-display {
+  font-family: var(--serif-display);
+  color: var(--fg1);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.ds-display { font-size: clamp(56px, 8vw, 104px); font-weight: 400; }
+.ds-h1      { font-size: clamp(40px, 5vw, 68px);  font-weight: 500; }
+.ds-h2      { font-size: clamp(30px, 3.4vw, 46px); font-weight: 500; }
+.ds-h3      { font-size: clamp(22px, 2.2vw, 30px); font-weight: 500; }
+
+.ds-signature {            /* o nome decorativo — Pinyon, SÓ aqui */
+  font-family: var(--script);
+  color: var(--accent);
+  font-weight: 400;
+  line-height: 1;
+  font-size: clamp(44px, 6vw, 88px);
+}
+
+.ds-lead {
+  font-family: var(--serif-display);
+  color: var(--fg2);
+  font-weight: 400;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.5;
+}
+
+.ds-body {
+  font-family: var(--sans);
+  color: var(--fg2);
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+}
+
+.ds-small {
+  font-family: var(--sans);
+  color: var(--fg3);
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ds-label {                /* ETIQUETA — Jost maiúsculas, tracking largo */
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  font-weight: var(--label-weight);
+  font-size: 12.5px;
+  color: var(--fg3);
+}
+
+/* ---- Botão em pílula ---- */
+.ds-btn {
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 400;
+  font-size: 13px;
+  padding: 16px 38px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--fg-on-terracotta);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+.ds-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--accent);
+}
+.ds-btn--ghost:hover { background: var(--accent); color: var(--fg-on-terracotta); }
+
+/* ---- Separador em linha fina ---- */
+.ds-rule {
+  border: 0;
+  border-top: 1px solid var(--line);
+  width: 100%;
+}
+.ds-rule--center {        /* pequena régua centrada com nó dourado */
+  width: 64px;
+  border-top: 1px solid var(--accent-jewel);
+  margin-inline: auto;
+}
