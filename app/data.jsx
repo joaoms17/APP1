@@ -256,8 +256,99 @@ const AGENDA_EVENTS = [
   { id: 'filipa', day: 27, name: 'Filipa & André', local: 'Oeiras', team: ['rui', 'bruno'], servicos: ['dj', 'music'], conflict: false },
 ];
 
+// ─────────────────────────────────────────────────────────────
+// Supabase loader — fetches all data and replaces the window globals.
+// Falls back silently to the hardcoded demo data above when not configured.
+// ─────────────────────────────────────────────────────────────
+async function loadAllData() {
+  if (!window.SUPABASE_CONFIGURED || !window.db) return;
+
+  const [
+    { data: teamRows,    error: e1 },
+    { data: convRows,    error: e2 },
+    { data: msgRows,     error: e3 },
+    { data: extRows,     error: e4 },
+    { data: leadRows,    error: e5 },
+    { data: bookRows,    error: e6 },
+    { data: btRows,      error: e7 },
+    { data: agendaRows,  error: e8 },
+  ] = await Promise.all([
+    window.db.from('team').select('*').order('name'),
+    window.db.from('conversations').select('*').order('time', { ascending: false }),
+    window.db.from('messages').select('*').order('id'),
+    window.db.from('extract_data').select('*'),
+    window.db.from('leads').select('*'),
+    window.db.from('bookings').select('*').order('data_evento'),
+    window.db.from('booking_team').select('*'),
+    window.db.from('agenda_events').select('*').order('day'),
+  ]);
+
+  const errors = [e1,e2,e3,e4,e5,e6,e7,e8].filter(Boolean);
+  if (errors.length) { console.error('[Ramo] Supabase fetch errors:', errors); }
+
+  if (teamRows) {
+    window.TEAM = teamRows.map(r => ({
+      id: r.id, name: r.name, role: r.role, initials: r.initials,
+      color: r.color, load: r.load_count, status: r.status,
+    }));
+  }
+
+  if (convRows) {
+    window.CONVERSAS = convRows.map(c => {
+      const msgs = (msgRows || [])
+        .filter(m => m.conversation_id === c.id)
+        .map(m => ({ from: m.from_type, t: m.content, time: m.time }));
+      const ext = (extRows || []).find(e => e.conversation_id === c.id);
+      return {
+        id: c.id, name: c.name, initials: c.initials, color: c.color,
+        last: c.last_message, time: c.time, unread: c.unread_count,
+        aiReady: c.ai_ready, phone: c.phone,
+        messages: msgs.length ? msgs : undefined,
+        extract: ext ? {
+          nome: ext.nome, tipo: ext.tipo_evento, data: ext.data_evento,
+          local: ext.local, servicos: ext.servicos || [],
+          convidados: ext.convidados, obs: ext.obs,
+        } : undefined,
+      };
+    });
+  }
+
+  if (leadRows) {
+    window.LEADS = leadRows.map(r => ({
+      id: r.id, name: r.name, initials: r.initials, color: r.color,
+      estado: r.estado, tipo: r.tipo, data: r.data_evento, local: r.local,
+      servicos: r.servicos || [], convidados: r.convidados, valor: r.valor,
+      origem: r.origem, phone: r.phone, email: r.email,
+    }));
+  }
+
+  if (bookRows) {
+    window.RESERVAS = bookRows.map(r => {
+      const teamIds = (btRows || [])
+        .filter(bt => bt.booking_id === r.id)
+        .map(bt => bt.team_id);
+      return {
+        id: r.id, name: r.name, initials: r.initials, color: r.color,
+        estado: r.estado, data: r.data_evento, hora: r.hora, local: r.local,
+        tipo: r.tipo, servicos: r.servicos || [], team: teamIds,
+        total: r.total, sinal: r.sinal, pago: r.pago, pay: r.pay_status,
+        convidados: r.convidados, notes: r.notes,
+      };
+    });
+  }
+
+  if (agendaRows) {
+    window.AGENDA_EVENTS = agendaRows.map(r => ({
+      id: r.id, day: r.day, name: r.name, local: r.local,
+      team: r.team_ids || [], servicos: r.servicos || [],
+      conflict: r.has_conflict,
+    }));
+  }
+}
+
 Object.assign(window, {
   STR, makeT, PALETTE, hexToRgba, leadTone, reservaTone,
   LEAD_LABEL, RESERVA_LABEL, PAY_LABEL, SERVICE_LABEL, ROLE_LABEL, svc,
   TEAM, teamById, CONVERSAS, LEADS, PIPELINE_ORDER, RESERVAS, reservaById, AGENDA_EVENTS,
+  loadAllData,
 });

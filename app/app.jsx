@@ -1,5 +1,23 @@
 // app.jsx — main shell: tab bar + stack router + tweaks
-const { useState } = React;
+const { useState, useEffect } = React;
+
+// Loading screen — shown while Supabase data is fetched
+function LoadingScreen() {
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', gap: 20 }}>
+      <Eucalyptus size={32} stem={PALETTE.terracotta} leaf={PALETTE.sage} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{
+            width: 8, height: 8, borderRadius: '50%', background: PALETTE.terracotta,
+            animation: `loadPulse 1.2s ${i * 0.2}s ease-in-out infinite`,
+          }} />
+        ))}
+      </div>
+      <style>{`@keyframes loadPulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }`}</style>
+    </div>
+  );
+}
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "#A9744F",
@@ -44,8 +62,17 @@ function App() {
   const accent = tw.accent || PALETTE.terracotta;
   const t = makeT(lang);
 
+  // Supabase: fetch all data on mount; skip if not configured (use demo data)
+  const [ready, setReady] = useState(!window.SUPABASE_CONFIGURED);
+  useEffect(() => {
+    if (!window.SUPABASE_CONFIGURED) return;
+    loadAllData()
+      .then(() => setReady(true))
+      .catch((err) => { console.error('[Ramo] loadAllData failed:', err); setReady(true); });
+  }, []);
+
   const [tab, setTab] = useState('inicio');
-  const [stack, setStack] = useState([]);    // [{screen, params}]
+  const [stack, setStack] = useState([]);
   const [tabParams, setTabParams] = useState({});
 
   const ctx = {
@@ -71,18 +98,20 @@ function App() {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 24, boxSizing: 'border-box' }}>
       <IOSDevice>
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)', position: 'relative', overflow: 'hidden' }}>
-          {/* tab content */}
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', position: 'relative' }} key={tab}>
-            <TabScreen ctx={ctx} />
-          </div>
-          <TabBar active={tab} onChange={ctx.goTab} t={t} accent={accent} />
-
-          {/* stack overlay */}
-          {TopScreen && (
-            <div key={stack.length + top.screen} style={{ position: 'absolute', inset: 0, zIndex: 100, animation: 'slideIn .28s cubic-bezier(.33,0,.2,1)' }}>
-              <TopScreen ctx={ctx} params={top.params} />
-            </div>
-          )}
+          {!ready
+            ? <LoadingScreen />
+            : <>
+                <div style={{ flex: 1, minHeight: 0, overflow: 'auto', position: 'relative' }} key={tab}>
+                  <TabScreen ctx={ctx} />
+                </div>
+                <TabBar active={tab} onChange={ctx.goTab} t={t} accent={accent} />
+                {TopScreen && (
+                  <div key={stack.length + top.screen} style={{ position: 'absolute', inset: 0, zIndex: 100, animation: 'slideIn .28s cubic-bezier(.33,0,.2,1)' }}>
+                    <TopScreen ctx={ctx} params={top.params} />
+                  </div>
+                )}
+              </>
+          }
         </div>
       </IOSDevice>
 
