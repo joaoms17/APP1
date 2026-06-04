@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { db } from './supabase'
-import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow } from './data'
+import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow, genId, initialsOf, colorFor } from './data'
 import { Icon, Eucalyptus } from './ui'
-import { EntityForm, PaymentModal } from './forms'
+import { EntityForm, PaymentModal, WhatsAppModal } from './forms'
 import Auth from './Auth'
 import HomeScreen     from './screens/HomeScreen'
 import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
@@ -155,6 +155,7 @@ export default function App() {
   const [tabParams, setTabP] = useState({})
   const [form, setForm]      = useState(null)     // { type, initial, onComplete }
   const [payFor, setPayFor]  = useState(null)     // reserva object
+  const [pasteChat, setPasteChat] = useState(false)
 
   const user = session?.user
   const userName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : '')
@@ -174,6 +175,18 @@ export default function App() {
   const update  = async (table, id, patch) => { await updateRow(table, id, patch); await reload() }
   const remove  = async (table, id) => { await deleteRow(table, id); await reload() }
 
+  // Paste WhatsApp text → conversation + messages + AI extract + lead
+  const createLeadFromChat = async ({ name, phone, text, fields }) => {
+    const convId = genId()
+    const initials = initialsOf(name), color = colorFor(name)
+    const lines = (text || '').split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 40)
+    await insertRow('conversations', { id: convId, name, initials, color, last_message: lines[lines.length - 1] || '', time: 'agora', unread_count: 0, ai_ready: true, phone: phone || null })
+    if (lines.length) await db.from('messages').insert(lines.map(ln => ({ conversation_id: convId, from_type: 'them', content: ln, time: '' })))
+    await insertRow('extract_data', { conversation_id: convId, nome: name, tipo_evento: fields.tipo, data_evento: fields.data || null, local: fields.local || null, servicos: fields.servicos || [], convidados: fields.convidados, obs: 'Criado a partir de mensagem colada' })
+    await insertRow('leads', { id: genId(), name, initials, color, estado: 'novo', tipo: fields.tipo, data_evento: fields.data || null, local: fields.local || null, servicos: fields.servicos || [], convidados: fields.convidados, valor: null, origem: 'WhatsApp', phone: phone || null, email: null })
+    await reload()
+  }
+
   const ctx = {
     t, lang, accent, isDesktop, userName, signOut, tw, setTw,
     push:  (screen, params = {}) => setStack(s => [...s, { screen, params }]),
@@ -186,6 +199,7 @@ export default function App() {
     // CRUD
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),
     openPayment: (reserva) => setPayFor(reserva),
+    openPasteChat: () => setPasteChat(true),
     update, remove, reload,
   }
 
@@ -249,6 +263,14 @@ export default function App() {
           reserva={payFor} lang={lang} t={t} accent={accent} isDesktop={isDesktop}
           onClose={() => setPayFor(null)}
           onSave={(patch) => update('bookings', payFor.id, patch)}
+        />
+      )}
+
+      {pasteChat && (
+        <WhatsAppModal
+          lang={lang} t={t} accent={accent} isDesktop={isDesktop}
+          onClose={() => setPasteChat(false)}
+          onSubmit={createLeadFromChat}
         />
       )}
     </>

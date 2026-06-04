@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { PALETTE, hexToRgba, genId, initialsOf, colorFor, SERVICE_LABEL, ROLE_LABEL, LEAD_LABEL, RESERVA_LABEL } from './data'
-import { Icon, Btn, Eucalyptus } from './ui'
+import { PALETTE, hexToRgba, genId, initialsOf, colorFor, extractLead, SERVICE_LABEL, ROLE_LABEL, LEAD_LABEL, RESERVA_LABEL } from './data'
+import { Icon, Btn, Eucalyptus, AIBadge } from './ui'
 
 // ─── Modal shell (full-screen on mobile, centered card on desktop) ───
 export function Modal({ title, onClose, isDesktop, children }) {
@@ -207,6 +207,76 @@ export function EntityForm({ type, initial, lang, t, accent, isDesktop, persist,
         <Btn variant="ghost" accent={accent} size="md" onClick={onClose}>{t('cancelar')}</Btn>
         <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={save}>{saving ? '…' : t('guardar')}</Btn>
       </div>
+    </Modal>
+  )
+}
+
+// ─── Paste a WhatsApp message → extract → create lead ─────────
+export function WhatsAppModal({ lang, t, accent, isDesktop, onClose, onSubmit }) {
+  const [step, setStep] = useState('paste')   // paste | review
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [text, setText] = useState('')
+  const [f, setF] = useState({ tipo: 'Casamento', data: '', local: '', servicos: [], convidados: '' })
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState(null)
+
+  const extract = () => {
+    const e = extractLead(text)
+    setF({ tipo: e.tipo || 'Casamento', data: e.data || '', local: e.local || '', servicos: e.servicos || [], convidados: e.convidados ?? '' })
+    setStep('review')
+  }
+
+  const tipos = (lang === 'pt' ? ['Casamento','Convidada','Aniversário','Evento corporativo','Outro'] : ['Wedding','Guest','Birthday','Corporate event','Other']).map(v => ({ value: v, label: v }))
+
+  const save = async () => {
+    if (!name.trim()) { setErr(lang === 'pt' ? 'Indique o nome do cliente.' : 'Enter the client name.'); return }
+    setSaving(true); setErr(null)
+    try {
+      await onSubmit({ name: name.trim(), phone: phone.trim(), text, fields: { ...f, convidados: f.convidados === '' ? null : Number(f.convidados) } })
+      onClose()
+    } catch (e) { console.error(e); setErr(lang === 'pt' ? 'Erro ao guardar.' : 'Save failed.'); setSaving(false) }
+  }
+
+  return (
+    <Modal title={lang === 'pt' ? 'Mensagem do WhatsApp' : 'WhatsApp message'} onClose={onClose} isDesktop={isDesktop}>
+      {step === 'paste' ? (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, padding: '10px 12px', borderRadius: 12, background: hexToRgba(PALETTE.sage, 0.14) }}>
+            <Eucalyptus size={16} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />
+            <span style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.ink, lineHeight: 1.4 }}>
+              {lang === 'pt' ? 'Cole ou reencaminhe a conversa. A IA extrai os dados da lead.' : 'Paste or forward the chat. AI extracts the lead details.'}
+            </span>
+          </div>
+          <label style={labelStyle}>{lang === 'pt' ? 'Texto da mensagem' : 'Message text'}</label>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={8} autoFocus
+            placeholder={lang === 'pt' ? 'Boa tarde! Vou casar a 12 de setembro na Quinta dos Sonhos, em Sintra. Queria maquilhagem e cabelo para mim e 4 damas, cerca de 120 convidados…' : 'Hi! Getting married on 12 September at…'}
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 150 }} />
+          <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+            <Btn variant="ghost" accent={accent} size="md" onClick={onClose}>{t('cancelar')}</Btn>
+            <Btn variant="solid" accent={accent} size="md" full icon="sparkle" onClick={extract} style={{ opacity: text.trim() ? 1 : 0.5, pointerEvents: text.trim() ? 'auto' : 'none' }}>{lang === 'pt' ? 'Extrair com IA' : 'Extract with AI'}</Btn>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Reveja e ajuste antes de criar' : 'Review and adjust before creating'}</span>
+            <AIBadge />
+          </div>
+          <Field def={{ label: t('nome'), type: 'text' }} value={name} onChange={setName} lang={lang} />
+          <Field def={{ label: t('telefone'), type: 'text' }} value={phone} onChange={setPhone} lang={lang} />
+          <Field def={{ label: t('tipo_evento'), type: 'select', options: tipos }} value={f.tipo} onChange={(v) => setF(p => ({ ...p, tipo: v }))} lang={lang} />
+          <Field def={{ label: t('data'), type: 'text', placeholder: '12 Set 2026' }} value={f.data} onChange={(v) => setF(p => ({ ...p, data: v }))} lang={lang} />
+          <Field def={{ label: t('local'), type: 'text' }} value={f.local} onChange={(v) => setF(p => ({ ...p, local: v }))} lang={lang} />
+          <Field def={{ label: t('servicos'), type: 'services' }} value={f.servicos} onChange={(v) => setF(p => ({ ...p, servicos: v }))} lang={lang} />
+          <Field def={{ label: t('convidados'), type: 'number' }} value={f.convidados} onChange={(v) => setF(p => ({ ...p, convidados: v }))} lang={lang} />
+          {err && <div style={{ fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.clay, marginBottom: 12 }}>{err}</div>}
+          <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+            <Btn variant="ghost" accent={accent} size="md" onClick={() => setStep('paste')}>{t('voltar')}</Btn>
+            <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={save}>{saving ? '…' : t('criar_lead')}</Btn>
+          </div>
+        </>
+      )}
     </Modal>
   )
 }

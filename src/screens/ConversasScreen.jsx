@@ -10,7 +10,7 @@ export function ConversasScreen({ ctx }) {
       <div style={{ padding: '0 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_conversas')}</div>
-          <button onClick={() => ctx.openCreate('lead')} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
+          <button onClick={() => ctx.openPasteChat()} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
             <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
           </button>
         </div>
@@ -29,9 +29,13 @@ export function ConversasScreen({ ctx }) {
       </div>
 
       {lista.length === 0
-        ? <div style={{ padding: '40px 18px', textAlign: 'center' }}>
-            <Eucalyptus size={22} stem={PALETTE.terracotta} leaf={PALETTE.sage} style={{ margin: '0 auto 12px' }} />
-            <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>Sem conversas ainda</div>
+        ? <div style={{ padding: '36px 18px', textAlign: 'center' }}>
+            <Eucalyptus size={24} stem={PALETTE.terracotta} leaf={PALETTE.sage} style={{ margin: '0 auto 14px' }} />
+            <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 18, color: PALETTE.nearBlack, marginBottom: 6 }}>{lang === 'pt' ? 'Sem conversas ainda' : 'No chats yet'}</div>
+            <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft, marginBottom: 18, lineHeight: 1.5, maxWidth: 280, marginInline: 'auto' }}>{lang === 'pt' ? 'Cole uma mensagem do WhatsApp e a IA cria a lead automaticamente.' : 'Paste a WhatsApp message and AI creates the lead.'}</div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <Btn variant="solid" accent={accent} size="md" icon="plus" onClick={() => ctx.openPasteChat()}>{lang === 'pt' ? 'Colar mensagem' : 'Paste message'}</Btn>
+            </div>
           </div>
         : <div style={{ padding: '0 8px' }}>
             {lista.map((c) => (

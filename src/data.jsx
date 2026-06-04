@@ -231,6 +231,44 @@ export function colorFor(seed) {
   return AVATAR_COLORS[h % AVATAR_COLORS.length]
 }
 
+// ─── Extract lead fields from pasted WhatsApp text (heuristic, PT/EN) ───
+const _MONTHS = { janeiro:0,fevereiro:1,'março':2,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11,
+  jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11,
+  january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11 }
+const _ABBR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+
+function _extractDate(text) {
+  let m = text.match(/(\d{1,2})\s*(?:de\s+)?([a-zA-Zçà-úÀ-Ú]{3,})(?:\s*(?:de\s+)?(\d{4}))?/)
+  if (m) {
+    const mi = _MONTHS[m[2].toLowerCase()]
+    if (mi != null) { const y = m[3] || (new Date().getFullYear() + 0); return `${+m[1]} ${_ABBR[mi]} ${y}` }
+  }
+  m = text.match(/(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/)
+  if (m) { const d = +m[1], mi = +m[2] - 1; let y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear(); if (mi >= 0 && mi < 12) return `${d} ${_ABBR[mi]} ${y}` }
+  return null
+}
+
+export function extractLead(text) {
+  const lower = (text || '').toLowerCase()
+  const svcMap = [
+    ['makeup', /maquilhag|make[ -]?up/], ['hair', /cabelo|penteado|hair/],
+    ['photo', /fotograf|fotógraf|photo/], ['dj', /\bdj\b/],
+    ['music', /música ao vivo|live music|banda|músico/], ['planning', /wedding planner|planeamento|coordenaç/],
+    ['video', /v[ií]deo/],
+  ]
+  const servicos = svcMap.filter(([, re]) => re.test(lower)).map(([k]) => k)
+  const g = lower.match(/(\d{1,4})\s*(convidad|pessoas|guests|invitad)/)
+  const convidados = g ? Number(g[1]) : null
+  const data = _extractDate(text)
+  const tipo = /aniversá|birthday/.test(lower) ? 'Aniversário'
+    : /casa(mento|r)|wedding|noiv/.test(lower) ? 'Casamento'
+    : /convidad|guest/.test(lower) ? 'Convidada' : 'Casamento'
+  let local = null
+  const lm = (text || '').match(/\b(?:em|na|no|at|in)\s+([A-ZÀ-Þ][\wÀ-ÿ'’.\- ]{2,40})/)
+  if (lm) local = lm[1].trim().replace(/[.,;!?].*$/, '').trim()
+  return { tipo, data, local, servicos, convidados }
+}
+
 export async function insertRow(table, row) {
   const { data, error } = await db.from(table).insert(row).select()
   if (error) throw error
