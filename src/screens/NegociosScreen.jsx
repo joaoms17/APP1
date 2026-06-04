@@ -42,55 +42,54 @@ export default function NegociosScreen({ ctx }) {
 }
 
 function PipelineView({ ctx, leads, lang, accent, t }) {
-  return (
-    <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-      <div style={{ display: 'flex', gap: 12, padding: '6px 18px 24px', height: '100%' }}>
-        {PIPELINE_ORDER.map((est) => {
-          const items = leads.filter((l) => l.estado === est)
-          const tone = leadTone(est)
-          return (
-            <div key={est} style={{ width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 10px' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone.dot }} />
-                <span style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 12, letterSpacing: '0.06em', color: PALETTE.nearBlack, textTransform: 'uppercase' }}>{LEAD_LABEL[lang][est]}</span>
-                <span style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft, marginLeft: 'auto' }}>{items.length}</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', paddingBottom: 8 }}>
-                {items.map((l) => (
-                  <div key={l.id} onClick={() => ctx.push('lead', { id: l.id })} style={{ background: 'var(--paper-card)', borderRadius: 16, padding: 14, cursor: 'pointer', boxShadow: '0 4px 16px rgba(74,63,53,0.06)', borderTop: `3px solid ${tone.dot}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <Avatar initials={l.initials} color={l.color} size={36} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16, color: PALETTE.nearBlack, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div>
-                        <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft }}>{l.tipo} · {l.data}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-                      {(l.servicos || []).map((s) => <ServiceChip key={s} k={s} lang={lang} SERVICE_LABEL={SERVICE_LABEL} />)}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft }}>
-                        <Icon name={l.origem === 'Instagram' ? 'instagram' : l.origem === 'WhatsApp' ? 'chat' : 'user'} size={13} color={PALETTE.sage} stroke={1.6} />
-                        {l.origem}
-                      </span>
-                      <span style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 17, color: accent }}>{l.valor}</span>
-                    </div>
-                  </div>
-                ))}
-                {items.length === 0 && (
-                  <div style={{ border: '1px dashed rgba(74,63,53,0.18)', borderRadius: 16, padding: '20px 12px', textAlign: 'center', fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12, color: PALETTE.inkSoft }}>—</div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-        {leads.length === 0 && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-            <Eucalyptus size={28} stem={PALETTE.terracotta} leaf={PALETTE.sage} />
-            <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>Pipeline vazio</div>
-          </div>
-        )}
+  if (leads.length === 0) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, padding: 24 }}>
+        <Eucalyptus size={28} stem={PALETTE.terracotta} leaf={PALETTE.sage} />
+        <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Pipeline vazio' : 'Empty pipeline'}</div>
       </div>
+    )
+  }
+  // only show stages that have leads
+  const stages = PIPELINE_ORDER.filter((est) => leads.some((l) => l.estado === est))
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 18px 24px' }}>
+      {stages.map((est) => {
+        const items = leads.filter((l) => l.estado === est)
+        const tone = leadTone(est)
+        return (
+          <div key={est} style={{ marginBottom: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 2px 10px' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: tone.dot }} />
+              <span style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 12, letterSpacing: '0.06em', color: PALETTE.nearBlack, textTransform: 'uppercase' }}>{LEAD_LABEL[lang][est]}</span>
+              <span style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft, marginLeft: 'auto' }}>{items.length}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {items.map((l) => (
+                <div key={l.id} onClick={() => ctx.push('lead', { id: l.id })} style={{ background: 'var(--paper-card)', borderRadius: 16, padding: 14, cursor: 'pointer', boxShadow: '0 4px 16px rgba(74,63,53,0.06)', borderLeft: `3px solid ${tone.dot}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Avatar initials={l.initials} color={l.color} size={40} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16.5, color: PALETTE.nearBlack, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div>
+                      <div style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.inkSoft }}>{l.tipo}{l.data ? ` · ${l.data}` : ''}</div>
+                    </div>
+                    {l.valor && <span style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 17, color: accent, flexShrink: 0 }}>{l.valor}</span>}
+                  </div>
+                  {(l.servicos || []).length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 11 }}>
+                      {l.servicos.map((s) => <ServiceChip key={s} k={s} lang={lang} SERVICE_LABEL={SERVICE_LABEL} />)}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 11, fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft }}>
+                    <Icon name={l.origem === 'Instagram' ? 'instagram' : l.origem === 'WhatsApp' ? 'chat' : 'user'} size={13} color={PALETTE.sage} stroke={1.6} />
+                    {l.origem || (lang === 'pt' ? 'Manual' : 'Manual')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
