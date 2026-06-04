@@ -6,13 +6,13 @@ export function ConversasScreen({ ctx }) {
   const { t, accent, conversas } = ctx
   const lista = conversas || []
   return (
-    <div style={{ padding: '54px 0 24px' }}>
+    <div style={{ padding: '30px 0 24px' }}>
       <div style={{ padding: '0 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_conversas')}</div>
-          <div style={{ width: 42, height: 42, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
+          <button onClick={() => ctx.openCreate('lead')} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
             <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
-          </div>
+          </button>
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: PALETTE.sage }} />

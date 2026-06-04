@@ -14,7 +14,7 @@ export default function FinanceiroScreen({ ctx }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '54px 18px 6px', flexShrink: 0 }}>
+      <div style={{ padding: '30px 18px 6px', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_financeiro')}</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 18px 24px' }}>

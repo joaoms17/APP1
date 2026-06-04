@@ -1,6 +1,6 @@
 import React from 'react'
 import { PALETTE, hexToRgba, svc, ROLE_LABEL } from '../data'
-import { Icon, Card, Label, AvatarStack, Avatar, Chip, Eucalyptus } from '../ui'
+import { Icon, Card, Label, AvatarStack, Avatar, Chip, Eucalyptus, Btn } from '../ui'
 
 function Segmented({ options, value, onChange, accent }) {
   return (
@@ -20,7 +20,7 @@ export default function AgendaScreen({ ctx }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '54px 18px 14px', flexShrink: 0 }}>
+      <div style={{ padding: '30px 18px 14px', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1, marginBottom: 16 }}>{t('tab_agenda')}</div>
         <Segmented accent={accent} value={view} onChange={setView} options={[
           { id: 'calendario', label: t('calendario') },
@@ -30,7 +30,7 @@ export default function AgendaScreen({ ctx }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px 24px' }}>
         {view === 'calendario'
           ? <CalendarView ctx={ctx} agendaEvents={agendaEvents || []} teamById={teamById} />
-          : <EquipaView ctx={ctx} team={team || []} />}
+          : <EquipaView ctx={ctx} team={team || []} accent={accent} />}
       </div>
     </div>
   )
@@ -121,6 +121,9 @@ function EquipaView({ ctx, team }) {
 
   return (
     <div>
+      <Btn variant="soft" accent={accent} size="md" full icon="plus" style={{ marginBottom: 16 }} onClick={() => ctx.openCreate('team')}>
+        {lang === 'pt' ? 'Adicionar colaborador' : 'Add team member'}
+      </Btn>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 18, paddingBottom: 2 }}>
         {roles.map((r) => (
           <button key={r} onClick={() => setFilter(r)} style={{ flexShrink: 0, fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 50, cursor: 'pointer', whiteSpace: 'nowrap', border: `1px solid ${filter === r ? accent : 'rgba(74,63,53,0.12)'}`, background: filter === r ? hexToRgba(accent, 0.1) : 'transparent', color: filter === r ? accent : PALETTE.inkSoft }}>

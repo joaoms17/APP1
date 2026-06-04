@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase } from './data'
+import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow } from './data'
 import { Icon, Eucalyptus } from './ui'
-import { IOSDevice } from './ios-frame'
+import { EntityForm, PaymentModal } from './forms'
 import HomeScreen     from './screens/HomeScreen'
 import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
 import NegociosScreen  from './screens/NegociosScreen'
@@ -21,16 +21,70 @@ const TABS = [
   { id: 'financeiro', icon: 'wallet',   key: 'tab_financeiro' },
 ]
 
+function useIsDesktop() {
+  const [d, setD] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900)
+  useEffect(() => {
+    const f = () => setD(window.innerWidth >= 900)
+    window.addEventListener('resize', f)
+    return () => window.removeEventListener('resize', f)
+  }, [])
+  return d
+}
+
+function LoadingScreen() {
+  return (
+    <div style={{ height: '100%', minHeight: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+      <Eucalyptus size={32} stem={PALETTE.terracotta} leaf={PALETTE.sage} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[0,1,2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: PALETTE.terracotta, animation: `loadPulse 1.2s ${i*0.2}s ease-in-out infinite` }} />)}
+      </div>
+    </div>
+  )
+}
+
+// ─── Desktop sidebar ──────────────────────────────────────────
+function Sidebar({ active, onChange, t, accent, tw, setTw }) {
+  return (
+    <div style={{ width: 248, flexShrink: 0, background: 'var(--paper-card)', borderRight: '1px solid rgba(74,63,53,0.08)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '26px 22px 22px' }}>
+        <Eucalyptus size={26} stem={accent} leaf={PALETTE.sage} />
+        <div>
+          <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 24, color: PALETTE.nearBlack, lineHeight: 1 }}>Ramo</div>
+          <div style={{ fontFamily: 'var(--sans)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: PALETTE.inkSoft, marginTop: 3 }}>{t('appTagline')}</div>
+        </div>
+      </div>
+      <div style={{ flex: 1, padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {TABS.map((tb) => {
+          const on = active === tb.id
+          return (
+            <button key={tb.id} onClick={() => onChange(tb.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 13, padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: on ? hexToRgba(accent, 0.12) : 'transparent', textAlign: 'left',
+              fontFamily: 'var(--sans)', fontSize: 14.5, fontWeight: on ? 500 : 400, color: on ? accent : PALETTE.ink,
+            }}>
+              <Icon name={tb.icon} size={20} color={on ? accent : PALETTE.inkSoft} stroke={on ? 1.9 : 1.6} />
+              {t(tb.key)}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ padding: '14px 18px 22px', borderTop: '1px solid rgba(74,63,53,0.08)' }}>
+        <TweakControls tw={tw} setTw={setTw} compact />
+      </div>
+    </div>
+  )
+}
+
+// ─── Mobile bottom tabs ───────────────────────────────────────
 function TabBar({ active, onChange, t, accent }) {
   return (
-    <div style={{ flexShrink: 0, background: 'var(--paper-card)', borderTop: '1px solid rgba(74,63,53,0.08)', boxShadow: '0 -4px 20px rgba(74,63,53,0.05)', display: 'flex', padding: '9px 6px 30px' }}>
+    <div style={{ flexShrink: 0, background: 'var(--paper-card)', borderTop: '1px solid rgba(74,63,53,0.08)', boxShadow: '0 -4px 20px rgba(74,63,53,0.05)', display: 'flex', padding: '9px 6px max(14px, env(safe-area-inset-bottom))' }}>
       {TABS.map((tb) => {
         const on = active === tb.id
         return (
           <button key={tb.id} onClick={() => onChange(tb.id)} style={{ flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '5px 2px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <Icon name={tb.icon} size={23} color={on ? accent : PALETTE.inkSoft} stroke={on ? 1.9 : 1.5} />
             <span style={{ fontFamily: 'var(--sans)', fontSize: 9.5, letterSpacing: '0.04em', fontWeight: on ? 500 : 400, color: on ? accent : PALETTE.inkSoft }}>{t(tb.key)}</span>
-            <span style={{ width: 4, height: 4, borderRadius: '50%', background: on ? accent : 'transparent', marginTop: -1 }} />
           </button>
         )
       })}
@@ -38,13 +92,20 @@ function TabBar({ active, onChange, t, accent }) {
   )
 }
 
-function LoadingScreen() {
+function TweakControls({ tw, setTw, compact }) {
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', gap: 20 }}>
-      <Eucalyptus size={32} stem={PALETTE.terracotta} leaf={PALETTE.sage} />
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[0,1,2].map(i => (
-          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: PALETTE.terracotta, animation: `loadPulse 1.2s ${i*0.2}s ease-in-out infinite` }} />
+    <div>
+      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: PALETTE.inkSoft, marginBottom: 10 }}>
+        {tw.lang === 'pt' ? 'Preferências' : 'Preferences'}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        {['#A9744F','#B25B43','#8C5C3C','#93A07E'].map(c => (
+          <button key={c} onClick={() => setTw(p => ({...p, accent: c}))} style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: tw.accent === c ? '2px solid #29261b' : '2px solid transparent', cursor: 'pointer' }} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', background: 'rgba(0,0,0,.06)', borderRadius: 8, padding: 2, gap: 2 }}>
+        {['pt','en'].map(l => (
+          <button key={l} onClick={() => setTw(p => ({...p, lang: l}))} style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tw.lang === l ? 'rgba(255,255,255,.9)' : 'transparent', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, color: tw.lang === l ? PALETTE.nearBlack : PALETTE.inkSoft }}>{l.toUpperCase()}</button>
         ))}
       </div>
     </div>
@@ -52,6 +113,7 @@ function LoadingScreen() {
 }
 
 export default function App() {
+  const isDesktop = useIsDesktop()
   const [tw, setTw] = useState(TWEAK_DEFAULTS)
   const lang   = tw.lang === 'en' ? 'en' : 'pt'
   const accent = tw.accent || PALETTE.terracotta
@@ -60,92 +122,102 @@ export default function App() {
   const [data, setData] = useState(defaultData)
   const [ready, setReady] = useState(false)
 
-  useEffect(() => {
-    loadFromSupabase()
-      .then(setData)
-      .catch(err => console.error('[Ramo] Supabase error:', err))
-      .finally(() => setReady(true))
-  }, [])
+  const reload = async () => {
+    try { setData(await loadFromSupabase()) }
+    catch (e) { console.error('[Ramo] reload error:', e) }
+  }
+  useEffect(() => { reload().finally(() => setReady(true)) }, [])
 
-  const [tab, setTab]         = useState('inicio')
-  const [stack, setStack]     = useState([])
-  const [tabParams, setTabP]  = useState({})
+  const [tab, setTab]        = useState('inicio')
+  const [stack, setStack]    = useState([])
+  const [tabParams, setTabP] = useState({})
+  const [form, setForm]      = useState(null)     // { type, initial, onComplete }
+  const [payFor, setPayFor]  = useState(null)     // reserva object
 
-  const teamById   = (id) => data.team.find(m => m.id === id)
+  const teamById    = (id) => data.team.find(m => m.id === id)
   const reservaById = (id) => data.reservas.find(r => r.id === id)
 
+  const persist = async (table, row) => { await insertRow(table, row); await reload() }
+  const update  = async (table, id, patch) => { await updateRow(table, id, patch); await reload() }
+  const remove  = async (table, id) => { await deleteRow(table, id); await reload() }
+
   const ctx = {
-    t, lang, accent,
+    t, lang, accent, isDesktop,
     push:  (screen, params = {}) => setStack(s => [...s, { screen, params }]),
-    pop:   ()                     => setStack(s => s.slice(0, -1)),
+    pop:   ()                    => setStack(s => s.slice(0, -1)),
     goTab: (id, params = {})     => { setStack([]); setTabP(params); setTab(id) },
     params: tabParams,
-    // data
-    team:         data.team,
-    conversas:    data.conversas,
-    leads:        data.leads,
-    reservas:     data.reservas,
-    agendaEvents: data.agendaEvents,
-    teamById,
-    reservaById,
+    team: data.team, conversas: data.conversas, leads: data.leads,
+    reservas: data.reservas, agendaEvents: data.agendaEvents,
+    teamById, reservaById,
+    // CRUD
+    openCreate: (type, opts = {}) => setForm({ type, ...opts }),
+    openPayment: (reserva) => setPayFor(reserva),
+    update, remove, reload,
   }
 
-  const TAB_SCREENS = {
-    inicio: HomeScreen, conversas: ConversasScreen,
-    negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen,
-  }
-  const STACK_SCREENS = {
-    conversa: ConversaScreen, lead: LeadScreen,
-    reserva: ReservaScreen,   doc:  DocScreen,
-  }
+  const TAB_SCREENS = { inicio: HomeScreen, conversas: ConversasScreen, negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen }
+  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen }
   const TabScreen = TAB_SCREENS[tab]
   const top       = stack[stack.length - 1]
   const TopScreen = top ? STACK_SCREENS[top.screen] : null
 
+  // Detail screens render full-screen on mobile, as a centered panel on desktop
+  const detailOverlay = TopScreen && (
+    <div
+      onClick={isDesktop ? () => ctx.pop() : undefined}
+      style={isDesktop
+        ? { position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(46,40,32,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }
+        : { position: 'fixed', inset: 0, zIndex: 1500, background: 'var(--paper)', animation: 'slideIn .28s cubic-bezier(.33,0,.2,1)' }}>
+      <div
+        onClick={isDesktop ? (e) => e.stopPropagation() : undefined}
+        style={isDesktop
+          ? { width: 460, height: '88vh', maxHeight: 880, background: 'var(--paper)', borderRadius: 22, overflow: 'hidden', boxShadow: '0 24px 60px rgba(46,40,32,.3)' }
+          : { width: '100%', height: '100%' }}>
+        <TopScreen ctx={ctx} params={top.params} />
+      </div>
+    </div>
+  )
+
+  const content = !ready ? <LoadingScreen /> : <TabScreen ctx={ctx} />
+
   return (
     <>
       <style>{`@keyframes loadPulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 24, boxSizing: 'border-box' }}>
-        <IOSDevice>
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)', position: 'relative', overflow: 'hidden' }}>
-            {!ready
-              ? <LoadingScreen />
-              : <>
-                  <div style={{ flex: 1, minHeight: 0, overflow: 'auto', position: 'relative' }} key={tab}>
-                    <TabScreen ctx={ctx} />
-                  </div>
-                  <TabBar active={tab} onChange={ctx.goTab} t={t} accent={accent} />
-                  {TopScreen && (
-                    <div key={stack.length + top.screen} style={{ position: 'absolute', inset: 0, zIndex: 100, animation: 'slideIn .28s cubic-bezier(.33,0,.2,1)' }}>
-                      <TopScreen ctx={ctx} params={top.params} />
-                    </div>
-                  )}
-                </>
-            }
-          </div>
-        </IOSDevice>
 
-        {/* Tweaks panel — brand colour + language */}
-        <div style={{ position: 'fixed', bottom: 16, right: 16, background: 'rgba(250,249,247,.85)', backdropFilter: 'blur(20px)', borderRadius: 14, padding: '14px 16px', boxShadow: '0 12px 40px rgba(0,0,0,.15)', border: '.5px solid rgba(255,255,255,.6)', minWidth: 200, zIndex: 999 }}>
-          <div style={{ fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: PALETTE.inkSoft, marginBottom: 12 }}>Tweaks</div>
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft, marginBottom: 6 }}>Cor de marca</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {['#A9744F','#B25B43','#8C5C3C','#93A07E'].map(c => (
-                <button key={c} onClick={() => setTw(p => ({...p, accent: c}))} style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: tw.accent === c ? '2px solid #29261b' : '2px solid transparent', cursor: 'pointer', outline: 'none' }} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft, marginBottom: 6 }}>Idioma</div>
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,.06)', borderRadius: 8, padding: 2, gap: 2 }}>
-              {['pt','en'].map(l => (
-                <button key={l} onClick={() => setTw(p => ({...p, lang: l}))} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tw.lang === l ? 'rgba(255,255,255,.9)' : 'transparent', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, color: tw.lang === l ? PALETTE.nearBlack : PALETTE.inkSoft }}>{l.toUpperCase()}</button>
-              ))}
+      {isDesktop ? (
+        <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--paper)' }}>
+          <Sidebar active={tab} onChange={ctx.goTab} t={t} accent={accent} tw={tw} setTw={setTw} />
+          <div style={{ flex: 1, minWidth: 0, height: '100vh', overflowY: 'auto' }}>
+            <div style={{ maxWidth: 760, margin: '0 auto', minHeight: '100%' }} key={tab}>
+              {content}
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--paper)' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }} key={tab}>{content}</div>
+          <TabBar active={tab} onChange={ctx.goTab} t={t} accent={accent} />
+        </div>
+      )}
+
+      {detailOverlay}
+
+      {form && (
+        <EntityForm
+          type={form.type} initial={form.initial} lang={lang} t={t} accent={accent} isDesktop={isDesktop}
+          persist={persist} onClose={() => setForm(null)}
+          onComplete={form.onComplete ? (row) => form.onComplete(row, { update, reload }) : undefined}
+        />
+      )}
+
+      {payFor && (
+        <PaymentModal
+          reserva={payFor} lang={lang} t={t} accent={accent} isDesktop={isDesktop}
+          onClose={() => setPayFor(null)}
+          onSave={(patch) => update('bookings', payFor.id, patch)}
+        />
+      )}
     </>
   )
 }

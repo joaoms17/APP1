@@ -1,5 +1,5 @@
 import React from 'react'
-import { PALETTE, hexToRgba, svc, leadTone, reservaTone, LEAD_LABEL, RESERVA_LABEL, PIPELINE_ORDER } from '../data'
+import { PALETTE, hexToRgba, svc, leadTone, reservaTone, LEAD_LABEL, RESERVA_LABEL, PIPELINE_ORDER, SERVICE_LABEL } from '../data'
 import { Icon, Avatar, ServiceChip, AvatarStack, Card, Chip, Eucalyptus } from '../ui'
 
 function Segmented({ options, value, onChange, accent }) {
@@ -22,12 +22,12 @@ export default function NegociosScreen({ ctx }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '54px 18px 14px', flexShrink: 0 }}>
+      <div style={{ padding: '30px 18px 14px', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_negocios')}</div>
-          <div style={{ width: 42, height: 42, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
+          <button onClick={() => ctx.openCreate(view === 'pipeline' ? 'lead' : 'reserva')} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
             <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
-          </div>
+          </button>
         </div>
         <Segmented accent={accent} value={view} onChange={setView} options={[
           { id: 'pipeline', label: t('pipeline'), count: leadsList.length },
@@ -66,7 +66,7 @@ function PipelineView({ ctx, leads, lang, accent, t }) {
                       </div>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-                      {(l.servicos || []).map((s) => <ServiceChip key={s} k={s} lang={lang} SERVICE_LABEL={require('../data').SERVICE_LABEL} />)}
+                      {(l.servicos || []).map((s) => <ServiceChip key={s} k={s} lang={lang} SERVICE_LABEL={SERVICE_LABEL} />)}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft }}>

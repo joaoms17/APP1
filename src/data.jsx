@@ -214,3 +214,33 @@ export async function loadFromSupabase() {
 
   return { team, conversas, leads, reservas, agendaEvents }
 }
+
+// ─── CRUD helpers ─────────────────────────────────────────────
+const AVATAR_COLORS = [PALETTE.terracotta, PALETTE.sage, PALETTE.gold, PALETTE.clay, PALETTE.terracottaDark, PALETTE.inkSoft]
+
+export function genId() {
+  return (globalThis.crypto?.randomUUID?.() || ('id' + Date.now() + Math.random().toString(16).slice(2)))
+}
+export function initialsOf(name) {
+  const p = (name || '').trim().split(/\s+/)
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || '?'
+}
+export function colorFor(seed) {
+  let h = 0
+  for (const c of (seed || 'x')) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
+
+export async function insertRow(table, row) {
+  const { data, error } = await db.from(table).insert(row).select()
+  if (error) throw error
+  return data?.[0]
+}
+export async function updateRow(table, id, patch) {
+  const { error } = await db.from(table).update(patch).eq('id', id)
+  if (error) throw error
+}
+export async function deleteRow(table, id) {
+  const { error } = await db.from(table).delete().eq('id', id)
+  if (error) throw error
+}

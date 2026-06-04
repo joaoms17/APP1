@@ -25,7 +25,7 @@ export default function HomeScreen({ ctx }) {
   const events = agendaEvents || []
 
   return (
-    <div style={{ padding: '54px 18px 24px' }}>
+    <div style={{ padding: '30px 18px 24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
         <div>
           <Label size={10.5} style={{ marginBottom: 8, color: PALETTE.sage }}>{t('today')} · 4 Jun</Label>

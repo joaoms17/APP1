@@ -68,7 +68,7 @@ export default function ReservaScreen({ ctx, params }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 18px 28px' }}>
         {tab === 'detalhes'   && <DetalhesTab t={t} lang={lang} r={r} />}
         {tab === 'equipa'     && <EquipaTab ctx={ctx} t={t} lang={lang} accent={accent} r={r} teamById={teamById} />}
-        {tab === 'pagamentos' && <PagamentosTab t={t} lang={lang} accent={accent} r={r} />}
+        {tab === 'pagamentos' && <PagamentosTab ctx={ctx} t={t} lang={lang} accent={accent} r={r} />}
         {tab === 'docs'       && <DocsTab ctx={ctx} t={t} lang={lang} accent={accent} r={r} />}
         {tab === 'notas'      && <NotasTab t={t} lang={lang} accent={accent} r={r} teamById={teamById} />}
       </div>
@@ -124,7 +124,7 @@ function EquipaTab({ ctx, t, lang, accent, r, teamById }) {
   )
 }
 
-function PagamentosTab({ t, lang, accent, r }) {
+function PagamentosTab({ ctx, t, lang, accent, r }) {
   const divida = (r.total || 0) - (r.pago || 0)
   const pct = r.total > 0 ? Math.round(((r.pago || 0) / r.total) * 100) : 0
   const payTone = { pago: PALETTE.sage, parcial: PALETTE.gold, nao_pago: PALETTE.clay }[r.pay] || PALETTE.clay
@@ -151,7 +151,7 @@ function PagamentosTab({ t, lang, accent, r }) {
       </Card>
       <div style={{ display: 'flex', gap: 12 }}>
         <Btn variant="ghost" accent={accent} size="md" full icon="chat">{t('pedir_pagamento')}</Btn>
-        <Btn variant="solid" accent={accent} size="md" full icon="plus">{t('registar')}</Btn>
+        <Btn variant="solid" accent={accent} size="md" full icon="plus" onClick={() => ctx.openPayment(r)}>{t('registar')}</Btn>
       </div>
     </div>
   )
