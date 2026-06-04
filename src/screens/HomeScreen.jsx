@@ -41,6 +41,7 @@ function AccountMenu({ ctx, onClose }) {
             <button key={l} onClick={() => setTw(p => ({...p, lang: l}))} style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', background: tw.lang === l ? 'rgba(255,255,255,.9)' : 'transparent', fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, color: tw.lang === l ? PALETTE.nearBlack : PALETTE.inkSoft }}>{l.toUpperCase()}</button>
           ))}
         </div>
+        <button onClick={() => { onClose(); ctx.goTab('definicoes') }} style={{ width: '100%', padding: '11px', borderRadius: 10, border: '1px solid rgba(74,63,53,0.16)', background: 'transparent', color: PALETTE.ink, fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 10 }}>{lang === 'pt' ? 'Definições e propostas' : 'Settings & proposals'}</button>
         <button onClick={signOut} style={{ width: '100%', padding: '11px', borderRadius: 10, border: `1px solid ${hexToRgba(PALETTE.clay, 0.4)}`, background: 'transparent', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>{lang === 'pt' ? 'Terminar sessão' : 'Sign out'}</button>
       </div>
     </div>

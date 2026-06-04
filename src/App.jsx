@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { db } from './supabase'
-import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow, genId, initialsOf, colorFor } from './data'
+import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow, genId, initialsOf, colorFor, generateProposalContent } from './data'
 import { Icon, Eucalyptus } from './ui'
 import { EntityForm, PaymentModal, WhatsAppModal } from './forms'
 import Auth from './Auth'
+import SettingsScreen from './screens/SettingsScreen'
+import ProposalScreen from './screens/ProposalScreen'
 import HomeScreen     from './screens/HomeScreen'
 import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
 import NegociosScreen  from './screens/NegociosScreen'
@@ -69,6 +71,12 @@ function Sidebar({ active, onChange, t, accent, tw, setTw, userName, signOut }) 
             </button>
           )
         })}
+      </div>
+      <div style={{ padding: '4px 14px 0' }}>
+        <button onClick={() => onChange('definicoes')} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '12px 14px', borderRadius: 12, border: 'none', cursor: 'pointer', background: active === 'definicoes' ? hexToRgba(accent, 0.12) : 'transparent', textAlign: 'left', width: '100%', fontFamily: 'var(--sans)', fontSize: 14.5, fontWeight: active === 'definicoes' ? 500 : 400, color: active === 'definicoes' ? accent : PALETTE.ink }}>
+          <Icon name="file" size={20} color={active === 'definicoes' ? accent : PALETTE.inkSoft} stroke={1.6} />
+          {tw.lang === 'pt' ? 'Definições' : 'Settings'}
+        </button>
       </div>
       <div style={{ padding: '14px 18px 22px', borderTop: '1px solid rgba(74,63,53,0.08)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -175,6 +183,17 @@ export default function App() {
   const update  = async (table, id, patch) => { await updateRow(table, id, patch); await reload() }
   const remove  = async (table, id) => { await deleteRow(table, id); await reload() }
 
+  const saveSettings = async (patch) => { await db.from('settings').upsert({ id: 'default', ...patch }); await reload() }
+
+  // Generate a proposal from a lead's selected services + price table
+  const generateProposal = async (lead) => {
+    const content = generateProposalContent(lead, data.settings, data.priceItems)
+    const id = genId()
+    await insertRow('proposals', { id, lead_id: lead.id, client_name: lead.name, status: 'rascunho', content })
+    await reload()
+    return id
+  }
+
   const sendMessage = async (convId, text) => {
     const body = (text || '').trim()
     if (!body) return
@@ -203,7 +222,10 @@ export default function App() {
     params: tabParams,
     team: data.team, conversas: data.conversas, leads: data.leads,
     reservas: data.reservas, agendaEvents: data.agendaEvents,
+    settings: data.settings, priceItems: data.priceItems, proposals: data.proposals,
     teamById, reservaById,
+    saveSettings, generateProposal,
+    create: persist,
     // CRUD
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),
     openPayment: (reserva) => setPayFor(reserva),
@@ -212,8 +234,8 @@ export default function App() {
     update, remove, reload,
   }
 
-  const TAB_SCREENS = { inicio: HomeScreen, conversas: ConversasScreen, negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen }
-  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen }
+  const TAB_SCREENS = { inicio: HomeScreen, conversas: ConversasScreen, negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen, definicoes: SettingsScreen }
+  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen, proposta: ProposalScreen }
   const TabScreen = TAB_SCREENS[tab]
   const top       = stack[stack.length - 1]
   const TopScreen = top ? STACK_SCREENS[top.screen] : null

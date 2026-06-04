@@ -144,6 +144,9 @@ export const defaultData = {
   leads: [],
   reservas: [],
   agendaEvents: [],
+  settings: null,
+  priceItems: [],
+  proposals: [],
 }
 
 // ─── Supabase loader ──────────────────────────────────────────
@@ -167,6 +170,19 @@ export async function loadFromSupabase() {
     db.from('booking_team').select('*'),
     db.from('agenda_events').select('*').order('day'),
   ])
+
+  const [
+    { data: settingsRows },
+    { data: priceRows },
+    { data: proposalRows },
+  ] = await Promise.all([
+    db.from('settings').select('*').limit(1),
+    db.from('price_items').select('*').order('sort'),
+    db.from('proposals').select('*').order('created_at', { ascending: false }),
+  ])
+  const settings = (settingsRows && settingsRows[0]) || null
+  const priceItems = priceRows || []
+  const proposals = proposalRows || []
 
   const team = (teamRows || []).map(r => ({
     id: r.id, name: r.name, role: r.role, initials: r.initials,
@@ -212,7 +228,47 @@ export async function loadFromSupabase() {
     team: r.team_ids || [], servicos: r.servicos || [], conflict: r.has_conflict,
   }))
 
-  return { team, conversas, leads, reservas, agendaEvents }
+  return { team, conversas, leads, reservas, agendaEvents, settings, priceItems, proposals }
+}
+
+// ─── Proposal generation ──────────────────────────────────────
+// Picks, within each category, the price item whose `services` is a
+// subset of the lead's selected services and matches the MOST services
+// (most specific package wins).
+function pickBest(items, selected) {
+  const sel = new Set(selected || [])
+  const eligible = items.filter(it => (it.services || []).every(s => sel.has(s)))
+  if (!eligible.length) return null
+  // prefer the one requiring the most services; tie-break by sort
+  return eligible.sort((a, b) =>
+    (b.services?.length || 0) - (a.services?.length || 0) || (a.sort || 0) - (b.sort || 0)
+  )[0]
+}
+
+export function generateProposalContent(lead, settings, priceItems) {
+  const selected = lead.servicos || []
+  const noiva = (priceItems || []).filter(p => p.category === 'noiva')
+  const convidadas = (priceItems || []).filter(p => p.category === 'convidadas')
+  const extras = (priceItems || []).filter(p => p.category === 'extra')
+
+  const mainPkg = pickBest(noiva, selected)
+  const convPkg = pickBest(convidadas, selected)
+  const s = settings || {}
+
+  const toLine = (it) => it ? ({ title: it.title, description: it.description || '', price: Number(it.price) || 0, unit: it.unit || '' }) : null
+
+  return {
+    company: s.company_name || 'Ramo Eventos',
+    location: s.location || 'Lisboa · Portugal',
+    logo_url: s.logo_url || '',
+    about: s.about || '',
+    packages: [toLine(mainPkg)].filter(Boolean),
+    convidadas: [toLine(convPkg)].filter(Boolean),
+    extras: (extras || []).map(e => ({ title: e.title, description: e.description || '', price: Number(e.price) || 0, unit: e.unit || '' })),
+    deslocacao_rate: s.deslocacao_rate ?? 0.5,
+    payment: s.payment_terms || '',
+    terms: s.terms || '',
+  }
 }
 
 // ─── CRUD helpers ─────────────────────────────────────────────

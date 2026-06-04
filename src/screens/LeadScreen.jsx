@@ -65,6 +65,27 @@ export default function LeadScreen({ ctx, params }) {
           </div>
         </Card>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Label size={10.5}>{t('proposta')}</Label><AIBadge />
+        </div>
+        <Card sage style={{ marginBottom: 22 }}>
+          <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 12, lineHeight: 1.5 }}>
+            {lang === 'pt'
+              ? 'Gera uma proposta comercial com a sua marca, adaptada aos serviços desta lead.'
+              : 'Generate a branded proposal adapted to this lead’s services.'}
+          </div>
+          <Btn variant="solid" accent={accent} size="md" full icon="file" onClick={async () => { const id = await ctx.generateProposal(l); ctx.push('proposta', { id }) }}>
+            {lang === 'pt' ? 'Gerar proposta comercial' : 'Generate proposal'}
+          </Btn>
+          {(ctx.proposals || []).filter(p => p.lead_id === l.id).map(p => (
+            <button key={p.id} onClick={() => ctx.push('proposta', { id: p.id })} style={{ width: '100%', marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(74,63,53,0.12)', background: 'var(--paper-card)', cursor: 'pointer' }}>
+              <Icon name="file" size={16} color={accent} stroke={1.6} />
+              <span style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.ink }}>{lang === 'pt' ? 'Proposta' : 'Proposal'} · {p.status}</span>
+              <Icon name="chevR" size={16} color={PALETTE.inkSoft} stroke={1.8} />
+            </button>
+          ))}
+        </Card>
+
         <Label size={10.5} style={{ marginBottom: 8 }}>{t('estado')}</Label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 8 }}>
           {Object.entries(LEAD_LABEL[lang]).map(([est, label]) => {
