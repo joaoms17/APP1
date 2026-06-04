@@ -147,6 +147,7 @@ export const defaultData = {
   settings: null,
   priceItems: [],
   proposals: [],
+  schedules: [],
 }
 
 // ─── Supabase loader ──────────────────────────────────────────
@@ -183,6 +184,9 @@ export async function loadFromSupabase() {
   const settings = (settingsRows && settingsRows[0]) || null
   const priceItems = priceRows || []
   const proposals = proposalRows || []
+
+  let schedules = []
+  try { const { data } = await db.from('schedules').select('*').order('created_at', { ascending: false }); schedules = data || [] } catch (_) {}
 
   const team = (teamRows || []).map(r => ({
     id: r.id, name: r.name, role: r.role, initials: r.initials,
@@ -228,7 +232,43 @@ export async function loadFromSupabase() {
     team: r.team_ids || [], servicos: r.servicos || [], conflict: r.has_conflict,
   }))
 
-  return { team, conversas, leads, reservas, agendaEvents, settings, priceItems, proposals }
+  return { team, conversas, leads, reservas, agendaEvents, settings, priceItems, proposals, schedules }
+}
+
+// ─── Cronograma do dia: scaffold a partir da reserva ──────────
+export function buildScheduleContent(booking, kind, settings) {
+  const s = settings || {}
+  const base = {
+    company: s.company_name || 'Ramo Eventos',
+    logo_url: s.logo_url || '',
+    date: booking?.data || '',
+    location: booking?.local || '',
+    client: booking?.name || '',
+  }
+  if (kind === 'music') {
+    return {
+      ...base, kind: 'music',
+      moments: [
+        { time: '', label: 'Início / preparação' },
+        { time: '', label: 'Chegada' },
+        { time: '', label: 'Cerimónia' },
+        { time: '', label: 'Cocktail' },
+        { time: '', label: 'Saída' },
+      ],
+      notes: '',
+    }
+  }
+  // beauty (cabelo + maquilhagem)
+  const svcs = booking?.servicos || []
+  const slots = []
+  if (svcs.includes('hair')) slots.push({ service: 'cabelo', time: '', person: 'Noiva', note: '' })
+  if (svcs.includes('makeup')) slots.push({ service: 'maquilhagem', time: '', person: 'Noiva', note: '' })
+  if (!slots.length) slots.push({ service: 'cabelo', time: '', person: 'Noiva', note: '' })
+  return {
+    ...base, kind: 'beauty',
+    slots,
+    notes: 'Cabelo deve estar lavado e seco, sem produtos nem amaciador. Rosto e olhos sem maquilhagem e lavados.',
+  }
 }
 
 // ─── Proposal generation ──────────────────────────────────────

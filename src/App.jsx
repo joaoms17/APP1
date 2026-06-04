@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { db } from './supabase'
-import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow, genId, initialsOf, colorFor, generateProposalContent } from './data'
+import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow, genId, initialsOf, colorFor, generateProposalContent, buildScheduleContent } from './data'
 import { Icon, Eucalyptus } from './ui'
 import { EntityForm, PaymentModal, WhatsAppModal } from './forms'
 import Auth from './Auth'
 import SettingsScreen from './screens/SettingsScreen'
 import ProposalScreen from './screens/ProposalScreen'
+import ScheduleScreen from './screens/ScheduleScreen'
 import HomeScreen     from './screens/HomeScreen'
 import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
 import NegociosScreen  from './screens/NegociosScreen'
@@ -194,6 +195,15 @@ export default function App() {
     return id
   }
 
+  // Generate a day schedule (cronograma) for a booking
+  const generateSchedule = async (booking, kind) => {
+    const content = buildScheduleContent(booking, kind, data.settings)
+    const id = genId()
+    await insertRow('schedules', { id, booking_id: booking.id, kind, title: kind === 'music' ? 'Cronograma · Música' : 'Cronograma · Cabelo e Maquilhagem', event_date: booking.data || null, location: booking.local || null, status: 'rascunho', content })
+    await reload()
+    return id
+  }
+
   const sendMessage = async (convId, text) => {
     const body = (text || '').trim()
     if (!body) return
@@ -222,9 +232,9 @@ export default function App() {
     params: tabParams,
     team: data.team, conversas: data.conversas, leads: data.leads,
     reservas: data.reservas, agendaEvents: data.agendaEvents,
-    settings: data.settings, priceItems: data.priceItems, proposals: data.proposals,
+    settings: data.settings, priceItems: data.priceItems, proposals: data.proposals, schedules: data.schedules,
     teamById, reservaById,
-    saveSettings, generateProposal,
+    saveSettings, generateProposal, generateSchedule,
     create: persist,
     // CRUD
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),
@@ -235,7 +245,7 @@ export default function App() {
   }
 
   const TAB_SCREENS = { inicio: HomeScreen, conversas: ConversasScreen, negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen, definicoes: SettingsScreen }
-  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen, proposta: ProposalScreen }
+  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen, proposta: ProposalScreen, cronograma: ScheduleScreen }
   const TabScreen = TAB_SCREENS[tab]
   const top       = stack[stack.length - 1]
   const TopScreen = top ? STACK_SCREENS[top.screen] : null

@@ -189,6 +189,33 @@ function DocsTab({ ctx, t, lang, accent, r }) {
           </div>
         </Card>
       ))}
+
+      {/* Cronograma do dia — trabalho adjudicado */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 0 10px' }}>
+        <Eucalyptus size={16} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />
+        <Label size={10.5}>{lang === 'pt' ? 'Cronograma do dia' : 'Day schedule'}</Label>
+      </div>
+      <Card style={{ marginBottom: 10, padding: '14px 16px' }}>
+        <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 12, lineHeight: 1.5 }}>
+          {lang === 'pt' ? 'Horário para enviar ao cliente, por pessoa.' : 'Timetable to send the client, per person.'}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {(r.servicos || []).some(s => s === 'makeup' || s === 'hair') && (
+            <button onClick={async () => { const id = await ctx.generateSchedule(r, 'beauty'); ctx.push('cronograma', { id }) }} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup'}</button>
+          )}
+          {(r.servicos || []).includes('music') && (
+            <button onClick={async () => { const id = await ctx.generateSchedule(r, 'music'); ctx.push('cronograma', { id }) }} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Música' : 'Music'}</button>
+          )}
+        </div>
+        {(ctx.schedules || []).filter(s => s.booking_id === r.id).map(s => (
+          <button key={s.id} onClick={() => ctx.push('cronograma', { id: s.id })} style={{ width: '100%', marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(74,63,53,0.12)', background: 'var(--paper)', cursor: 'pointer' }}>
+            <Icon name="calendar" size={16} color={accent} stroke={1.6} />
+            <span style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.ink }}>{s.kind === 'music' ? (lang === 'pt' ? 'Música' : 'Music') : (lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup')} · {s.status}</span>
+            <Icon name="chevR" size={16} color={PALETTE.inkSoft} stroke={1.8} />
+          </button>
+        ))}
+      </Card>
+
       <Card sage style={{ marginTop: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Eucalyptus size={18} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />
