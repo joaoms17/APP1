@@ -3,10 +3,43 @@ import jsPDF from 'jspdf'
 // Brand colors (RGB)
 const C = {
   terracotta: [169, 116, 79], sage: [147, 160, 126], ink: [74, 63, 53],
-  near: [46, 40, 32], soft: [110, 97, 85], line: [225, 218, 203],
+  near: [46, 40, 32], soft: [110, 97, 85], line: [225, 218, 203], gold: [200, 168, 107],
 }
+const eur = (n) => `${Number(n || 0).toLocaleString('pt-PT')} €`
 
-function eur(n) { return `${Number(n || 0).toLocaleString('pt-PT')} €` }
+// ── Brand fonts (Cormorant Garamond + Jost), embedded once ────
+let FONTS = null
+function ab2b64(buf) {
+  let bin = ''; const b = new Uint8Array(buf)
+  for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i])
+  return btoa(bin)
+}
+async function loadFonts() {
+  if (FONTS) return FONTS
+  const files = {
+    corN: '/brand/fonts/CormorantGaramond-Regular.ttf',
+    corB: '/brand/fonts/CormorantGaramond-SemiBold.ttf',
+    jostN: '/brand/fonts/Jost-Regular.ttf',
+    jostB: '/brand/fonts/Jost-Medium.ttf',
+  }
+  const out = {}
+  await Promise.all(Object.entries(files).map(async ([k, u]) => {
+    try { out[k] = ab2b64(await (await fetch(u)).arrayBuffer()) } catch (_) { out[k] = null }
+  }))
+  FONTS = out
+  return out
+}
+function setupFonts(doc, f) {
+  const reg = (b64, file, fam, style) => { if (b64) { doc.addFileToVFS(file, b64); doc.addFont(file, fam, style) } }
+  reg(f.corN, 'Cor-N.ttf', 'Cormorant', 'normal')
+  reg(f.corB, 'Cor-B.ttf', 'Cormorant', 'bold')
+  reg(f.jostN, 'Jost-N.ttf', 'Jost', 'normal')
+  reg(f.jostB, 'Jost-B.ttf', 'Jost', 'bold')
+  return {
+    SERIF: f.corN ? 'Cormorant' : 'times',
+    SANS: f.jostN ? 'Jost' : 'helvetica',
+  }
+}
 
 async function addLogo(doc, dataUrl, pageW, y) {
   if (!dataUrl) return y
@@ -21,46 +54,56 @@ async function addLogo(doc, dataUrl, pageW, y) {
   } catch (_) { return y }
 }
 
+function goldRule(doc, pageW, M, y) {
+  doc.setDrawColor(...C.gold); doc.setLineWidth(0.4)
+  const cx = pageW / 2, gap = 4
+  doc.line(M + 8, y, cx - gap, y)
+  doc.line(cx + gap, y, pageW - M - 8, y)
+  doc.setFillColor(...C.gold); doc.circle(cx, y, 0.7, 'F')
+}
+
 // ── Proposta comercial ────────────────────────────────────────
 export async function proposalPdfBlob(c) {
+  const f = await loadFonts()
   const doc = new jsPDF('p', 'mm', 'a4')
+  const { SERIF, SANS } = setupFonts(doc, f)
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  const M = 18, cw = pageW - 2 * M
+  const M = 20, cw = pageW - 2 * M
   let y = M + 2
 
   const ensure = (need) => { if (y + need > pageH - M) { doc.addPage(); y = M } }
   const section = (title) => {
-    ensure(14); y += 4
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...C.sage)
-    doc.text(title.toUpperCase(), M, y); y += 5
+    ensure(16); y += 5
+    doc.setFont(SANS, 'bold'); doc.setFontSize(8.5); doc.setTextColor(...C.sage)
+    doc.text(title.toUpperCase(), M, y, { charSpace: 1.4 }); y += 5.5
   }
   const para = (t, size = 9.5, color = C.ink) => {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(size); doc.setTextColor(...color)
-    doc.splitTextToSize(String(t || ''), cw).forEach(ln => { ensure(size * 0.55); doc.text(ln, M, y); y += size * 0.52 })
+    doc.setFont(SANS, 'normal'); doc.setFontSize(size); doc.setTextColor(...color)
+    doc.splitTextToSize(String(t || ''), cw).forEach(ln => { ensure(size * 0.6); doc.text(ln, M, y); y += size * 0.55 })
     y += 1.5
   }
   const item = (it) => {
-    ensure(11)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...C.near)
+    ensure(12)
+    doc.setFont(SANS, 'bold'); doc.setFontSize(11); doc.setTextColor(...C.near)
     doc.text(it.title || '', M, y)
-    doc.setTextColor(...C.terracotta)
+    doc.setFont(SERIF, 'bold'); doc.setFontSize(13); doc.setTextColor(...C.terracotta)
     doc.text(`${eur(it.price)}${it.unit ? ` /${it.unit}` : ''}`, pageW - M, y, { align: 'right' })
-    y += 4.6
+    y += 5
     if (it.description) {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3); doc.setTextColor(...C.soft)
-      doc.splitTextToSize(it.description, cw).forEach(ln => { ensure(4); doc.text(ln, M, y); y += 3.7 })
+      doc.setFont(SANS, 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.soft)
+      doc.splitTextToSize(it.description, cw).forEach(ln => { ensure(4); doc.text(ln, M, y); y += 3.8 })
     }
-    doc.setDrawColor(...C.line); doc.setLineWidth(0.2); doc.line(M, y + 1.5, pageW - M, y + 1.5); y += 5
+    doc.setDrawColor(...C.line); doc.setLineWidth(0.2); doc.line(M, y + 1.5, pageW - M, y + 1.5); y += 5.5
   }
 
   // letterhead
   y = await addLogo(doc, c.logo_url, pageW, y)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.setTextColor(...C.near)
-  doc.text(c.company || 'Ramo Eventos', pageW / 2, y + 4, { align: 'center' }); y += 9
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.sage)
-  doc.text((c.location || '').toUpperCase(), pageW / 2, y, { align: 'center' }); y += 5
-  doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(M, y, pageW - M, y); y += 3
+  doc.setFont(SERIF, 'bold'); doc.setFontSize(26); doc.setTextColor(...C.near)
+  doc.text(c.company || 'Ramo Eventos', pageW / 2, y + 5, { align: 'center' }); y += 11
+  doc.setFont(SANS, 'normal'); doc.setFontSize(8); doc.setTextColor(...C.sage)
+  doc.text((c.location || '').toUpperCase(), pageW / 2, y, { align: 'center', charSpace: 2 }); y += 6
+  goldRule(doc, pageW, M, y); y += 4
 
   if (c.about) { section('Sobre'); para(c.about) }
   if (c.packages?.length) { section('Noivas'); c.packages.forEach(item) }
@@ -75,41 +118,43 @@ export async function proposalPdfBlob(c) {
 
 // ── Cronograma do dia ─────────────────────────────────────────
 export async function schedulePdfBlob(c) {
+  const f = await loadFonts()
   const doc = new jsPDF('p', 'mm', 'a4')
+  const { SERIF, SANS } = setupFonts(doc, f)
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  const M = 18, cw = pageW - 2 * M
+  const M = 20, cw = pageW - 2 * M
   let y = M + 2
   const ensure = (need) => { if (y + need > pageH - M) { doc.addPage(); y = M } }
   const section = (title) => {
-    ensure(14); y += 5
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...C.sage)
-    doc.text(title.toUpperCase(), M, y); y += 2
-    doc.setDrawColor(...C.line); doc.setLineWidth(0.2); doc.line(M, y, pageW - M, y); y += 5
+    ensure(16); y += 6
+    doc.setFont(SANS, 'bold'); doc.setFontSize(8.5); doc.setTextColor(...C.sage)
+    doc.text(title.toUpperCase(), M, y, { charSpace: 1.4 }); y += 2
+    doc.setDrawColor(...C.line); doc.setLineWidth(0.2); doc.line(M, y, pageW - M, y); y += 5.5
   }
   const slot = (time, person, note) => {
-    ensure(8)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.terracotta)
+    ensure(9)
+    doc.setFont(SERIF, 'bold'); doc.setFontSize(13); doc.setTextColor(...C.terracotta)
     doc.text(time || '—', M, y)
-    doc.setFontSize(10.5); doc.setTextColor(...C.near)
-    doc.text(person || '', M + 22, y)
-    let adv = 5
+    doc.setFont(SANS, 'bold'); doc.setFontSize(10.5); doc.setTextColor(...C.near)
+    doc.text(person || '', M + 24, y)
+    let adv = 5.5
     if (note) {
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.3); doc.setTextColor(...C.soft)
-      doc.splitTextToSize(note, cw - 22).forEach((ln, i) => { doc.text(ln, M + 22, y + 4 + i * 3.6) })
-      adv = 4 + doc.splitTextToSize(note, cw - 22).length * 3.6 + 2
+      doc.setFont(SANS, 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.soft)
+      const ls = doc.splitTextToSize(note, cw - 24)
+      ls.forEach((ln, i) => doc.text(ln, M + 24, y + 4 + i * 3.7))
+      adv = 4 + ls.length * 3.7 + 2.5
     }
-    doc.setDrawColor(...C.line); doc.setLineWidth(0.15); doc.line(M, y + adv - 1.5, pageW - M, y + adv - 1.5)
+    doc.setDrawColor(...C.line); doc.setLineWidth(0.15); doc.line(M, y + adv - 2, pageW - M, y + adv - 2)
     y += adv + 1.5
   }
 
-  // letterhead
   y = await addLogo(doc, c.logo_url, pageW, y)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(...C.near)
-  doc.text(c.client || 'Evento', pageW / 2, y + 4, { align: 'center' }); y += 8
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...C.sage)
-  doc.text(`${c.date || ''}${c.location ? `  ·  ${c.location}` : ''}`.toUpperCase(), pageW / 2, y, { align: 'center' }); y += 5
-  doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(M, y, pageW - M, y); y += 2
+  doc.setFont(SERIF, 'bold'); doc.setFontSize(24); doc.setTextColor(...C.near)
+  doc.text(c.client || 'Evento', pageW / 2, y + 4, { align: 'center' }); y += 9
+  doc.setFont(SANS, 'normal'); doc.setFontSize(9); doc.setTextColor(...C.sage)
+  doc.text(`${c.date || ''}${c.location ? `   ·   ${c.location}` : ''}`.toUpperCase(), pageW / 2, y, { align: 'center', charSpace: 1.5 }); y += 6
+  goldRule(doc, pageW, M, y); y += 2
 
   if (c.kind === 'music') {
     section('Música')
@@ -124,8 +169,8 @@ export async function schedulePdfBlob(c) {
   }
 
   if (c.notes) {
-    y += 3; ensure(20)
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.6); doc.setTextColor(...C.ink)
+    y += 4; ensure(20)
+    doc.setFont(SANS, 'normal'); doc.setFontSize(8.6); doc.setTextColor(...C.ink)
     doc.splitTextToSize(c.notes, cw).forEach(ln => { ensure(4.5); doc.text(ln, M, y); y += 4.2 })
   }
 
