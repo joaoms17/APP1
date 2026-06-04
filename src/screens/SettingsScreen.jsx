@@ -138,7 +138,8 @@ function PrecosTab({ ctx }) {
               <Icon name="plus" size={15} color={accent} stroke={2} />{lang === 'pt' ? 'Adicionar' : 'Add'}
             </button>
           </div>
-          {priceItems.filter(p => p.category === c.id).map(item => <PriceRow key={item.id} ctx={ctx} item={item} withServices={c.id !== 'extra'} />)}
+          {c.id === 'extra' && <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft, marginBottom: 8, lineHeight: 1.4 }}>{lang === 'pt' ? 'Etiquete com serviços (ex.: Música) para só aparecer nesses orçamentos. Sem etiqueta = aparece sempre.' : 'Tag with services to show only on those quotes. No tag = always shown.'}</div>}
+          {priceItems.filter(p => p.category === c.id).map(item => <PriceRow key={item.id} ctx={ctx} item={item} withServices={true} />)}
         </div>
       ))}
     </div>

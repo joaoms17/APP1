@@ -95,14 +95,24 @@ function DetalhesTab({ t, lang, r }) {
 }
 
 function EquipaTab({ ctx, t, lang, accent, r, teamById }) {
+  const [picking, setPicking] = React.useState(false)
+  const [busy, setBusy] = React.useState(false)
+  const team = ctx.team || []
+  const assigned = r.team || []
+
+  const toggle = async (id, isOn) => {
+    setBusy(true)
+    try { await ctx.assignTeam(r.id, id, !isOn) } finally { setBusy(false) }
+  }
+
   return (
     <div>
-      {(!r.team || r.team.length === 0)
+      {assigned.length === 0
         ? <div style={{ border: '1px dashed rgba(74,63,53,0.18)', borderRadius: 16, padding: '28px 16px', textAlign: 'center', marginBottom: 12 }}>
             <Eucalyptus size={22} stem={PALETTE.terracotta} leaf={PALETTE.sage} style={{ margin: '0 auto 10px' }} />
             <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Sem equipa atribuída' : 'No team assigned'}</div>
           </div>
-        : r.team.map((id) => {
+        : assigned.map((id) => {
             const m = teamById(id)
             if (!m) return null
             return (
@@ -111,15 +121,42 @@ function EquipaTab({ ctx, t, lang, accent, r, teamById }) {
                   <Avatar initials={m.initials} color={m.color} size={42} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16, color: PALETTE.nearBlack }}>{m.name}</div>
-                    <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>{ROLE_LABEL[lang][m.role]}</div>
+                    <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>{ROLE_LABEL[lang][m.role] || m.role}</div>
                   </div>
-                  <Icon name="check2" size={20} color={PALETTE.sage} stroke={1.8} />
+                  <button onClick={() => toggle(id, true)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12 }}>{lang === 'pt' ? 'Remover' : 'Remove'}</button>
                 </div>
               </Card>
             )
           })
       }
-      <Btn variant="soft" accent={accent} size="md" full icon="plus" style={{ marginTop: 6 }}>{lang === 'pt' ? 'Atribuir colaborador' : 'Assign collaborator'}</Btn>
+
+      {!picking
+        ? <Btn variant="soft" accent={accent} size="md" full icon="plus" style={{ marginTop: 6 }} onClick={() => setPicking(true)}>{lang === 'pt' ? 'Atribuir colaborador' : 'Assign collaborator'}</Btn>
+        : (
+          <Card style={{ marginTop: 8, padding: '14px 14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Label size={10.5}>{lang === 'pt' ? 'Escolher colaborador' : 'Choose'}</Label>
+              <button onClick={() => setPicking(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: accent, fontFamily: 'var(--sans)', fontSize: 12.5 }}>{lang === 'pt' ? 'Fechar' : 'Close'}</button>
+            </div>
+            {team.length === 0 && <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.inkSoft, padding: '8px 0' }}>{lang === 'pt' ? 'Sem colaboradores. Crie na tab Equipa.' : 'No team. Create in the Team tab.'}</div>}
+            {team.map((m) => {
+              const on = assigned.includes(m.id)
+              return (
+                <div key={m.id} onClick={() => toggle(m.id, on)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 4px', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
+                  <Avatar initials={m.initials} color={m.color} size={36} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 15, color: PALETTE.nearBlack }}>{m.name}</div>
+                    <div style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.inkSoft }}>{ROLE_LABEL[lang][m.role] || m.role}</div>
+                  </div>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${on ? PALETTE.sage : 'rgba(74,63,53,0.2)'}`, background: on ? PALETTE.sage : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {on && <Icon name="check" size={14} color="#FBF7F0" stroke={2.4} />}
+                  </div>
+                </div>
+              )
+            })}
+          </Card>
+        )
+      }
     </div>
   )
 }
@@ -128,9 +165,14 @@ function PagamentosTab({ ctx, t, lang, accent, r }) {
   const divida = (r.total || 0) - (r.pago || 0)
   const pct = r.total > 0 ? Math.round(((r.pago || 0) / r.total) * 100) : 0
   const payTone = { pago: PALETTE.sage, parcial: PALETTE.gold, nao_pago: PALETTE.clay }[r.pay] || PALETTE.clay
+  const sinalPago = (r.sinal || 0) > 0 && (r.pago || 0) >= (r.sinal || 0)
+  const [editSinal, setEditSinal] = React.useState(false)
+  const [sv, setSv] = React.useState(r.sinal || 0)
+  const saveSinal = async () => { await ctx.update('bookings', r.id, { sinal: Number(sv) || 0 }); setEditSinal(false) }
+
   return (
     <div>
-      <Card style={{ marginBottom: 18, padding: '20px 18px' }}>
+      <Card style={{ marginBottom: 16, padding: '20px 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
           <div>
             <Label size={10}>{t('total')}</Label>
@@ -142,95 +184,118 @@ function PagamentosTab({ ctx, t, lang, accent, r }) {
           <div style={{ width: `${pct}%`, height: '100%', borderRadius: 50, background: accent }} />
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <PayCell label={t('sinal')} value={r.sinal || 0} />
+          <PayCell label={t('sinal')} value={r.sinal || 0} sub={(r.sinal || 0) > 0 ? (sinalPago ? (lang === 'pt' ? 'Pago' : 'Paid') : (lang === 'pt' ? 'Por pagar' : 'Due')) : null} subColor={sinalPago ? PALETTE.sage : PALETTE.clay} />
           <div style={{ width: 1, background: 'rgba(74,63,53,0.1)' }} />
           <PayCell label={t('pago')} value={r.pago || 0} accent={PALETTE.sage} />
           <div style={{ width: 1, background: 'rgba(74,63,53,0.1)' }} />
           <PayCell label={t('em_divida')} value={divida} accent={divida > 0 ? PALETTE.clay : PALETTE.sage} />
         </div>
       </Card>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <Btn variant="ghost" accent={accent} size="md" full icon="chat">{t('pedir_pagamento')}</Btn>
-        <Btn variant="solid" accent={accent} size="md" full icon="plus" onClick={() => ctx.openPayment(r)}>{t('registar')}</Btn>
+
+      {/* Definir sinal (depósito) */}
+      <Card style={{ marginBottom: 16, padding: '14px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'var(--sans)', fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Sinal / depósito acordado' : 'Agreed deposit'}</div>
+            {editSinal
+              ? <input type="number" value={sv} autoFocus onChange={e => setSv(e.target.value)} style={{ marginTop: 4, width: 120, boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 18, color: PALETTE.nearBlack, outline: 'none' }} />
+              : <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 20, color: PALETTE.nearBlack, marginTop: 2 }}>€ {(r.sinal || 0).toLocaleString('pt-PT')}</div>}
+          </div>
+          {editSinal
+            ? <Btn variant="solid" accent={accent} size="sm" icon="check" onClick={saveSinal}>{lang === 'pt' ? 'Guardar' : 'Save'}</Btn>
+            : <Btn variant="ghost" accent={accent} size="sm" icon="edit" onClick={() => { setSv(r.sinal || 0); setEditSinal(true) }}>{lang === 'pt' ? 'Definir' : 'Set'}</Btn>}
+        </div>
+      </Card>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {(r.sinal || 0) > 0 && !sinalPago && (
+          <Btn variant="soft" accent={accent} size="md" full icon="check" onClick={() => ctx.openPayment(r, { amount: (r.sinal || 0) - (r.pago || 0), label: lang === 'pt' ? 'sinal' : 'deposit' })}>
+            {lang === 'pt' ? `Registar sinal pago (€ ${((r.sinal||0)-(r.pago||0)).toLocaleString('pt-PT')})` : 'Mark deposit paid'}
+          </Btn>
+        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Btn variant="ghost" accent={accent} size="md" full icon="chat">{t('pedir_pagamento')}</Btn>
+          <Btn variant="solid" accent={accent} size="md" full icon="plus" onClick={() => ctx.openPayment(r)}>{t('registar')}</Btn>
+        </div>
       </div>
     </div>
   )
 }
 
-function PayCell({ label, value, accent = PALETTE.nearBlack }) {
+function PayCell({ label, value, accent = PALETTE.nearBlack, sub, subColor }) {
   return (
     <div style={{ flex: 1 }}>
       <div style={{ fontFamily: 'var(--sans)', fontSize: 9.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: PALETTE.inkSoft }}>{label}</div>
       <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 19, color: accent, marginTop: 3, whiteSpace: 'nowrap' }}>€ {(value || 0).toLocaleString('pt-PT')}</div>
+      {sub && <div style={{ fontFamily: 'var(--sans)', fontSize: 10, color: subColor || PALETTE.inkSoft, marginTop: 1 }}>{sub}</div>}
+    </div>
+  )
+}
+
+function DocRow({ icon, title, status, onOpen, onDelete, accent, lang }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(74,63,53,0.1)', background: 'var(--paper-card)' }}>
+      <Icon name={icon} size={18} color={accent} stroke={1.6} />
+      <button onClick={onOpen} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.ink }}>{title}{status ? ` · ${status}` : ''}</button>
+      <button onClick={onDelete} title={lang === 'pt' ? 'Apagar' : 'Delete'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}><Icon name="x" size={15} color={PALETTE.inkSoft} stroke={2} /></button>
+      <button onClick={onOpen} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}><Icon name="chevR" size={16} color={PALETTE.inkSoft} stroke={1.8} /></button>
     </div>
   )
 }
 
 function DocsTab({ ctx, t, lang, accent, r }) {
-  const statusLabel = { sent: lang === 'pt' ? 'Enviado' : 'Sent', signed: lang === 'pt' ? 'Assinado' : 'Signed', draft: lang === 'pt' ? 'Rascunho' : 'Draft' }
-  const statusTone = { sent: PALETTE.gold, signed: PALETTE.sage, draft: PALETTE.inkSoft }
-  const docs = [
-    { id: 'orcamento', label: t('orcamento'), status: 'draft' },
-    { id: 'contrato',  label: t('contrato'),  status: 'draft' },
-  ]
+  const proposals = (ctx.proposals || []).filter(p => p.lead_id === r.id)
+  const schedules = (ctx.schedules || []).filter(s => s.booking_id === r.id)
+  const beautySch = schedules.find(s => s.kind === 'beauty')
+  const musicSch = schedules.find(s => s.kind === 'music')
+  const hasBeauty = (r.servicos || []).some(s => s === 'makeup' || s === 'hair')
+  const hasMusic = (r.servicos || []).includes('music')
+
+  const openOrGenBeauty = async () => { if (beautySch) ctx.push('cronograma', { id: beautySch.id }); else { const id = await ctx.generateSchedule(r, 'beauty'); ctx.push('cronograma', { id }) } }
+  const openOrGenMusic = async () => { if (musicSch) ctx.push('cronograma', { id: musicSch.id }); else { const id = await ctx.generateSchedule(r, 'music'); ctx.push('cronograma', { id }) } }
+
   return (
     <div>
-      {docs.map((d) => (
-        <Card key={d.id} onClick={() => ctx.push('doc', { reservaId: r.id, type: d.id })} style={{ marginBottom: 10, padding: '14px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-            <div style={{ width: 42, height: 52, borderRadius: 8, background: hexToRgba(PALETTE.terracotta, 0.1), border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.2)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon name="file" size={22} color={accent} stroke={1.5} />
+      {/* ORÇAMENTO */}
+      <Label size={10.5} style={{ marginBottom: 10 }}>{t('orcamento')}</Label>
+      {proposals.length > 0
+        ? proposals.map(p => (
+            <DocRow key={p.id} icon="file" accent={accent} lang={lang}
+              title={t('orcamento')} status={p.status}
+              onOpen={() => ctx.push('proposta', { id: p.id })}
+              onDelete={() => ctx.remove('proposals', p.id)} />
+          ))
+        : <Card style={{ marginBottom: 10, padding: '14px 16px' }}>
+            <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 12, lineHeight: 1.5 }}>
+              {lang === 'pt' ? 'Orçamento com a sua marca, adaptado aos serviços.' : 'Branded quote adapted to the services.'}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16.5, color: PALETTE.nearBlack }}>{d.label}</div>
-              <div style={{ marginTop: 5 }}><Chip tone={{ bg: hexToRgba(statusTone[d.status], 0.14), fg: statusTone[d.status], dot: statusTone[d.status] }} size={11}>{statusLabel[d.status]}</Chip></div>
-            </div>
-            <Icon name="chevR" size={20} color={PALETTE.inkSoft} stroke={1.8} />
-          </div>
-        </Card>
-      ))}
+            <Btn variant="solid" accent={accent} size="md" full icon="file" onClick={async () => { const id = await ctx.generateProposal(r); ctx.push('proposta', { id }) }}>
+              {lang === 'pt' ? 'Gerar orçamento' : 'Generate quote'}
+            </Btn>
+          </Card>}
 
-      {/* Cronograma do dia — trabalho adjudicado */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 0 10px' }}>
+      {/* CRONOGRAMA */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '20px 0 10px' }}>
         <Eucalyptus size={16} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />
         <Label size={10.5}>{lang === 'pt' ? 'Cronograma do dia' : 'Day schedule'}</Label>
       </div>
-      <Card style={{ marginBottom: 10, padding: '14px 16px' }}>
-        <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 12, lineHeight: 1.5 }}>
-          {lang === 'pt' ? 'Horário para enviar ao cliente, por pessoa.' : 'Timetable to send the client, per person.'}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {(r.servicos || []).some(s => s === 'makeup' || s === 'hair') && (
-            <button onClick={async () => { const id = await ctx.generateSchedule(r, 'beauty'); ctx.push('cronograma', { id }) }} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup'}</button>
-          )}
-          {(r.servicos || []).includes('music') && (
-            <button onClick={async () => { const id = await ctx.generateSchedule(r, 'music'); ctx.push('cronograma', { id }) }} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Música' : 'Music'}</button>
-          )}
-        </div>
-        {(ctx.schedules || []).filter(s => s.booking_id === r.id).map(s => (
-          <button key={s.id} onClick={() => ctx.push('cronograma', { id: s.id })} style={{ width: '100%', marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(74,63,53,0.12)', background: 'var(--paper)', cursor: 'pointer' }}>
-            <Icon name="calendar" size={16} color={accent} stroke={1.6} />
-            <span style={{ flex: 1, textAlign: 'left', fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.ink }}>{s.kind === 'music' ? (lang === 'pt' ? 'Música' : 'Music') : (lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup')} · {s.status}</span>
-            <Icon name="chevR" size={16} color={PALETTE.inkSoft} stroke={1.8} />
-          </button>
-        ))}
-      </Card>
-
-      <Card sage style={{ marginTop: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Eucalyptus size={18} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />
-          <span style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 14, color: PALETTE.nearBlack }}>{lang === 'pt' ? 'Gerar documento' : 'Generate document'}</span>
-          <AIBadge />
-        </div>
-        <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 14, lineHeight: 1.5 }}>
-          {lang === 'pt' ? 'A IA prepara o documento com os dados da reserva.' : 'AI prepares the document from booking data.'}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {[t('proposta'), t('contrato'), t('brochura')].map((x) => (
-            <button key={x} onClick={() => ctx.push('doc', { reservaId: r.id, type: 'orcamento' })} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {x}</button>
-          ))}
-        </div>
-      </Card>
+      {schedules.length > 0 && schedules.map(s => (
+        <DocRow key={s.id} icon="calendar" accent={accent} lang={lang}
+          title={s.kind === 'music' ? (lang === 'pt' ? 'Música' : 'Music') : (lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup')} status={s.status}
+          onOpen={() => ctx.push('cronograma', { id: s.id })}
+          onDelete={() => ctx.remove('schedules', s.id)} />
+      ))}
+      {((hasBeauty && !beautySch) || (hasMusic && !musicSch)) && (
+        <Card style={{ padding: '14px 16px' }}>
+          <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 12, lineHeight: 1.5 }}>
+            {lang === 'pt' ? 'Horário para enviar ao cliente, por pessoa.' : 'Timetable to send the client, per person.'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {hasBeauty && !beautySch && <button onClick={openOrGenBeauty} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup'}</button>}
+            {hasMusic && !musicSch && <button onClick={openOrGenMusic} style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.terracottaDark, background: 'var(--paper-card)', border: `1px solid ${hexToRgba(PALETTE.terracotta, 0.3)}`, borderRadius: 50, padding: '8px 14px', cursor: 'pointer' }}>+ {lang === 'pt' ? 'Música' : 'Music'}</button>}
+          </div>
+        </Card>
+      )}
     </div>
   )
 }

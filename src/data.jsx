@@ -314,7 +314,9 @@ export function generateProposalContent(lead, settings, priceItems) {
     about: s.about || '',
     packages: [toLine(mainPkg)].filter(Boolean),
     convidadas: [toLine(convPkg)].filter(Boolean),
-    extras: (extras || []).map(e => ({ title: e.title, description: e.description || '', price: Number(e.price) || 0, unit: e.unit || '' })),
+    extras: (extras || [])
+      .filter(e => !(e.services?.length) || e.services.every(k => selected.includes(k)))
+      .map(e => ({ title: e.title, description: e.description || '', price: Number(e.price) || 0, unit: e.unit || '' })),
     deslocacao_rate: s.deslocacao_rate ?? 0.5,
     payment: s.payment_terms || '',
     terms: s.terms || '',

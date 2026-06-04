@@ -204,6 +204,12 @@ export default function App() {
     return id
   }
 
+  const assignTeam = async (bookingId, teamId, add) => {
+    if (add) await db.from('booking_team').insert({ booking_id: bookingId, team_id: teamId })
+    else await db.from('booking_team').delete().eq('booking_id', bookingId).eq('team_id', teamId)
+    await reload()
+  }
+
   const sendMessage = async (convId, text) => {
     const body = (text || '').trim()
     if (!body) return
@@ -234,11 +240,11 @@ export default function App() {
     reservas: data.reservas, agendaEvents: data.agendaEvents,
     settings: data.settings, priceItems: data.priceItems, proposals: data.proposals, schedules: data.schedules,
     teamById, reservaById,
-    saveSettings, generateProposal, generateSchedule,
+    saveSettings, generateProposal, generateSchedule, assignTeam,
     create: persist,
     // CRUD
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),
-    openPayment: (reserva) => setPayFor(reserva),
+    openPayment: (reserva, preset) => setPayFor({ reserva, preset }),
     openPasteChat: () => setPasteChat(true),
     sendMessage,
     update, remove, reload,
@@ -301,9 +307,9 @@ export default function App() {
 
       {payFor && (
         <PaymentModal
-          reserva={payFor} lang={lang} t={t} accent={accent} isDesktop={isDesktop}
+          reserva={payFor.reserva} preset={payFor.preset} lang={lang} t={t} accent={accent} isDesktop={isDesktop}
           onClose={() => setPayFor(null)}
-          onSave={(patch) => update('bookings', payFor.id, patch)}
+          onSave={(patch) => update('bookings', payFor.reserva.id, patch)}
         />
       )}
 

@@ -282,15 +282,27 @@ export function WhatsAppModal({ lang, t, accent, isDesktop, onClose, onSubmit })
 }
 
 // ─── Small payment modal ──────────────────────────────────────
-export function PaymentModal({ reserva, lang, t, accent, isDesktop, onClose, onSave }) {
+export function PaymentModal({ reserva, preset, lang, t, accent, isDesktop, onClose, onSave }) {
   const restante = (reserva.total || 0) - (reserva.pago || 0)
-  const [amount, setAmount] = useState(restante > 0 ? restante : 0)
+  const sinalEmFalta = Math.max(0, (reserva.sinal || 0) - (reserva.pago || 0))
+  const [amount, setAmount] = useState(preset?.amount != null ? preset.amount : (restante > 0 ? restante : 0))
   const [saving, setSaving] = useState(false)
+  const chips = [
+    sinalEmFalta > 0 ? { label: lang === 'pt' ? `Sinal · €${sinalEmFalta.toLocaleString('pt-PT')}` : `Deposit · €${sinalEmFalta}`, val: sinalEmFalta } : null,
+    restante > 0 ? { label: lang === 'pt' ? `Em dívida · €${restante.toLocaleString('pt-PT')}` : `Outstanding · €${restante}`, val: restante } : null,
+  ].filter(Boolean)
   return (
     <Modal title={t('registar')} onClose={onClose} isDesktop={isDesktop}>
-      <div style={{ fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.inkSoft, marginBottom: 16 }}>
+      <div style={{ fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.inkSoft, marginBottom: 14 }}>
         {reserva.name} · {lang === 'pt' ? 'em dívida' : 'outstanding'}: € {restante.toLocaleString('pt-PT')}
       </div>
+      {chips.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          {chips.map((c, i) => (
+            <button key={i} onClick={() => setAmount(c.val)} style={{ fontFamily: 'var(--sans)', fontSize: 12.5, padding: '7px 13px', borderRadius: 50, cursor: 'pointer', border: `1px solid ${Number(amount) === c.val ? accent : 'rgba(74,63,53,0.16)'}`, background: Number(amount) === c.val ? hexToRgba(accent, 0.12) : 'transparent', color: Number(amount) === c.val ? accent : PALETTE.inkSoft, fontWeight: 500 }}>{c.label}</button>
+          ))}
+        </div>
+      )}
       <Field def={{ label: lang === 'pt' ? 'Valor recebido (€)' : 'Amount received (€)', type: 'number' }} value={amount} onChange={setAmount} lang={lang} />
       <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
         <Btn variant="ghost" accent={accent} size="md" onClick={onClose}>{t('cancelar')}</Btn>
