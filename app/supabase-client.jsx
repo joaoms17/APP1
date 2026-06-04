@@ -5,8 +5,8 @@
 // SUPABASE_URL  → "Project URL"   ex: https://abcxyz.supabase.co
 // SUPABASE_ANON → "anon / public" key
 
-const SUPABASE_URL  = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON = 'YOUR_ANON_KEY';
+const SUPABASE_URL  = 'https://ibthtjxeyzdrtwtfuzyj.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_l17_aIPHKUqUoi4lKoGnEQ_4ktw_PY5';
 
 // ── Deteta se as credenciais foram preenchidas ──────────────
 const SUPABASE_CONFIGURED = (
