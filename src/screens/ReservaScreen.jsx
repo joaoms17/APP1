@@ -55,7 +55,7 @@ export default function ReservaScreen({ ctx, params }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
-      <DetailHeader ctx={ctx} title={r.name} sub={`${r.data} · ${r.hora}`} chip={<Chip tone={tone}>{RESERVA_LABEL[lang][r.estado]}</Chip>} />
+      <DetailHeader ctx={ctx} title={r.name} sub={[r.data, r.hora].filter(Boolean).join(' · ')} chip={<Chip tone={tone}>{RESERVA_LABEL[lang][r.estado]}</Chip>} />
       <div style={{ flexShrink: 0, background: 'var(--paper-card)', borderBottom: '1px solid rgba(74,63,53,0.07)', overflowX: 'auto' }}>
         <div style={{ display: 'flex', gap: 4, padding: '4px 12px 0', minWidth: 'min-content' }}>
           {tabs.map((tb) => (
@@ -80,7 +80,7 @@ function DetalhesTab({ t, lang, r }) {
   return (
     <div>
       <Card style={{ marginBottom: 18, padding: '4px 16px' }}>
-        <FieldRow icon="calendar" label={t('data')} value={`${r.data} · ${r.hora}`} />
+        <FieldRow icon="calendar" label={t('data')} value={[r.data, r.hora].filter(Boolean).join(' · ')} />
         <FieldRow icon="pin" label={t('local')} value={r.local} />
         <FieldRow icon="users" label={t('convidados')} value={`${r.convidados} ${t('convidados_n')}`} />
         <div style={{ padding: '12px 0' }}>
