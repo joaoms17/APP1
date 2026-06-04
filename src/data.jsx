@@ -130,8 +130,8 @@ export const SERVICE_LABEL = {
   en: { makeup: 'Makeup', hair: 'Hair', music: 'Live music' },
 }
 export const ROLE_LABEL = {
-  pt: { maquilhadora: 'Maquilhadora', cabeleireira: 'Cabeleireira', fotografo: 'Fotógrafo', dj: 'DJ', musico: 'Músico', planner: 'Wedding Planner', assistente: 'Assistente' },
-  en: { maquilhadora: 'Makeup artist', cabeleireira: 'Hairstylist', fotografo: 'Photographer', dj: 'DJ', musico: 'Musician', planner: 'Wedding planner', assistente: 'Assistant' },
+  pt: { maquilhadora: 'Maquilhadora', cabeleireira: 'Cabeleireira', musico: 'Músico', assistente: 'Assistente' },
+  en: { maquilhadora: 'Makeup artist', cabeleireira: 'Hairstylist', musico: 'Musician', assistente: 'Assistant' },
 }
 export function svc(lang, keys) { return (keys || []).map((k) => SERVICE_LABEL[lang]?.[k] || k).join(' · ') }
 

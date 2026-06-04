@@ -137,7 +137,7 @@ function CalendarView({ ctx, teamById }) {
 function EquipaView({ ctx, team }) {
   const { t, lang, accent } = ctx
   const [filter, setFilter] = React.useState('all')
-  const roles = ['all', 'maquilhadora', 'cabeleireira', 'fotografo', 'dj', 'musico', 'planner']
+  const roles = ['all', 'maquilhadora', 'cabeleireira', 'musico', 'assistente']
   const list = filter === 'all' ? team : team.filter(m => m.role === filter)
   const statusTone = { disp: PALETTE.sage, ferias: PALETTE.gold, indisp: PALETTE.clay }
   const statusLabel = { disp: t('disponivel'), ferias: t('ferias'), indisp: t('indisponivel') }
