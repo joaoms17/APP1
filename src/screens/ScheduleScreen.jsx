@@ -1,7 +1,7 @@
 import React from 'react'
 import { PALETTE, hexToRgba } from '../data'
 import { Icon, Label, Btn, Eucalyptus, Chip } from '../ui'
-import { htmlToPdfBlob, downloadBlob } from '../pdf'
+import { schedulePdfBlob, downloadBlob } from '../pdf'
 
 const inp = { boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack, outline: 'none' }
 
@@ -47,7 +47,7 @@ export default function ScheduleScreen({ ctx, params }) {
   const { lang, accent, schedules } = ctx
   const sch = (schedules || []).find(s => s.id === params.id)
   const [c, setC] = React.useState(sch ? sch.content : null)
-  const [editing, setEditing] = React.useState(true)
+  const [editing, setEditing] = React.useState(false)
   const [status, setStatus] = React.useState(sch ? sch.status : 'rascunho')
   const [msg, setMsg] = React.useState(null)
 
@@ -63,7 +63,7 @@ export default function ScheduleScreen({ ctx, params }) {
     setPdfBusy(true)
     flash(lang === 'pt' ? 'A gerar PDF…' : 'Generating PDF…')
     try {
-      const blob = await htmlToPdfBlob(buildScheduleHTML(c, lang))
+      const blob = await schedulePdfBlob(c)
       downloadBlob(blob, `Cronograma-${(c.client || 'evento').replace(/\s+/g, '_')}.pdf`)
       await ctx.savePdf('schedules', sch.id, blob)
       flash(lang === 'pt' ? 'PDF guardado no histórico ✓' : 'PDF saved ✓')

@@ -17,8 +17,9 @@ function Segmented({ options, value, onChange, accent }) {
 export default function NegociosScreen({ ctx }) {
   const { t, lang, accent, leads, reservas, teamById } = ctx
   const [view, setView] = React.useState(ctx.params?.view || 'pipeline')
-  const leadsList = leads || []
   const reservasList = reservas || []
+  // Closed deals (won/lost) leave the pipeline — won ones live as bookings
+  const leadsList = (leads || []).filter(l => l.estado !== 'ganho' && l.estado !== 'perdido')
   const [menu, setMenu] = React.useState(false)
 
   return (

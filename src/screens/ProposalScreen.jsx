@@ -1,7 +1,7 @@
 import React from 'react'
 import { PALETTE, hexToRgba } from '../data'
 import { Icon, Label, Rule, Btn, AIBadge, Eucalyptus, Chip } from '../ui'
-import { htmlToPdfBlob, downloadBlob } from '../pdf'
+import { proposalPdfBlob, downloadBlob } from '../pdf'
 
 const inp = { boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack, outline: 'none' }
 
@@ -92,7 +92,7 @@ export default function ProposalScreen({ ctx, params }) {
     setPdfBusy(true)
     flash(lang === 'pt' ? 'A gerar PDF…' : 'Generating PDF…')
     try {
-      const blob = await htmlToPdfBlob(buildProposalHTML(content, lang))
+      const blob = await proposalPdfBlob(content)
       downloadBlob(blob, `Orcamento-${(prop.client_name || 'cliente').replace(/\s+/g, '_')}.pdf`)
       await ctx.savePdf('proposals', prop.id, blob)
       flash(lang === 'pt' ? 'PDF guardado no histórico ✓' : 'PDF saved ✓')
