@@ -149,6 +149,13 @@ export default function App() {
   }
   useEffect(() => { if (session) reload().finally(() => setReady(true)) }, [session])
 
+  // NOTE: all hooks must run on every render — keep them above any early return.
+  const [tab, setTab]        = useState('inicio')
+  const [stack, setStack]    = useState([])
+  const [tabParams, setTabP] = useState({})
+  const [form, setForm]      = useState(null)     // { type, initial, onComplete }
+  const [payFor, setPayFor]  = useState(null)     // reserva object
+
   const user = session?.user
   const userName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : '')
   const signOut = () => db.auth.signOut()
@@ -159,12 +166,6 @@ export default function App() {
   }
   // Not logged in → login screen
   if (!session) return <Auth />
-
-  const [tab, setTab]        = useState('inicio')
-  const [stack, setStack]    = useState([])
-  const [tabParams, setTabP] = useState({})
-  const [form, setForm]      = useState(null)     // { type, initial, onComplete }
-  const [payFor, setPayFor]  = useState(null)     // reserva object
 
   const teamById    = (id) => data.team.find(m => m.id === id)
   const reservaById = (id) => data.reservas.find(r => r.id === id)
