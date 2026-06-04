@@ -4,6 +4,60 @@ import { Icon, Label, Rule, Btn, AIBadge, Eucalyptus, Chip } from '../ui'
 
 const inp = { boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack, outline: 'none' }
 
+// Build a printable A4 HTML document from the proposal content
+function buildProposalHTML(c, lang) {
+  const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const eur = (n) => `${Number(n || 0).toLocaleString('pt-PT')} €`
+  const line = (it) => `<div class="line"><div class="ln-head"><span class="ln-title">${esc(it.title)}</span><span class="ln-price">${eur(it.price)}${it.unit ? ` <small>/${esc(it.unit)}</small>` : ''}</span></div>${it.description ? `<div class="ln-desc">${esc(it.description)}</div>` : ''}</div>`
+  const section = (title, body) => body ? `<div class="sec">${esc(title)}</div>${body}` : ''
+  const T = lang === 'pt'
+    ? { sobre: 'Sobre', noivas: 'Noivas', conv: 'Convidadas', outros: 'Outros serviços', desl: 'Deslocação', pag: 'Pagamento', termos: 'Termos e condições', deslTxt: (r) => `Calculada a ${r} € por quilómetro.` }
+    : { sobre: 'About', noivas: 'Bride', conv: 'Guests', outros: 'Extras', desl: 'Travel', pag: 'Payment', termos: 'Terms & conditions', deslTxt: (r) => `Charged at ${r} € per km.` }
+  const logo = c.logo_url
+    ? `<img src="${c.logo_url}" style="max-height:80px;max-width:220px;object-fit:contain;margin:0 auto 10px;display:block"/>`
+    : `<svg width="34" height="53" viewBox="0 0 40 62" style="display:block;margin:0 auto 10px"><circle cx="20" cy="5" r="3.4" fill="#A9744F"/><path d="M20 8 V58" stroke="#A9744F" stroke-width="2.2" stroke-linecap="round"/><g fill="#93A07E"><ellipse cx="11" cy="20" rx="8" ry="5" transform="rotate(-28 11 20)"/><ellipse cx="29" cy="27" rx="8" ry="5" transform="rotate(28 29 27)"/><ellipse cx="11" cy="34" rx="7.5" ry="4.6" transform="rotate(-28 11 34)"/><ellipse cx="28" cy="41" rx="7" ry="4.4" transform="rotate(28 28 41)"/><ellipse cx="13" cy="48" rx="6" ry="3.8" transform="rotate(-28 13 48)"/></g></svg>`
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(c.company)} — ${T.noivas}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Jost', sans-serif; color: #4A3F35; margin: 0; }
+  .head { text-align: center; padding-bottom: 18px; border-bottom: 1px solid #e3dccd; margin-bottom: 20px; }
+  .company { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 30px; color: #2E2820; }
+  .loc { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: #93A07E; margin-top: 6px; }
+  .sec { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #93A07E; font-weight: 500; margin: 20px 0 10px; }
+  .about { font-weight: 300; font-size: 13px; line-height: 1.65; }
+  .line { padding: 9px 0; border-bottom: 1px solid #efe9dd; }
+  .ln-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; }
+  .ln-title { font-weight: 500; font-size: 14px; color: #2E2820; }
+  .ln-price { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 16px; color: #A9744F; white-space: nowrap; }
+  .ln-price small { color: #6E6155; font-size: 11px; }
+  .ln-desc { font-weight: 300; font-size: 12px; color: #6E6155; margin-top: 3px; line-height: 1.5; }
+  .txt { font-weight: 300; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; }
+  .terms { font-weight: 300; font-size: 11px; line-height: 1.6; color: #6E6155; white-space: pre-wrap; }
+</style></head><body>
+  <div class="head">${logo}<div class="company">${esc(c.company)}</div><div class="loc">${esc(c.location)}</div></div>
+  ${c.about ? section(T.sobre, `<div class="about">${esc(c.about)}</div>`) : ''}
+  ${section(T.noivas, (c.packages || []).map(line).join(''))}
+  ${(c.convidadas || []).length ? section(T.conv, c.convidadas.map(line).join('')) : ''}
+  ${(c.extras || []).length ? section(T.outros, c.extras.map(line).join('')) : ''}
+  ${section(T.desl, `<div class="txt">${T.deslTxt(c.deslocacao_rate)}</div>`)}
+  ${c.payment ? section(T.pag, `<div class="txt">${esc(c.payment)}</div>`) : ''}
+  ${c.terms ? section(T.termos, `<div class="terms">${esc(c.terms)}</div>`) : ''}
+</body></html>`
+}
+
+function downloadProposal(content, lang) {
+  const html = buildProposalHTML(content, lang)
+  const f = document.createElement('iframe')
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
+  document.body.appendChild(f)
+  const d = f.contentWindow.document
+  d.open(); d.write(html); d.close()
+  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => document.body.removeChild(f), 1500) }, 400)
+}
+
 export default function ProposalScreen({ ctx, params }) {
   const { lang, accent, proposals } = ctx
   const prop = (proposals || []).find(p => p.id === params.id)
@@ -24,7 +78,21 @@ export default function ProposalScreen({ ctx, params }) {
   const addExtra = () => setC(p => ({ ...p, extras: [...(p.extras || []), { title: lang === 'pt' ? 'Novo serviço' : 'New service', description: '', price: 0, unit: '' }] }))
 
   const save = async () => { await ctx.update('proposals', prop.id, { content: c }); setEditing(false); flash(lang === 'pt' ? 'Guardado ✓' : 'Saved ✓') }
-  const send = async () => { await ctx.update('proposals', prop.id, { content: c, status: 'enviada' }); setStatus('enviada'); flash(lang === 'pt' ? 'Proposta marcada como enviada' : 'Marked as sent') }
+  const send = async () => {
+    const sentAt = new Date().toISOString()
+    try {
+      await ctx.update('proposals', prop.id, { content: c, status: 'enviada', sent_content: c, sent_at: sentAt })
+      flash(lang === 'pt' ? 'Marcada como enviada — versão guardada' : 'Marked as sent — version saved')
+    } catch (e) {
+      // Colunas sent_content/sent_at podem não existir ainda — marca na mesma
+      console.warn('[Ramo] snapshot indisponível, a marcar só o estado:', e?.message)
+      try { await ctx.update('proposals', prop.id, { content: c, status: 'enviada' }) } catch (_) {}
+      flash(lang === 'pt' ? 'Marcada como enviada (corra a ALTER para guardar a versão)' : 'Marked as sent (run the ALTER to save the version)')
+    }
+    setStatus('enviada')
+  }
+  const sentAt = prop.sent_at ? new Date(prop.sent_at) : null
+  const sentLabel = sentAt ? sentAt.toLocaleDateString(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null
   const flash = (m) => { setSavedMsg(m); setTimeout(() => setSavedMsg(null), 2200) }
   const fmt = (n) => `${Number(n || 0).toLocaleString('pt-PT')} €`
 
@@ -66,6 +134,18 @@ export default function ProposalScreen({ ctx, params }) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px 24px' }}>
         {savedMsg && <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: hexToRgba(PALETTE.sage, 0.18), borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack }}><Icon name="check2" size={18} color={PALETTE.sage} stroke={1.8} />{savedMsg}</div>}
+
+        {sentLabel && prop.sent_content && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, background: hexToRgba(PALETTE.gold, 0.13), border: `1px solid ${hexToRgba(PALETTE.gold, 0.35)}`, borderRadius: 14, padding: '11px 14px', marginBottom: 16 }}>
+            <Icon name="check2" size={18} color={PALETTE.gold} stroke={1.8} />
+            <span style={{ flex: 1, fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.ink }}>
+              {lang === 'pt' ? `Versão enviada guardada · ${sentLabel}` : `Sent version saved · ${sentLabel}`}
+            </span>
+            <button onClick={() => downloadProposal(prop.sent_content, lang)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.terracottaDark, fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
+              {lang === 'pt' ? 'Descarregar' : 'Download'}
+            </button>
+          </div>
+        )}
 
         <div style={{ background: 'var(--paper-card)', borderRadius: 14, boxShadow: '0 14px 40px rgba(74,63,53,0.12)', overflow: 'hidden', border: '1px solid rgba(74,63,53,0.05)' }}>
           {/* letterhead */}
@@ -136,6 +216,7 @@ export default function ProposalScreen({ ctx, params }) {
           ? <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={save}>{lang === 'pt' ? 'Guardar alterações' : 'Save changes'}</Btn>
           : <>
               <Btn variant="ghost" accent={accent} size="md" icon="edit" onClick={() => setEditing(true)}>{lang === 'pt' ? 'Editar' : 'Edit'}</Btn>
+              <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={() => downloadProposal(c, lang)}>{lang === 'pt' ? 'PDF' : 'PDF'}</Btn>
               <Btn variant="solid" accent={accent} size="md" full icon="send" onClick={send}>{lang === 'pt' ? 'Marcar enviada' : 'Mark sent'}</Btn>
             </>}
       </div>
