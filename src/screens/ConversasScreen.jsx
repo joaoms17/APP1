@@ -3,7 +3,7 @@ import { PALETTE, hexToRgba, svc, SERVICE_LABEL } from '../data'
 import { Icon, Avatar, Card, Btn, AIBadge, Label, Eucalyptus } from '../ui'
 
 export function ConversasScreen({ ctx }) {
-  const { t, accent, conversas } = ctx
+  const { t, lang, accent, conversas } = ctx
   const lista = conversas || []
   return (
     <div style={{ padding: '30px 0 24px' }}>
@@ -14,9 +14,13 @@ export function ConversasScreen({ ctx }) {
             <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
           </button>
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: PALETTE.sage }} />
-          <span style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12, color: PALETTE.inkSoft }}>{t('wa_connected')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '10px 13px', borderRadius: 12, background: hexToRgba(PALETTE.gold, 0.12), border: `1px solid ${hexToRgba(PALETTE.gold, 0.35)}` }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: PALETTE.gold, flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12, color: PALETTE.ink, flex: 1, lineHeight: 1.4 }}>
+            {lang === 'pt'
+              ? 'WhatsApp Business por ligar. Requer a API oficial (Meta) com webhook no servidor.'
+              : 'WhatsApp Business not connected. Requires the official Meta API with a server webhook.'}
+          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--paper-card)', borderRadius: 50, padding: '11px 16px', marginBottom: 18, border: '1px solid rgba(74,63,53,0.06)' }}>
           <Icon name="search" size={17} color={PALETTE.inkSoft} stroke={1.6} />

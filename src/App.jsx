@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import { db } from './supabase'
 import { makeT, PALETTE, hexToRgba, defaultData, loadFromSupabase, insertRow, updateRow, deleteRow } from './data'
 import { Icon, Eucalyptus } from './ui'
 import { EntityForm, PaymentModal } from './forms'
+import Auth from './Auth'
 import HomeScreen     from './screens/HomeScreen'
 import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
 import NegociosScreen  from './screens/NegociosScreen'
@@ -43,7 +45,7 @@ function LoadingScreen() {
 }
 
 // ─── Desktop sidebar ──────────────────────────────────────────
-function Sidebar({ active, onChange, t, accent, tw, setTw }) {
+function Sidebar({ active, onChange, t, accent, tw, setTw, userName, signOut }) {
   return (
     <div style={{ width: 248, flexShrink: 0, background: 'var(--paper-card)', borderRight: '1px solid rgba(74,63,53,0.08)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '26px 22px 22px' }}>
@@ -69,6 +71,17 @@ function Sidebar({ active, onChange, t, accent, tw, setTw }) {
         })}
       </div>
       <div style={{ padding: '14px 18px 22px', borderTop: '1px solid rgba(74,63,53,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: hexToRgba(accent, 0.16), color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 14 }}>
+            {(userName || '?').slice(0, 1).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 500, color: PALETTE.nearBlack, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
+          </div>
+          <button onClick={signOut} title={tw.lang === 'pt' ? 'Sair' : 'Sign out'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+            <Icon name="arrowR" size={18} color={PALETTE.inkSoft} stroke={1.6} />
+          </button>
+        </div>
         <TweakControls tw={tw} setTw={setTw} compact />
       </div>
     </div>
@@ -119,6 +132,14 @@ export default function App() {
   const accent = tw.accent || PALETTE.terracotta
   const t = makeT(lang)
 
+  // ── Auth session ──
+  const [session, setSession] = useState(undefined)   // undefined = loading
+  useEffect(() => {
+    db.auth.getSession().then(({ data }) => setSession(data.session))
+    const { data: sub } = db.auth.onAuthStateChange((_e, s) => setSession(s))
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
   const [data, setData] = useState(defaultData)
   const [ready, setReady] = useState(false)
 
@@ -126,7 +147,18 @@ export default function App() {
     try { setData(await loadFromSupabase()) }
     catch (e) { console.error('[Ramo] reload error:', e) }
   }
-  useEffect(() => { reload().finally(() => setReady(true)) }, [])
+  useEffect(() => { if (session) reload().finally(() => setReady(true)) }, [session])
+
+  const user = session?.user
+  const userName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : '')
+  const signOut = () => db.auth.signOut()
+
+  // While checking session
+  if (session === undefined) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}><LoadingScreen /></div>
+  }
+  // Not logged in → login screen
+  if (!session) return <Auth />
 
   const [tab, setTab]        = useState('inicio')
   const [stack, setStack]    = useState([])
@@ -142,7 +174,7 @@ export default function App() {
   const remove  = async (table, id) => { await deleteRow(table, id); await reload() }
 
   const ctx = {
-    t, lang, accent, isDesktop,
+    t, lang, accent, isDesktop, userName, signOut, tw, setTw,
     push:  (screen, params = {}) => setStack(s => [...s, { screen, params }]),
     pop:   ()                    => setStack(s => s.slice(0, -1)),
     goTab: (id, params = {})     => { setStack([]); setTabP(params); setTab(id) },
@@ -187,7 +219,7 @@ export default function App() {
 
       {isDesktop ? (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--paper)' }}>
-          <Sidebar active={tab} onChange={ctx.goTab} t={t} accent={accent} tw={tw} setTw={setTw} />
+          <Sidebar active={tab} onChange={ctx.goTab} t={t} accent={accent} tw={tw} setTw={setTw} userName={userName} signOut={signOut} />
           <div style={{ flex: 1, minWidth: 0, height: '100vh', overflowY: 'auto' }}>
             <div style={{ maxWidth: 760, margin: '0 auto', minHeight: '100%' }} key={tab}>
               {content}
