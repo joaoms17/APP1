@@ -135,12 +135,15 @@ function CalendarView({ ctx, teamById }) {
 }
 
 function EquipaView({ ctx, team }) {
-  const { t, lang, accent } = ctx
+  const { t, lang, accent, reservas } = ctx
   const [filter, setFilter] = React.useState('all')
   const roles = ['all', 'maquilhadora', 'cabeleireira', 'musico', 'assistente']
   const list = filter === 'all' ? team : team.filter(m => m.role === filter)
   const statusTone = { disp: PALETTE.sage, ferias: PALETTE.gold, indisp: PALETTE.clay }
   const statusLabel = { disp: t('disponivel'), ferias: t('ferias'), indisp: t('indisponivel') }
+  // click cycles the status; persisted to Supabase
+  const nextStatus = { disp: 'ferias', ferias: 'indisp', indisp: 'disp' }
+  const eventosDe = (id) => (reservas || []).filter(r => (r.team || []).includes(id) && r.estado !== 'cancelada')
 
   return (
     <div>
@@ -160,25 +163,35 @@ function EquipaView({ ctx, team }) {
             <Eucalyptus size={22} stem={PALETTE.terracotta} leaf={PALETTE.sage} style={{ margin: '0 auto 10px' }} />
             <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Sem colaboradores' : 'No team members'}</div>
           </div>
-        : list.map((m) => (
-            <Card key={m.id} style={{ marginBottom: 10, padding: '14px 15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <Avatar initials={m.initials} color={m.color} size={44} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16.5, color: PALETTE.nearBlack }}>{m.name}</div>
-                  <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>{ROLE_LABEL[lang][m.role]}</div>
+        : list.map((m) => {
+            const eventos = eventosDe(m.id)
+            const st = m.status || 'disp'
+            return (
+              <Card key={m.id} style={{ marginBottom: 10, padding: '14px 15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar initials={m.initials} color={m.color} size={44} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16.5, color: PALETTE.nearBlack }}>{m.name}</div>
+                    <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>
+                      {ROLE_LABEL[lang][m.role] || m.role} · {eventos.length} {lang === 'pt' ? (eventos.length === 1 ? 'evento' : 'eventos') : 'events'}
+                    </div>
+                  </div>
+                  <button onClick={() => ctx.update('team', m.id, { status: nextStatus[st] })} title={lang === 'pt' ? 'Tocar para alterar' : 'Tap to change'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    <Chip tone={{ bg: hexToRgba(statusTone[st], 0.15), fg: statusTone[st], dot: statusTone[st] }} size={11}>{statusLabel[st]}</Chip>
+                  </button>
                 </div>
-                <Chip tone={{ bg: hexToRgba(statusTone[m.status] || PALETTE.inkSoft, 0.15), fg: statusTone[m.status] || PALETTE.inkSoft, dot: statusTone[m.status] || PALETTE.inkSoft }} size={11}>{statusLabel[m.status] || m.status}</Chip>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontFamily: 'var(--sans)', fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: PALETTE.inkSoft, width: 86, flexShrink: 0 }}>{t('carga')}</span>
-                <div style={{ flex: 1, height: 6, borderRadius: 50, background: hexToRgba(PALETTE.ink, 0.07), overflow: 'hidden' }}>
-                  <div style={{ width: `${((m.load || 0) / 6) * 100}%`, height: '100%', borderRadius: 50, background: (m.load || 0) >= 5 ? PALETTE.clay : accent }} />
-                </div>
-                <span style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.ink, width: 56, textAlign: 'right' }}>{m.load || 0} {lang === 'pt' ? 'eventos' : 'events'}</span>
-              </div>
-            </Card>
-          ))
+                {eventos.length > 0 && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(74,63,53,0.07)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {eventos.slice(0, 4).map(ev => (
+                      <button key={ev.id} onClick={() => ctx.push('reserva', { id: ev.id })} style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.ink, background: hexToRgba(PALETTE.sage, 0.12), border: 'none', borderRadius: 50, padding: '5px 11px', cursor: 'pointer' }}>
+                        {ev.data} · {ev.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )
+          })
       }
     </div>
   )
