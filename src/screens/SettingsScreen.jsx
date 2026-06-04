@@ -124,11 +124,11 @@ function PrecosTab({ ctx }) {
     { id: 'convidadas', label: lang === 'pt' ? 'Convidadas' : 'Guests' },
     { id: 'extra', label: lang === 'pt' ? 'Outros serviços' : 'Extras' },
   ]
-  const addItem = (category) => ctx.create('price_items', { id: genId(), category, title: lang === 'pt' ? 'Novo item' : 'New item', description: '', price: 0, unit: '', services: [], sort: 99 })
+  const addItem = (category) => ctx.create('price_items', { id: genId(), category, title: '', description: '', price: 0, unit: '', services: [], sort: 99 })
   return (
     <div>
       <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft, lineHeight: 1.5, marginBottom: 18 }}>
-        {lang === 'pt' ? 'A proposta escolhe automaticamente o item cujos serviços batem certo com os da lead. Ex.: "Maquilhagem e Penteado" exige maquilhagem + cabelo.' : 'The proposal auto-picks the item whose services match the lead. E.g. "Makeup & Hair" needs both.'}
+        {lang === 'pt' ? 'A proposta escolhe automaticamente o item cujos serviços batem certo com os da lead. Cada item guarda-se no seu próprio botão Guardar.' : 'The proposal auto-picks the matching item. Each item saves with its own Save button.'}
       </div>
       {cats.map(c => (
         <div key={c.id} style={{ marginBottom: 22 }}>
@@ -149,11 +149,14 @@ function PrecosTab({ ctx }) {
 function PriceRow({ ctx, item, withServices }) {
   const { lang, accent } = ctx
   const [d, setD] = React.useState({ title: item.title, description: item.description || '', price: item.price ?? 0, unit: item.unit || '', services: item.services || [] })
+  const [saving, setSaving] = React.useState(false)
+  const [saved, setSaved] = React.useState(false)
   const dirty = d.title !== item.title || d.description !== (item.description || '') || Number(d.price) !== Number(item.price ?? 0) || d.unit !== (item.unit || '') || JSON.stringify(d.services) !== JSON.stringify(item.services || [])
   const toggleSvc = (k) => setD(p => ({ ...p, services: p.services.includes(k) ? p.services.filter(x => x !== k) : [...p.services, k] }))
+  const save = async () => { setSaving(true); try { await ctx.update('price_items', item.id, d); setSaved(true); setTimeout(() => setSaved(false), 1800) } finally { setSaving(false) } }
   return (
-    <Card style={{ marginBottom: 10, padding: '14px' }}>
-      <input value={d.title} onChange={e => setD(p => ({ ...p, title: e.target.value }))} style={{ ...inputStyle, fontFamily: 'var(--serif-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }} />
+    <Card style={{ marginBottom: 10, padding: '14px', border: dirty ? `1px solid ${hexToRgba(accent, 0.4)}` : undefined }}>
+      <input value={d.title} onChange={e => setD(p => ({ ...p, title: e.target.value }))} placeholder={lang === 'pt' ? 'Nome do serviço' : 'Service name'} style={{ ...inputStyle, fontFamily: 'var(--serif-display)', fontSize: 16, fontWeight: 600, marginBottom: 8 }} />
       <textarea value={d.description} onChange={e => setD(p => ({ ...p, description: e.target.value }))} rows={2} placeholder={lang === 'pt' ? 'Descrição / o que inclui' : 'Description'} style={{ ...inputStyle, resize: 'vertical', fontSize: 12.5, marginBottom: 8 }} />
       <div style={{ display: 'flex', gap: 8, marginBottom: withServices ? 10 : 0 }}>
         <div style={{ flex: 1 }}>
@@ -176,10 +179,11 @@ function PriceRow({ ctx, item, withServices }) {
           </div>
         </>
       )}
-      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
         <button onClick={() => ctx.remove('price_items', item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12.5 }}>{lang === 'pt' ? 'Eliminar' : 'Delete'}</button>
         <div style={{ flex: 1 }} />
-        {dirty && <Btn variant="solid" accent={accent} size="sm" icon="check" onClick={() => ctx.update('price_items', item.id, d)}>{lang === 'pt' ? 'Guardar' : 'Save'}</Btn>}
+        {saved && <span style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.sage }}>{lang === 'pt' ? 'Guardado ✓' : 'Saved ✓'}</span>}
+        {dirty && <Btn variant="solid" accent={accent} size="sm" icon="check" onClick={save}>{saving ? '…' : (lang === 'pt' ? 'Guardar' : 'Save')}</Btn>}
       </div>
     </Card>
   )

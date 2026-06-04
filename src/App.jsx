@@ -87,11 +87,11 @@ function Sidebar({ active, onChange, t, accent, tw, setTw, userName, signOut }) 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: 500, color: PALETTE.nearBlack, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName}</div>
           </div>
-          <button onClick={signOut} title={tw.lang === 'pt' ? 'Sair' : 'Sign out'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
-            <Icon name="arrowR" size={18} color={PALETTE.inkSoft} stroke={1.6} />
-          </button>
         </div>
         <TweakControls tw={tw} setTw={setTw} compact />
+        <button onClick={signOut} style={{ marginTop: 14, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '9px', borderRadius: 10, border: `1px solid ${hexToRgba(PALETTE.clay, 0.35)}`, background: 'transparent', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12.5, fontWeight: 500, cursor: 'pointer' }}>
+          {tw.lang === 'pt' ? 'Terminar sessão' : 'Sign out'}
+        </button>
       </div>
     </div>
   )
@@ -165,6 +165,19 @@ export default function App() {
   const [form, setForm]      = useState(null)     // { type, initial, onComplete }
   const [payFor, setPayFor]  = useState(null)     // reserva object
   const [pasteChat, setPasteChat] = useState(false)
+
+  // Escape closes the topmost overlay
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setForm(f => f ? null : f)
+      setPayFor(p => p ? null : p)
+      setPasteChat(c => c ? false : c)
+      if (!form && !payFor && !pasteChat) setStack(s => s.length ? s.slice(0, -1) : s)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [form, payFor, pasteChat])
 
   const user = session?.user
   const userName = user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : '')

@@ -104,7 +104,7 @@ export default function LeadScreen({ ctx, params }) {
 
       <div style={{ flexShrink: 0, padding: '12px 18px 30px', background: 'var(--paper-card)', borderTop: '1px solid rgba(74,63,53,0.07)', display: 'flex', gap: 12 }}>
         <Btn variant="solid" accent={accent} size="md" full icon="arrowR" onClick={() => ctx.openCreate('reserva', {
-          initial: { name: l.name, tipo: l.tipo, data_evento: l.data, local: l.local, servicos: l.servicos, convidados: l.convidados, estado: 'proposta' },
+          initial: { name: l.name, tipo: l.tipo, data_evento: l.data, local: l.local, servicos: l.servicos, convidados: l.convidados, estado: 'confirmada' },
           onComplete: async (row, { update }) => { await update('leads', l.id, { estado: 'ganho' }); ctx.pop() },
         })}>{t('converter')}</Btn>
       </div>

@@ -36,7 +36,14 @@ export default function Auth() {
         if (error) throw error
       }
     } catch (e) {
-      setErr(e.message || 'Erro ao autenticar.')
+      const m = (e.message || '').toLowerCase()
+      const pt = m.includes('invalid login') ? 'Email ou palavra-passe incorretos.'
+        : m.includes('email not confirmed') ? 'Confirme o email antes de entrar.'
+        : m.includes('user already registered') ? 'Já existe uma conta com este email.'
+        : m.includes('password should be at least') ? 'A palavra-passe é demasiado curta (mínimo 6 caracteres).'
+        : m.includes('unable to validate email') || m.includes('invalid email') ? 'Email inválido.'
+        : (e.message || 'Erro ao autenticar.')
+      setErr(pt)
     } finally {
       setBusy(false)
     }

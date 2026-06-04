@@ -78,7 +78,7 @@ function CalendarView({ ctx, teamById }) {
             const ev = eventsByDay[d]
             const isToday = d === today.getDate() && mo === today.getMonth() && y === today.getFullYear()
             return (
-              <div key={d} onClick={() => ev && ctx.push('reserva', { id: ev[0].id })} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: isToday ? accent : 'transparent', cursor: ev ? 'pointer' : 'default' }}>
+              <div key={d} onClick={() => ev ? ctx.push('reserva', { id: ev[0].id }) : ctx.openCreate('reserva', { initial: { data_evento: `${d} ${abbr[mo]} ${y}` } })} style={{ aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: isToday ? accent : (ev ? hexToRgba(PALETTE.sage, 0.14) : 'transparent'), cursor: 'pointer' }}>
                 <span style={{ fontFamily: 'var(--sans)', fontSize: 13, fontWeight: isToday ? 600 : 300, color: isToday ? '#FBF7F0' : PALETTE.ink }}>{d}</span>
                 {ev && <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>{ev.slice(0,3).map((e, i) => <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: isToday ? '#FBF7F0' : e.color || PALETTE.terracotta }} />)}</div>}
               </div>

@@ -9,8 +9,13 @@ export default function EquipaScreen({ ctx }) {
   const list = filter === 'all' ? (team || []) : (team || []).filter(m => m.role === filter)
   const statusTone = { disp: PALETTE.sage, ferias: PALETTE.gold, indisp: PALETTE.clay }
   const statusLabel = { disp: t('disponivel'), ferias: t('ferias'), indisp: t('indisponivel') }
-  const nextStatus = { disp: 'ferias', ferias: 'indisp', indisp: 'disp' }
   const eventosDe = (id) => (reservas || []).filter(r => (r.team || []).includes(id) && r.estado !== 'cancelada')
+  const [editId, setEditId] = React.useState(null)
+  const [d, setD] = React.useState({})
+  const roleOpts = Object.entries(ROLE_LABEL[lang])
+  const startEdit = (m) => { setEditId(m.id); setD({ name: m.name, role: m.role, status: m.status || 'disp' }) }
+  const saveEdit = async (id) => { await ctx.update('team', id, { name: d.name, role: d.role, status: d.status }); setEditId(null) }
+  const inp = { boxSizing: 'border-box', width: '100%', padding: '9px 11px', borderRadius: 10, border: '1px solid rgba(74,63,53,0.18)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 14, color: PALETTE.nearBlack, outline: 'none' }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -37,6 +42,28 @@ export default function EquipaScreen({ ctx }) {
           : list.map((m) => {
               const eventos = eventosDe(m.id)
               const st = m.status || 'disp'
+              if (editId === m.id) return (
+                <Card key={m.id} style={{ marginBottom: 10, padding: '14px 15px' }}>
+                  <Label size={9.5} style={{ marginBottom: 5 }}>{lang === 'pt' ? 'Nome' : 'Name'}</Label>
+                  <input value={d.name} onChange={e => setD(p => ({ ...p, name: e.target.value }))} style={{ ...inp, marginBottom: 10 }} />
+                  <Label size={9.5} style={{ marginBottom: 5 }}>{lang === 'pt' ? 'Função' : 'Role'}</Label>
+                  <select value={d.role} onChange={e => setD(p => ({ ...p, role: e.target.value }))} style={{ ...inp, marginBottom: 10 }}>
+                    {roleOpts.map(([v, lab]) => <option key={v} value={v}>{lab}</option>)}
+                  </select>
+                  <Label size={9.5} style={{ marginBottom: 5 }}>{t('estado')}</Label>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                    {Object.keys(statusTone).map(s => (
+                      <button key={s} onClick={() => setD(p => ({ ...p, status: s }))} style={{ flex: 1, padding: '8px', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 12, border: `1px solid ${d.status === s ? statusTone[s] : 'rgba(74,63,53,0.16)'}`, background: d.status === s ? hexToRgba(statusTone[s], 0.14) : 'transparent', color: d.status === s ? statusTone[s] : PALETTE.inkSoft, fontWeight: d.status === s ? 500 : 400 }}>{statusLabel[s]}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => { ctx.remove('team', m.id); setEditId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12.5 }}>{lang === 'pt' ? 'Eliminar' : 'Delete'}</button>
+                    <div style={{ flex: 1 }} />
+                    <button onClick={() => setEditId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.inkSoft, fontFamily: 'var(--sans)', fontSize: 12.5 }}>{t('cancelar')}</button>
+                    <Btn variant="solid" accent={accent} size="sm" icon="check" onClick={() => saveEdit(m.id)}>{lang === 'pt' ? 'Guardar' : 'Save'}</Btn>
+                  </div>
+                </Card>
+              )
               return (
                 <Card key={m.id} style={{ marginBottom: 10, padding: '14px 15px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -47,8 +74,9 @@ export default function EquipaScreen({ ctx }) {
                         {ROLE_LABEL[lang][m.role] || m.role} · {eventos.length} {lang === 'pt' ? (eventos.length === 1 ? 'evento' : 'eventos') : 'events'}
                       </div>
                     </div>
-                    <button onClick={() => ctx.update('team', m.id, { status: nextStatus[st] })} title={lang === 'pt' ? 'Tocar para alterar' : 'Tap to change'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                      <Chip tone={{ bg: hexToRgba(statusTone[st], 0.15), fg: statusTone[st], dot: statusTone[st] }} size={11}>{statusLabel[st]}</Chip>
+                    <Chip tone={{ bg: hexToRgba(statusTone[st], 0.15), fg: statusTone[st], dot: statusTone[st] }} size={11}>{statusLabel[st]}</Chip>
+                    <button onClick={() => startEdit(m)} title={lang === 'pt' ? 'Editar' : 'Edit'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                      <Icon name="edit" size={17} color={PALETTE.inkSoft} stroke={1.6} />
                     </button>
                   </div>
                   {eventos.length > 0 && (

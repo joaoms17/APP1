@@ -285,11 +285,17 @@ function pickBest(items, selected) {
   )[0]
 }
 
+const isRealItem = (it) => {
+  const tt = (it.title || '').trim().toLowerCase()
+  return tt && tt !== 'novo item' && tt !== 'new item'
+}
+
 export function generateProposalContent(lead, settings, priceItems) {
   const selected = lead.servicos || []
-  const noiva = (priceItems || []).filter(p => p.category === 'noiva')
-  const convidadas = (priceItems || []).filter(p => p.category === 'convidadas')
-  const extras = (priceItems || []).filter(p => p.category === 'extra')
+  const real = (priceItems || []).filter(isRealItem)
+  const noiva = real.filter(p => p.category === 'noiva')
+  const convidadas = real.filter(p => p.category === 'convidadas')
+  const extras = real.filter(p => p.category === 'extra')
 
   const mainPkg = pickBest(noiva, selected)
   const convPkg = pickBest(convidadas, selected)
