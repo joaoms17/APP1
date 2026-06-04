@@ -257,10 +257,20 @@ export function generateProposalContent(lead, settings, priceItems) {
 
   const toLine = (it) => it ? ({ title: it.title, description: it.description || '', price: Number(it.price) || 0, unit: it.unit || '' }) : null
 
+  // Per-service logo: if exactly one selected service has a logo, use it; else main logo.
+  const sl = s.service_logos || {}
+  const withLogo = selected.filter(k => sl[k])
+  const chosenLogo = withLogo.length === 1 ? sl[withLogo[0]] : (s.logo_url || '')
+  const logoOptions = [
+    ...(s.logo_url ? [{ key: 'main', label: 'Principal', url: s.logo_url }] : []),
+    ...Object.keys(sl).filter(k => sl[k]).map(k => ({ key: k, label: k, url: sl[k] })),
+  ]
+
   return {
     company: s.company_name || 'Ramo Eventos',
     location: s.location || 'Lisboa · Portugal',
-    logo_url: s.logo_url || '',
+    logo_url: chosenLogo,
+    logo_options: logoOptions,
     about: s.about || '',
     packages: [toLine(mainPkg)].filter(Boolean),
     convidadas: [toLine(convPkg)].filter(Boolean),

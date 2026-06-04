@@ -151,6 +151,16 @@ export default function ProposalScreen({ ctx, params }) {
           {/* letterhead */}
           <div style={{ padding: '28px 26px 20px', textAlign: 'center', borderBottom: '1px solid rgba(74,63,53,0.1)' }}>
             {c.logo_url ? <img src={c.logo_url} alt="logo" style={{ maxHeight: 70, maxWidth: 200, objectFit: 'contain', marginBottom: 10 }} /> : <Eucalyptus size={26} stem={accent} leaf={PALETTE.sage} style={{ margin: '0 auto 10px' }} />}
+            {editing && (c.logo_options?.length > 0) && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+                {c.logo_options.map(o => (
+                  <button key={o.key} onClick={() => setField('logo_url', o.url)} title={o.label} style={{ width: 50, height: 40, borderRadius: 8, background: 'var(--paper)', cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${c.logo_url === o.url ? accent : 'rgba(74,63,53,0.16)'}` }}>
+                    <img src={o.url} alt={o.label} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  </button>
+                ))}
+                <button onClick={() => setField('logo_url', '')} title="Sem logo" style={{ width: 50, height: 40, borderRadius: 8, background: 'var(--paper)', cursor: 'pointer', border: `2px solid ${!c.logo_url ? accent : 'rgba(74,63,53,0.16)'}`, fontFamily: 'var(--sans)', fontSize: 16, color: PALETTE.sage }}>✿</button>
+              </div>
+            )}
             <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 25, color: PALETTE.nearBlack }}>{c.company}</div>
             <div style={{ fontFamily: 'var(--sans)', fontSize: 10.5, letterSpacing: '0.28em', textTransform: 'uppercase', color: PALETTE.sage, marginTop: 6 }}>{c.location}</div>
           </div>

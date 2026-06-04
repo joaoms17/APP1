@@ -38,36 +38,52 @@ export default function SettingsScreen({ ctx }) {
   )
 }
 
-function MarcaTab({ ctx }) {
-  const { lang, accent, settings, saveSettings } = ctx
-  const [d, setD] = React.useState({ company_name: settings.company_name || '', location: settings.location || '', phone: settings.phone || '', logo_url: settings.logo_url || '' })
-  const [saved, setSaved] = React.useState(false)
-  const fileRef = React.useRef(null)
-
+function LogoUploader({ lang, accent, value, onChange, label, small }) {
+  const ref = React.useRef(null)
   const onFile = (e) => {
     const f = e.target.files?.[0]; if (!f) return
     if (f.size > 600000) { alert(lang === 'pt' ? 'Imagem demasiado grande (máx ~500KB).' : 'Image too large (max ~500KB).'); return }
-    const r = new FileReader()
-    r.onload = () => setD(p => ({ ...p, logo_url: r.result }))
-    r.readAsDataURL(f)
+    const r = new FileReader(); r.onload = () => onChange(r.result); r.readAsDataURL(f)
   }
+  const box = small ? 56 : 84
+  return (
+    <Card style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, padding: small ? 12 : 18 }}>
+      <div style={{ width: box, height: box, borderRadius: 14, background: 'var(--paper)', border: '1px solid rgba(74,63,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+        {value ? <img src={value} alt="logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <Eucalyptus size={small ? 18 : 26} stem={accent} leaf={PALETTE.sage} />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {label && <div style={{ fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 13.5, color: PALETTE.nearBlack, marginBottom: 6 }}>{label}</div>}
+        <input ref={ref} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+        <Btn variant="soft" accent={accent} size="sm" icon="plus" onClick={() => ref.current?.click()}>{lang === 'pt' ? 'Carregar' : 'Upload'}</Btn>
+        {value && <button onClick={() => onChange('')} style={{ marginLeft: 10, background: 'none', border: 'none', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12, cursor: 'pointer' }}>{lang === 'pt' ? 'Remover' : 'Remove'}</button>}
+      </div>
+    </Card>
+  )
+}
+
+function MarcaTab({ ctx }) {
+  const { lang, accent, settings, saveSettings } = ctx
+  const [d, setD] = React.useState({ company_name: settings.company_name || '', location: settings.location || '', phone: settings.phone || '', logo_url: settings.logo_url || '', service_logos: settings.service_logos || {} })
+  const [saved, setSaved] = React.useState(false)
+  const setLogo = (url) => setD(p => ({ ...p, logo_url: url }))
+  const setServiceLogo = (k, url) => setD(p => ({ ...p, service_logos: { ...p.service_logos, [k]: url } }))
   const save = async () => { await saveSettings(d); setSaved(true); setTimeout(() => setSaved(false), 1800) }
 
   return (
     <div>
-      <Label size={10.5} style={{ marginBottom: 8 }}>{lang === 'pt' ? 'Logótipo' : 'Logo'}</Label>
-      <Card style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ width: 84, height: 84, borderRadius: 16, background: 'var(--paper)', border: '1px solid rgba(74,63,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-          {d.logo_url ? <img src={d.logo_url} alt="logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <Eucalyptus size={26} stem={accent} leaf={PALETTE.sage} />}
-        </div>
-        <div style={{ flex: 1 }}>
-          <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
-          <Btn variant="soft" accent={accent} size="sm" icon="plus" onClick={() => fileRef.current?.click()}>{lang === 'pt' ? 'Carregar logótipo' : 'Upload logo'}</Btn>
-          {d.logo_url && <button onClick={() => setD(p => ({ ...p, logo_url: '' }))} style={{ marginLeft: 10, background: 'none', border: 'none', color: PALETTE.clay, fontFamily: 'var(--sans)', fontSize: 12, cursor: 'pointer' }}>{lang === 'pt' ? 'Remover' : 'Remove'}</button>}
-          <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft, marginTop: 8 }}>PNG/JPG · máx ~500KB</div>
-        </div>
-      </Card>
+      <Label size={10.5} style={{ marginBottom: 8 }}>{lang === 'pt' ? 'Logótipo principal' : 'Main logo'}</Label>
+      <LogoUploader lang={lang} accent={accent} value={d.logo_url} onChange={setLogo} />
+      <div style={{ fontFamily: 'var(--sans)', fontSize: 11, color: PALETTE.inkSoft, marginBottom: 18 }}>PNG/JPG · máx ~500KB</div>
 
+      <Label size={10.5} style={{ marginBottom: 8 }}>{lang === 'pt' ? 'Logótipo por serviço' : 'Logo per service'}</Label>
+      <div style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.inkSoft, marginBottom: 12, lineHeight: 1.5 }}>
+        {lang === 'pt' ? 'Usado na proposta quando a lead tem só esse serviço. Caso contrário usa o principal.' : 'Used on the proposal when the lead has only that service.'}
+      </div>
+      {Object.keys(SERVICE_LABEL[lang]).map(k => (
+        <LogoUploader key={k} small lang={lang} accent={accent} label={SERVICE_LABEL[lang][k]} value={d.service_logos[k] || ''} onChange={(url) => setServiceLogo(k, url)} />
+      ))}
+
+      <div style={{ height: 8 }} />
       <label style={lbl}>{lang === 'pt' ? 'Nome da empresa' : 'Company name'}</label>
       <input style={{ ...inputStyle, marginBottom: 14 }} value={d.company_name} onChange={e => setD(p => ({ ...p, company_name: e.target.value }))} />
       <label style={lbl}>{lang === 'pt' ? 'Localização' : 'Location'}</label>
