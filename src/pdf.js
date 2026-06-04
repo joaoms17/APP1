@@ -63,6 +63,12 @@ async function addLogo(doc, dataUrl, pageW, y) {
   } catch (_) { return y }
 }
 
+// centered text that correctly accounts for letter-spacing (jsPDF align:center ignores charSpace)
+function centerTracked(doc, text, y, pageW, charSpace) {
+  const w = doc.getTextWidth(text) + charSpace * Math.max(0, text.length - 1)
+  doc.text(text, (pageW - w) / 2, y, { charSpace })
+}
+
 function goldRule(doc, pageW, M, y) {
   doc.setDrawColor(...C.gold); doc.setLineWidth(0.4)
   const cx = pageW / 2, gap = 4
@@ -111,7 +117,7 @@ export async function proposalPdfBlob(c) {
   doc.setFont(SERIF, 'bold'); doc.setFontSize(26); doc.setTextColor(...C.near)
   doc.text(c.company || 'Ramo Eventos', pageW / 2, y + 5, { align: 'center' }); y += 11
   doc.setFont(SANS, 'normal'); doc.setFontSize(8); doc.setTextColor(...C.sage)
-  doc.text((c.location || '').toUpperCase(), pageW / 2, y, { align: 'center', charSpace: 2 }); y += 6
+  centerTracked(doc, (c.location || '').toUpperCase(), y, pageW, 2); y += 6
   goldRule(doc, pageW, M, y); y += 4
 
   if (c.about) { section('Sobre'); para(c.about) }
@@ -162,7 +168,7 @@ export async function schedulePdfBlob(c) {
   doc.setFont(SERIF, 'bold'); doc.setFontSize(24); doc.setTextColor(...C.near)
   doc.text(c.client || 'Evento', pageW / 2, y + 4, { align: 'center' }); y += 9
   doc.setFont(SANS, 'normal'); doc.setFontSize(9); doc.setTextColor(...C.sage)
-  doc.text(`${c.date || ''}${c.location ? `   ·   ${c.location}` : ''}`.toUpperCase(), pageW / 2, y, { align: 'center', charSpace: 1.5 }); y += 6
+  centerTracked(doc, `${c.date || ''}${c.location ? `   ·   ${c.location}` : ''}`.toUpperCase(), y, pageW, 1.5); y += 6
   goldRule(doc, pageW, M, y); y += 2
 
   if (c.kind === 'music') {
