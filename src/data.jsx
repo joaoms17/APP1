@@ -5,7 +5,7 @@ export const STR = {
   pt: {
     appName: 'Ramo', appTagline: 'Operação para equipas de eventos',
     tab_inicio: 'Início', tab_conversas: 'Conversas', tab_negocios: 'Negócios',
-    tab_agenda: 'Agenda', tab_financeiro: 'Financeiro',
+    tab_agenda: 'Agenda', tab_equipa: 'Equipa', tab_financeiro: 'Financeiro',
     greeting: 'Bom dia', manager: 'Marta', today: 'Hoje',
     comercial: 'Comercial', operacional: 'Operacional', financeiro: 'Financeiro',
     leads_recebidas: 'Leads recebidas', taxa_conversao: 'Taxa de conversão',
@@ -46,7 +46,7 @@ export const STR = {
   en: {
     appName: 'Ramo', appTagline: 'Operations for event teams',
     tab_inicio: 'Home', tab_conversas: 'Chats', tab_negocios: 'Deals',
-    tab_agenda: 'Calendar', tab_financeiro: 'Finance',
+    tab_agenda: 'Calendar', tab_equipa: 'Team', tab_financeiro: 'Finance',
     greeting: 'Good morning', manager: 'Marta', today: 'Today',
     comercial: 'Sales', operacional: 'Operations', financeiro: 'Finance',
     leads_recebidas: 'Leads received', taxa_conversao: 'Conversion rate',

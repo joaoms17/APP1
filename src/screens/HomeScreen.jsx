@@ -87,7 +87,7 @@ export default function HomeScreen({ ctx }) {
         </button>
       </div>
 
-      <Card sage onClick={() => ctx.goTab('conversas')} style={{ marginBottom: 22, padding: 0, overflow: 'hidden' }}>
+      <Card sage onClick={() => (novas > 0 ? ctx.goTab('negocios') : ctx.openPasteChat())} style={{ marginBottom: 22, padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 46, height: 46, borderRadius: '50%', background: hexToRgba(PALETTE.sage, 0.35), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Eucalyptus size={20} stem={PALETTE.terracottaDark} leaf={PALETTE.sage} />

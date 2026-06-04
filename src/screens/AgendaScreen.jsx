@@ -1,36 +1,16 @@
 import React from 'react'
-import { PALETTE, hexToRgba, svc, ROLE_LABEL } from '../data'
-import { Icon, Card, Label, AvatarStack, Avatar, Chip, Eucalyptus, Btn } from '../ui'
-
-function Segmented({ options, value, onChange, accent }) {
-  return (
-    <div style={{ display: 'flex', background: hexToRgba(PALETTE.ink, 0.06), borderRadius: 50, padding: 4, gap: 4 }}>
-      {options.map((o) => (
-        <button key={o.id} onClick={() => onChange(o.id)} style={{ flex: 1, padding: '9px 8px', borderRadius: 50, border: 'none', cursor: 'pointer', background: value === o.id ? 'var(--paper-card)' : 'transparent', boxShadow: value === o.id ? '0 2px 8px rgba(74,63,53,0.1)' : 'none', fontFamily: 'var(--sans)', fontWeight: 500, fontSize: 12.5, letterSpacing: '0.04em', color: value === o.id ? accent : PALETTE.inkSoft, transition: 'all .2s' }}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
+import { PALETTE, hexToRgba, svc } from '../data'
+import { Icon, Card, Label, AvatarStack, Eucalyptus } from '../ui'
 
 export default function AgendaScreen({ ctx }) {
-  const { t, accent, agendaEvents, team, teamById } = ctx
-  const [view, setView] = React.useState('calendario')
-
+  const { t, teamById } = ctx
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '30px 18px 14px', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1, marginBottom: 16 }}>{t('tab_agenda')}</div>
-        <Segmented accent={accent} value={view} onChange={setView} options={[
-          { id: 'calendario', label: t('calendario') },
-          { id: 'equipa',     label: t('equipa') },
-        ]} />
+      <div style={{ padding: '30px 18px 8px', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_agenda')}</div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px 24px' }}>
-        {view === 'calendario'
-          ? <CalendarView ctx={ctx} teamById={teamById} />
-          : <EquipaView ctx={ctx} team={team || []} accent={accent} />}
+        <CalendarView ctx={ctx} teamById={teamById} />
       </div>
     </div>
   )
@@ -129,69 +109,6 @@ function CalendarView({ ctx, teamById }) {
               </div>
             </Card>
           ))
-      }
-    </div>
-  )
-}
-
-function EquipaView({ ctx, team }) {
-  const { t, lang, accent, reservas } = ctx
-  const [filter, setFilter] = React.useState('all')
-  const roles = ['all', 'maquilhadora', 'cabeleireira', 'musico', 'assistente']
-  const list = filter === 'all' ? team : team.filter(m => m.role === filter)
-  const statusTone = { disp: PALETTE.sage, ferias: PALETTE.gold, indisp: PALETTE.clay }
-  const statusLabel = { disp: t('disponivel'), ferias: t('ferias'), indisp: t('indisponivel') }
-  // click cycles the status; persisted to Supabase
-  const nextStatus = { disp: 'ferias', ferias: 'indisp', indisp: 'disp' }
-  const eventosDe = (id) => (reservas || []).filter(r => (r.team || []).includes(id) && r.estado !== 'cancelada')
-
-  return (
-    <div>
-      <Btn variant="soft" accent={accent} size="md" full icon="plus" style={{ marginBottom: 16 }} onClick={() => ctx.openCreate('team')}>
-        {lang === 'pt' ? 'Adicionar colaborador' : 'Add team member'}
-      </Btn>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 18, paddingBottom: 2 }}>
-        {roles.map((r) => (
-          <button key={r} onClick={() => setFilter(r)} style={{ flexShrink: 0, fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, padding: '7px 14px', borderRadius: 50, cursor: 'pointer', whiteSpace: 'nowrap', border: `1px solid ${filter === r ? accent : 'rgba(74,63,53,0.12)'}`, background: filter === r ? hexToRgba(accent, 0.1) : 'transparent', color: filter === r ? accent : PALETTE.inkSoft }}>
-            {r === 'all' ? (lang === 'pt' ? 'Todos' : 'All') : ROLE_LABEL[lang][r]}
-          </button>
-        ))}
-      </div>
-
-      {list.length === 0
-        ? <div style={{ padding: '40px 0', textAlign: 'center' }}>
-            <Eucalyptus size={22} stem={PALETTE.terracotta} leaf={PALETTE.sage} style={{ margin: '0 auto 10px' }} />
-            <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.inkSoft }}>{lang === 'pt' ? 'Sem colaboradores' : 'No team members'}</div>
-          </div>
-        : list.map((m) => {
-            const eventos = eventosDe(m.id)
-            const st = m.status || 'disp'
-            return (
-              <Card key={m.id} style={{ marginBottom: 10, padding: '14px 15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Avatar initials={m.initials} color={m.color} size={44} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 16.5, color: PALETTE.nearBlack }}>{m.name}</div>
-                    <div style={{ fontFamily: 'var(--sans)', fontSize: 12, color: PALETTE.inkSoft }}>
-                      {ROLE_LABEL[lang][m.role] || m.role} · {eventos.length} {lang === 'pt' ? (eventos.length === 1 ? 'evento' : 'eventos') : 'events'}
-                    </div>
-                  </div>
-                  <button onClick={() => ctx.update('team', m.id, { status: nextStatus[st] })} title={lang === 'pt' ? 'Tocar para alterar' : 'Tap to change'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                    <Chip tone={{ bg: hexToRgba(statusTone[st], 0.15), fg: statusTone[st], dot: statusTone[st] }} size={11}>{statusLabel[st]}</Chip>
-                  </button>
-                </div>
-                {eventos.length > 0 && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(74,63,53,0.07)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {eventos.slice(0, 4).map(ev => (
-                      <button key={ev.id} onClick={() => ctx.push('reserva', { id: ev.id })} style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.ink, background: hexToRgba(PALETTE.sage, 0.12), border: 'none', borderRadius: 50, padding: '5px 11px', cursor: 'pointer' }}>
-                        {ev.data} · {ev.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            )
-          })
       }
     </div>
   )

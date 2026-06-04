@@ -7,8 +7,8 @@ import Auth from './Auth'
 import SettingsScreen from './screens/SettingsScreen'
 import ProposalScreen from './screens/ProposalScreen'
 import ScheduleScreen from './screens/ScheduleScreen'
+import EquipaScreen from './screens/EquipaScreen'
 import HomeScreen     from './screens/HomeScreen'
-import { ConversasScreen, ConversaScreen } from './screens/ConversasScreen'
 import NegociosScreen  from './screens/NegociosScreen'
 import LeadScreen      from './screens/LeadScreen'
 import ReservaScreen   from './screens/ReservaScreen'
@@ -20,9 +20,9 @@ const TWEAK_DEFAULTS = { accent: '#A9744F', lang: 'pt' }
 
 const TABS = [
   { id: 'inicio',     icon: 'home',     key: 'tab_inicio' },
-  { id: 'conversas',  icon: 'chat',     key: 'tab_conversas' },
   { id: 'negocios',   icon: 'deals',    key: 'tab_negocios' },
   { id: 'agenda',     icon: 'calendar', key: 'tab_agenda' },
+  { id: 'equipa',     icon: 'users',    key: 'tab_equipa' },
   { id: 'financeiro', icon: 'wallet',   key: 'tab_financeiro' },
 ]
 
@@ -244,8 +244,8 @@ export default function App() {
     update, remove, reload,
   }
 
-  const TAB_SCREENS = { inicio: HomeScreen, conversas: ConversasScreen, negocios: NegociosScreen, agenda: AgendaScreen, financeiro: FinanceiroScreen, definicoes: SettingsScreen }
-  const STACK_SCREENS = { conversa: ConversaScreen, lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen, proposta: ProposalScreen, cronograma: ScheduleScreen }
+  const TAB_SCREENS = { inicio: HomeScreen, negocios: NegociosScreen, agenda: AgendaScreen, equipa: EquipaScreen, financeiro: FinanceiroScreen, definicoes: SettingsScreen }
+  const STACK_SCREENS = { lead: LeadScreen, reserva: ReservaScreen, doc: DocScreen, proposta: ProposalScreen, cronograma: ScheduleScreen }
   const TabScreen = TAB_SCREENS[tab]
   const top       = stack[stack.length - 1]
   const TopScreen = top ? STACK_SCREENS[top.screen] : null

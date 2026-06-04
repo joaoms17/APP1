@@ -19,15 +19,33 @@ export default function NegociosScreen({ ctx }) {
   const [view, setView] = React.useState(ctx.params?.view || 'pipeline')
   const leadsList = leads || []
   const reservasList = reservas || []
+  const [menu, setMenu] = React.useState(false)
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '30px 18px 14px', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 500, fontSize: 32, color: PALETTE.nearBlack, lineHeight: 1.1 }}>{t('tab_negocios')}</div>
-          <button onClick={() => ctx.openCreate(view === 'pipeline' ? 'lead' : 'reserva')} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
-            <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => { if (view === 'reservas') ctx.openCreate('reserva'); else setMenu(m => !m) }} style={{ width: 42, height: 42, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(169,116,79,0.3)', marginTop: 4 }}>
+              <Icon name="plus" size={22} color="#FBF7F0" stroke={2} />
+            </button>
+            {menu && view === 'pipeline' && (
+              <>
+                <div onClick={() => setMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                <div style={{ position: 'absolute', top: 50, right: 0, zIndex: 50, background: 'var(--paper-card)', borderRadius: 14, boxShadow: '0 12px 32px rgba(74,63,53,0.18)', border: '1px solid rgba(74,63,53,0.08)', overflow: 'hidden', width: 230 }}>
+                  <button onClick={() => { setMenu(false); ctx.openPasteChat() }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 15px', background: 'none', border: 'none', borderBottom: '1px solid rgba(74,63,53,0.07)', cursor: 'pointer', textAlign: 'left' }}>
+                    <Icon name="chat" size={18} color={PALETTE.sage} stroke={1.7} />
+                    <span style={{ fontFamily: 'var(--sans)', fontSize: 13.5, color: PALETTE.nearBlack }}>{lang === 'pt' ? 'Colar mensagem WhatsApp' : 'Paste WhatsApp message'}</span>
+                  </button>
+                  <button onClick={() => { setMenu(false); ctx.openCreate('lead') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 15px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <Icon name="edit" size={18} color={accent} stroke={1.7} />
+                    <span style={{ fontFamily: 'var(--sans)', fontSize: 13.5, color: PALETTE.nearBlack }}>{lang === 'pt' ? 'Lead manual' : 'Manual lead'}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <Segmented accent={accent} value={view} onChange={setView} options={[
           { id: 'pipeline', label: t('pipeline'), count: leadsList.length },
