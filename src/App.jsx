@@ -217,6 +217,18 @@ export default function App() {
     return id
   }
 
+  // Upload a generated PDF to Supabase Storage and save its URL on the record (history)
+  const savePdf = async (table, id, blob) => {
+    try {
+      const path = `${table}/${id}.pdf`
+      await db.storage.from('documents').upload(path, blob, { upsert: true, contentType: 'application/pdf' })
+      const { data } = db.storage.from('documents').getPublicUrl(path)
+      const url = data?.publicUrl ? `${data.publicUrl}?t=${Date.now()}` : null
+      if (url) { await updateRow(table, id, { pdf_url: url }); await reload() }
+      return url
+    } catch (e) { console.warn('[Ramo] savePdf falhou:', e?.message); return null }
+  }
+
   const assignTeam = async (bookingId, teamId, add) => {
     if (add) await db.from('booking_team').insert({ booking_id: bookingId, team_id: teamId })
     else await db.from('booking_team').delete().eq('booking_id', bookingId).eq('team_id', teamId)
@@ -253,7 +265,7 @@ export default function App() {
     reservas: data.reservas, agendaEvents: data.agendaEvents,
     settings: data.settings, priceItems: data.priceItems, proposals: data.proposals, schedules: data.schedules,
     teamById, reservaById,
-    saveSettings, generateProposal, generateSchedule, assignTeam,
+    saveSettings, generateProposal, generateSchedule, assignTeam, savePdf,
     create: persist,
     // CRUD
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),

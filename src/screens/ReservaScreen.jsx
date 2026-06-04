@@ -229,11 +229,12 @@ function PayCell({ label, value, accent = PALETTE.nearBlack, sub, subColor }) {
   )
 }
 
-function DocRow({ icon, title, status, onOpen, onDelete, accent, lang }) {
+function DocRow({ icon, title, status, onOpen, onDelete, accent, lang, pdfUrl }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: '12px 14px', borderRadius: 14, border: '1px solid rgba(74,63,53,0.1)', background: 'var(--paper-card)' }}>
       <Icon name={icon} size={18} color={accent} stroke={1.6} />
       <button onClick={onOpen} style={{ flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.ink }}>{title}{status ? ` · ${status}` : ''}</button>
+      {pdfUrl && <a href={pdfUrl} target="_blank" rel="noreferrer" title="PDF" style={{ fontFamily: 'var(--sans)', fontSize: 11.5, fontWeight: 500, color: accent, textDecoration: 'none', whiteSpace: 'nowrap' }}>PDF</a>}
       <button onClick={onDelete} title={lang === 'pt' ? 'Apagar' : 'Delete'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}><Icon name="x" size={15} color={PALETTE.inkSoft} stroke={2} /></button>
       <button onClick={onOpen} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}><Icon name="chevR" size={16} color={PALETTE.inkSoft} stroke={1.8} /></button>
     </div>
@@ -257,7 +258,7 @@ function DocsTab({ ctx, t, lang, accent, r }) {
       <Label size={10.5} style={{ marginBottom: 10 }}>{t('orcamento')}</Label>
       {proposals.length > 0
         ? proposals.map(p => (
-            <DocRow key={p.id} icon="file" accent={accent} lang={lang}
+            <DocRow key={p.id} icon="file" accent={accent} lang={lang} pdfUrl={p.pdf_url}
               title={t('orcamento')} status={p.status}
               onOpen={() => ctx.push('proposta', { id: p.id })}
               onDelete={() => ctx.remove('proposals', p.id)} />
@@ -277,7 +278,7 @@ function DocsTab({ ctx, t, lang, accent, r }) {
         <Label size={10.5}>{lang === 'pt' ? 'Cronograma do dia' : 'Day schedule'}</Label>
       </div>
       {schedules.length > 0 && schedules.map(s => (
-        <DocRow key={s.id} icon="calendar" accent={accent} lang={lang}
+        <DocRow key={s.id} icon="calendar" accent={accent} lang={lang} pdfUrl={s.pdf_url}
           title={s.kind === 'music' ? (lang === 'pt' ? 'Música' : 'Music') : (lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup')} status={s.status}
           onOpen={() => ctx.push('cronograma', { id: s.id })}
           onDelete={() => ctx.remove('schedules', s.id)} />

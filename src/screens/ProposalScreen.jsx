@@ -1,6 +1,7 @@
 import React from 'react'
 import { PALETTE, hexToRgba } from '../data'
 import { Icon, Label, Rule, Btn, AIBadge, Eucalyptus, Chip } from '../ui'
+import { htmlToPdfBlob, downloadBlob } from '../pdf'
 
 const inp = { boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack, outline: 'none' }
 
@@ -48,15 +49,6 @@ function buildProposalHTML(c, lang) {
 </body></html>`
 }
 
-function downloadProposal(content, lang) {
-  const html = buildProposalHTML(content, lang)
-  const f = document.createElement('iframe')
-  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
-  document.body.appendChild(f)
-  const d = f.contentWindow.document
-  d.open(); d.write(html); d.close()
-  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => document.body.removeChild(f), 1500) }, 400)
-}
 
 export default function ProposalScreen({ ctx, params }) {
   const { lang, accent, proposals } = ctx
@@ -93,7 +85,20 @@ export default function ProposalScreen({ ctx, params }) {
   }
   const sentAt = prop.sent_at ? new Date(prop.sent_at) : null
   const sentLabel = sentAt ? sentAt.toLocaleDateString(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null
-  const flash = (m) => { setSavedMsg(m); setTimeout(() => setSavedMsg(null), 2200) }
+  const flash = (m) => { setSavedMsg(m); setTimeout(() => setSavedMsg(null), 2600) }
+  const [pdfBusy, setPdfBusy] = React.useState(false)
+  const makePdf = async (content) => {
+    if (pdfBusy) return
+    setPdfBusy(true)
+    flash(lang === 'pt' ? 'A gerar PDF…' : 'Generating PDF…')
+    try {
+      const blob = await htmlToPdfBlob(buildProposalHTML(content, lang))
+      downloadBlob(blob, `Orcamento-${(prop.client_name || 'cliente').replace(/\s+/g, '_')}.pdf`)
+      await ctx.savePdf('proposals', prop.id, blob)
+      flash(lang === 'pt' ? 'PDF guardado no histórico ✓' : 'PDF saved ✓')
+    } catch (e) { console.error(e); flash(lang === 'pt' ? 'Erro ao gerar PDF' : 'PDF error') }
+    finally { setPdfBusy(false) }
+  }
   const fmt = (n) => `${Number(n || 0).toLocaleString('pt-PT')} €`
 
   const statusTone = { rascunho: PALETTE.inkSoft, enviada: PALETTE.gold, aceite: PALETTE.sage }[status] || PALETTE.inkSoft
@@ -141,7 +146,7 @@ export default function ProposalScreen({ ctx, params }) {
             <span style={{ flex: 1, fontFamily: 'var(--sans)', fontSize: 12.5, color: PALETTE.ink }}>
               {lang === 'pt' ? `Versão enviada guardada · ${sentLabel}` : `Sent version saved · ${sentLabel}`}
             </span>
-            <button onClick={() => downloadProposal(prop.sent_content, lang)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.terracottaDark, fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
+            <button onClick={() => makePdf(prop.sent_content)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: PALETTE.terracottaDark, fontFamily: 'var(--sans)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
               {lang === 'pt' ? 'Descarregar' : 'Download'}
             </button>
           </div>
@@ -226,7 +231,7 @@ export default function ProposalScreen({ ctx, params }) {
           ? <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={save}>{lang === 'pt' ? 'Guardar alterações' : 'Save changes'}</Btn>
           : <>
               <Btn variant="ghost" accent={accent} size="md" icon="edit" onClick={() => setEditing(true)}>{lang === 'pt' ? 'Editar' : 'Edit'}</Btn>
-              <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={() => downloadProposal(c, lang)}>{lang === 'pt' ? 'PDF' : 'PDF'}</Btn>
+              <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={() => makePdf(c)}>{pdfBusy ? '…' : 'PDF'}</Btn>
               <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={send}>{lang === 'pt' ? 'Marcar como enviada' : 'Mark as sent'}</Btn>
             </>}
       </div>

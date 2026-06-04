@@ -1,6 +1,7 @@
 import React from 'react'
 import { PALETTE, hexToRgba } from '../data'
 import { Icon, Label, Btn, Eucalyptus, Chip } from '../ui'
+import { htmlToPdfBlob, downloadBlob } from '../pdf'
 
 const inp = { boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: '1px solid rgba(74,63,53,0.2)', background: 'var(--paper)', fontFamily: 'var(--sans)', fontSize: 13, color: PALETTE.nearBlack, outline: 'none' }
 
@@ -41,14 +42,6 @@ function buildScheduleHTML(c, lang) {
 </body></html>`
 }
 
-function downloadSchedule(content, lang) {
-  const html = buildScheduleHTML(content, lang)
-  const f = document.createElement('iframe')
-  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
-  document.body.appendChild(f)
-  const d = f.contentWindow.document; d.open(); d.write(html); d.close()
-  setTimeout(() => { f.contentWindow.focus(); f.contentWindow.print(); setTimeout(() => document.body.removeChild(f), 1500) }, 400)
-}
 
 export default function ScheduleScreen({ ctx, params }) {
   const { lang, accent, schedules } = ctx
@@ -63,7 +56,20 @@ export default function ScheduleScreen({ ctx, params }) {
       <div style={{ fontFamily: 'var(--sans)', color: PALETTE.inkSoft }}>Cronograma não encontrado</div>
     </div>
   )
-  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(null), 2000) }
+  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(null), 2600) }
+  const [pdfBusy, setPdfBusy] = React.useState(false)
+  const makePdf = async () => {
+    if (pdfBusy) return
+    setPdfBusy(true)
+    flash(lang === 'pt' ? 'A gerar PDF…' : 'Generating PDF…')
+    try {
+      const blob = await htmlToPdfBlob(buildScheduleHTML(c, lang))
+      downloadBlob(blob, `Cronograma-${(c.client || 'evento').replace(/\s+/g, '_')}.pdf`)
+      await ctx.savePdf('schedules', sch.id, blob)
+      flash(lang === 'pt' ? 'PDF guardado no histórico ✓' : 'PDF saved ✓')
+    } catch (e) { console.error(e); flash(lang === 'pt' ? 'Erro ao gerar PDF' : 'PDF error') }
+    finally { setPdfBusy(false) }
+  }
   const setField = (k, v) => setC(p => ({ ...p, [k]: v }))
   const save = async () => { await ctx.update('schedules', sch.id, { content: c }); setEditing(false); flash(lang === 'pt' ? 'Guardado ✓' : 'Saved ✓') }
   const send = async () => {
@@ -149,7 +155,7 @@ export default function ScheduleScreen({ ctx, params }) {
           ? <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={save}>{lang === 'pt' ? 'Guardar' : 'Save'}</Btn>
           : <>
               <Btn variant="ghost" accent={accent} size="md" icon="edit" onClick={() => setEditing(true)}>{lang === 'pt' ? 'Editar' : 'Edit'}</Btn>
-              <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={() => downloadSchedule(c, lang)}>PDF</Btn>
+              <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={makePdf}>{pdfBusy ? '…' : 'PDF'}</Btn>
               <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={send}>{lang === 'pt' ? 'Marcar como enviado' : 'Mark as sent'}</Btn>
             </>}
       </div>
