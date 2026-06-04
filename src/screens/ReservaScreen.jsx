@@ -213,10 +213,7 @@ function PagamentosTab({ ctx, t, lang, accent, r }) {
             {lang === 'pt' ? `Registar sinal pago (€ ${((r.sinal||0)-(r.pago||0)).toLocaleString('pt-PT')})` : 'Mark deposit paid'}
           </Btn>
         )}
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Btn variant="ghost" accent={accent} size="md" full icon="chat">{t('pedir_pagamento')}</Btn>
-          <Btn variant="solid" accent={accent} size="md" full icon="plus" onClick={() => ctx.openPayment(r)}>{t('registar')}</Btn>
-        </div>
+        <Btn variant="solid" accent={accent} size="md" full icon="plus" onClick={() => ctx.openPayment(r)}>{t('registar')}</Btn>
       </div>
     </div>
   )

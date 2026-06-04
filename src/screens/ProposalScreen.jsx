@@ -227,7 +227,7 @@ export default function ProposalScreen({ ctx, params }) {
           : <>
               <Btn variant="ghost" accent={accent} size="md" icon="edit" onClick={() => setEditing(true)}>{lang === 'pt' ? 'Editar' : 'Edit'}</Btn>
               <Btn variant="ghost" accent={accent} size="md" icon="file" onClick={() => downloadProposal(c, lang)}>{lang === 'pt' ? 'PDF' : 'PDF'}</Btn>
-              <Btn variant="solid" accent={accent} size="md" full icon="send" onClick={send}>{lang === 'pt' ? 'Marcar enviada' : 'Mark sent'}</Btn>
+              <Btn variant="solid" accent={accent} size="md" full icon="check" onClick={send}>{lang === 'pt' ? 'Marcar como enviada' : 'Mark as sent'}</Btn>
             </>}
       </div>
     </div>

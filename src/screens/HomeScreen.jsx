@@ -49,7 +49,7 @@ function AccountMenu({ ctx, onClose }) {
 }
 
 export default function HomeScreen({ ctx }) {
-  const { t, lang, accent, agendaEvents, leads, reservas, teamById, userName } = ctx
+  const { t, lang, accent, agendaEvents, leads, reservas, proposals, teamById, userName } = ctx
   const events = agendaEvents || []
   const allLeads = leads || []
   const allReservas = reservas || []
@@ -67,7 +67,7 @@ export default function HomeScreen({ ctx }) {
   const dateLabel = `${now.getDate()} ${mesesPt[now.getMonth()]}`
 
   const novas = allLeads.filter(l => l.estado === 'novo').length
-  const propostas = allLeads.filter(l => l.estado === 'proposta' || l.estado === 'negociacao').length
+  const propostas = (proposals || []).filter(p => p.status === 'enviada').length
   const ganhas = allLeads.filter(l => l.estado === 'ganho').length
   const conv = allLeads.length ? Math.round((ganhas / allLeads.length) * 100) : 0
 
