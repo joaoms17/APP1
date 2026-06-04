@@ -27,7 +27,10 @@ export default function LeadScreen({ ctx, params }) {
   )
 
   const tone = leadTone(l.estado)
-  const suggested = (team || []).filter(m => m.status === 'disp').slice(0, 2)
+  const digits = (l.phone || '').replace(/[^\d+]/g, '')
+  const openWhatsApp = () => { if (digits) window.open(`https://wa.me/${digits.replace(/\D/g, '')}`, '_blank') }
+  const openPhone = () => { if (digits) window.location.href = `tel:${digits}` }
+  const openEmail = () => { if (l.email) window.location.href = `mailto:${l.email}` }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
@@ -46,9 +49,9 @@ export default function LeadScreen({ ctx, params }) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 20px' }}>
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <ContactBtn icon="chat" label="WhatsApp" accent={PALETTE.sage} onClick={() => ctx.push('conversa', { id: l.id })} />
-          <ContactBtn icon="phone" label={t('telefone')} accent={accent} />
-          <ContactBtn icon="file" label={t('proposta')} accent={PALETTE.gold} />
+          <ContactBtn icon="chat" label="WhatsApp" accent={PALETTE.sage} disabled={!digits} onClick={openWhatsApp} />
+          <ContactBtn icon="phone" label={t('telefone')} accent={accent} disabled={!digits} onClick={openPhone} />
+          <ContactBtn icon="send" label="Email" accent={PALETTE.gold} disabled={!l.email} onClick={openEmail} />
         </div>
 
         <Label size={10.5} style={{ marginBottom: 4 }}>{t('detalhes')}</Label>
@@ -62,32 +65,23 @@ export default function LeadScreen({ ctx, params }) {
           </div>
         </Card>
 
-        {suggested.length > 0 && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, paddingLeft: 2 }}>
-              <Label size={10.5}>{t('sugestao_equipa')}</Label><AIBadge />
-            </div>
-            <Card sage style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12.5, color: PALETTE.ink, marginBottom: 14, lineHeight: 1.5 }}>
-                {lang === 'pt' ? `Disponíveis a ${l.data}:` : `Available on ${l.data}:`}
-              </div>
-              {suggested.map((m) => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-                  <Avatar initials={m.initials} color={m.color} size={38} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--serif-display)', fontWeight: 600, fontSize: 15.5, color: PALETTE.nearBlack }}>{m.name}</div>
-                    <div style={{ fontFamily: 'var(--sans)', fontSize: 11.5, color: PALETTE.inkSoft }}>{ROLE_LABEL[lang][m.role]}</div>
-                  </div>
-                  <Chip tone={{ bg: hexToRgba(PALETTE.sage, 0.2), fg: PALETTE.terracottaDark, dot: PALETTE.sage }} size={11}>{t('disponivel')}</Chip>
-                </div>
-              ))}
-            </Card>
-          </>
-        )}
+        <Label size={10.5} style={{ marginBottom: 8 }}>{t('estado')}</Label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 8 }}>
+          {Object.entries(LEAD_LABEL[lang]).map(([est, label]) => {
+            const on = l.estado === est
+            const tn = leadTone(est)
+            return (
+              <button key={est} onClick={() => ctx.update('leads', l.id, { estado: est })} style={{
+                fontFamily: 'var(--sans)', fontSize: 12, padding: '7px 13px', borderRadius: 50, cursor: 'pointer',
+                border: `1px solid ${on ? tn.fg : 'rgba(74,63,53,0.16)'}`,
+                background: on ? tn.bg : 'transparent', color: on ? tn.fg : PALETTE.inkSoft, fontWeight: on ? 500 : 400,
+              }}>{label}</button>
+            )
+          })}
+        </div>
       </div>
 
       <div style={{ flexShrink: 0, padding: '12px 18px 30px', background: 'var(--paper-card)', borderTop: '1px solid rgba(74,63,53,0.07)', display: 'flex', gap: 12 }}>
-        <Btn variant="ghost" accent={accent} size="md" icon="chat" onClick={() => ctx.push('conversa', { id: l.id })}>{t('rever')}</Btn>
         <Btn variant="solid" accent={accent} size="md" full icon="arrowR" onClick={() => ctx.openCreate('reserva', {
           initial: { name: l.name, tipo: l.tipo, data_evento: l.data, local: l.local, servicos: l.servicos, convidados: l.convidados, estado: 'proposta' },
           onComplete: async (row, { update }) => { await update('leads', l.id, { estado: 'ganho' }); ctx.pop() },
@@ -97,9 +91,9 @@ export default function LeadScreen({ ctx, params }) {
   )
 }
 
-function ContactBtn({ icon, label, accent, onClick }) {
+function ContactBtn({ icon, label, accent, onClick, disabled }) {
   return (
-    <button onClick={onClick} style={{ flex: 1, background: 'var(--paper-card)', border: '1px solid rgba(74,63,53,0.06)', borderRadius: 16, padding: '14px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, boxShadow: '0 3px 12px rgba(74,63,53,0.04)' }}>
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ flex: 1, background: 'var(--paper-card)', border: '1px solid rgba(74,63,53,0.06)', borderRadius: 16, padding: '14px 8px', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, boxShadow: '0 3px 12px rgba(74,63,53,0.04)' }}>
       <div style={{ width: 38, height: 38, borderRadius: '50%', background: hexToRgba(accent, 0.14), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={icon} size={19} color={accent} stroke={1.7} />
       </div>
