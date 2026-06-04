@@ -135,6 +135,9 @@ export default function ProposalScreen({ ctx, params }) {
           <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12, color: PALETTE.inkSoft }}>{prop.client_name}</div>
         </div>
         <Chip tone={{ bg: hexToRgba(statusTone, 0.16), fg: statusTone, dot: statusTone }} size={11}>{statusLabel}</Chip>
+        <button onClick={async () => { if (window.confirm(lang === 'pt' ? 'Apagar esta proposta?' : 'Delete this proposal?')) { await ctx.remove('proposals', prop.id); ctx.pop() } }} title={lang === 'pt' ? 'Apagar' : 'Delete'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+          <Icon name="x" size={18} color={PALETTE.clay} stroke={2} />
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px 24px' }}>

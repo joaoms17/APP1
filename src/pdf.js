@@ -14,6 +14,12 @@ function ab2b64(buf) {
   for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i])
   return btoa(bin)
 }
+function isFont(buf) {
+  if (!buf || buf.byteLength < 4) return false
+  const h = new Uint8Array(buf.slice(0, 4))
+  const sig = String.fromCharCode(h[0], h[1], h[2], h[3])
+  return (h[0] === 0 && h[1] === 1 && h[2] === 0 && h[3] === 0) || sig === 'OTTO' || sig === 'true' || sig === 'ttcf'
+}
 async function loadFonts() {
   if (FONTS) return FONTS
   const files = {
@@ -24,21 +30,24 @@ async function loadFonts() {
   }
   const out = {}
   await Promise.all(Object.entries(files).map(async ([k, u]) => {
-    try { out[k] = ab2b64(await (await fetch(u)).arrayBuffer()) } catch (_) { out[k] = null }
+    try {
+      const r = await fetch(u)
+      if (!r.ok) { out[k] = null; return }
+      const buf = await r.arrayBuffer()
+      out[k] = isFont(buf) ? ab2b64(buf) : null   // ignore HTML/404 fallbacks
+    } catch (_) { out[k] = null }
   }))
   FONTS = out
   return out
 }
 function setupFonts(doc, f) {
-  const reg = (b64, file, fam, style) => { if (b64) { doc.addFileToVFS(file, b64); doc.addFont(file, fam, style) } }
-  reg(f.corN, 'Cor-N.ttf', 'Cormorant', 'normal')
-  reg(f.corB, 'Cor-B.ttf', 'Cormorant', 'bold')
-  reg(f.jostN, 'Jost-N.ttf', 'Jost', 'normal')
-  reg(f.jostB, 'Jost-B.ttf', 'Jost', 'bold')
-  return {
-    SERIF: f.corN ? 'Cormorant' : 'times',
-    SANS: f.jostN ? 'Jost' : 'helvetica',
+  const reg = (b64, file, fam, style) => {
+    try { if (b64) { doc.addFileToVFS(file, b64); doc.addFont(file, fam, style); return true } } catch (_) {}
+    return false
   }
+  const cor = reg(f.corN, 'Cor-N.ttf', 'Cormorant', 'normal') && reg(f.corB, 'Cor-B.ttf', 'Cormorant', 'bold')
+  const jost = reg(f.jostN, 'Jost-N.ttf', 'Jost', 'normal') && reg(f.jostB, 'Jost-B.ttf', 'Jost', 'bold')
+  return { SERIF: cor ? 'Cormorant' : 'times', SANS: jost ? 'Jost' : 'helvetica' }
 }
 
 async function addLogo(doc, dataUrl, pageW, y) {

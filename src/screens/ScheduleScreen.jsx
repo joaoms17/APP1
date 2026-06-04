@@ -99,6 +99,9 @@ export default function ScheduleScreen({ ctx, params }) {
           <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 12, color: PALETTE.inkSoft }}>{c.kind === 'music' ? (lang === 'pt' ? 'Música' : 'Music') : (lang === 'pt' ? 'Cabelo e Maquilhagem' : 'Hair & Makeup')}</div>
         </div>
         <Chip tone={{ bg: hexToRgba(statusTone, 0.16), fg: statusTone, dot: statusTone }} size={11}>{statusLabel}</Chip>
+        <button onClick={async () => { if (window.confirm(lang === 'pt' ? 'Apagar este cronograma?' : 'Delete this schedule?')) { await ctx.remove('schedules', sch.id); ctx.pop() } }} title={lang === 'pt' ? 'Apagar' : 'Delete'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+          <Icon name="x" size={18} color={PALETTE.clay} stroke={2} />
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 24px' }}>
