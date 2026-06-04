@@ -126,8 +126,8 @@ export const PAY_LABEL = {
   en: { pago: 'Paid', parcial: 'Partially paid', nao_pago: 'Unpaid' },
 }
 export const SERVICE_LABEL = {
-  pt: { makeup: 'Maquilhagem', hair: 'Cabelo', photo: 'Fotografia', dj: 'DJ', music: 'Música ao vivo', planning: 'Wedding planning', video: 'Vídeo' },
-  en: { makeup: 'Makeup', hair: 'Hair', photo: 'Photography', dj: 'DJ', music: 'Live music', planning: 'Wedding planning', video: 'Video' },
+  pt: { makeup: 'Maquilhagem', hair: 'Cabelo', music: 'Música ao vivo' },
+  en: { makeup: 'Makeup', hair: 'Hair', music: 'Live music' },
 }
 export const ROLE_LABEL = {
   pt: { maquilhadora: 'Maquilhadora', cabeleireira: 'Cabeleireira', fotografo: 'Fotógrafo', dj: 'DJ', musico: 'Músico', planner: 'Wedding Planner', assistente: 'Assistente' },
