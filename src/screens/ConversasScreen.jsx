@@ -73,7 +73,16 @@ export function ConversaScreen({ ctx, params }) {
   const { t, lang, accent, conversas } = ctx
   const c = (conversas || []).find((x) => x.id === params.id) || null
   const [showExtract, setShowExtract] = React.useState(false)
-  const [sent, setSent] = React.useState([])
+  const [reply, setReply] = React.useState('')
+  const [sending, setSending] = React.useState(false)
+
+  const doSend = async (txt) => {
+    const body = (txt ?? reply).trim()
+    if (!body || sending) return
+    setSending(true)
+    try { await ctx.sendMessage(c.id, body); setReply('') }
+    finally { setSending(false) }
+  }
 
   if (!c) return (
     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
@@ -108,7 +117,6 @@ export function ConversaScreen({ ctx, params }) {
         {(c.messages || [{ from: 'them', t: c.last, time: c.time }]).map((m, i) => (
           <Bubble key={i} m={m} accent={accent} />
         ))}
-        {sent.map((m, i) => <Bubble key={'s'+i} m={{ from: 'me', t: m, time: 'agora' }} accent={accent} />)}
 
         {c.aiReady && (
           <div style={{ margin: '18px 0 6px' }}>
@@ -155,8 +163,8 @@ export function ConversaScreen({ ctx, params }) {
             <div style={{ background: 'var(--paper-card)', border: `1px dashed ${hexToRgba(PALETTE.sage, 0.6)}`, borderRadius: 16, padding: '13px 15px' }}>
               <div style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13, color: PALETTE.ink, lineHeight: 1.55 }}>{suggestedReply}</div>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                <Btn variant="soft" accent={accent} size="sm">{t('editar')}</Btn>
-                <Btn variant="solid" accent={accent} size="sm" icon="send" onClick={() => setSent(s => [...s, suggestedReply])}>{t('aprovar')}</Btn>
+                <Btn variant="soft" accent={accent} size="sm" onClick={() => setReply(suggestedReply)}>{t('editar')}</Btn>
+                <Btn variant="solid" accent={accent} size="sm" icon="send" onClick={() => doSend(suggestedReply)}>{t('aprovar')}</Btn>
               </div>
             </div>
           </div>
@@ -164,10 +172,14 @@ export function ConversaScreen({ ctx, params }) {
       </div>
 
       <div style={{ flexShrink: 0, padding: '10px 14px 30px', background: 'var(--paper-card)', borderTop: '1px solid rgba(74,63,53,0.07)', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ flex: 1, background: 'var(--paper)', borderRadius: 50, padding: '11px 16px', border: '1px solid rgba(74,63,53,0.08)' }}>
-          <span style={{ fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13.5, color: PALETTE.inkSoft }}>{t('escrever')}</span>
-        </div>
-        <button style={{ width: 44, height: 44, borderRadius: '50%', background: accent, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <input
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); doSend() } }}
+          placeholder={t('escrever')}
+          style={{ flex: 1, background: 'var(--paper)', borderRadius: 50, padding: '12px 16px', border: '1px solid rgba(74,63,53,0.08)', fontFamily: 'var(--sans)', fontWeight: 300, fontSize: 13.5, color: PALETTE.ink, outline: 'none', minWidth: 0 }}
+        />
+        <button onClick={() => doSend()} disabled={!reply.trim() || sending} style={{ width: 44, height: 44, borderRadius: '50%', background: accent, border: 'none', cursor: reply.trim() ? 'pointer' : 'default', opacity: reply.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Icon name="send" size={20} color="#FBF7F0" stroke={1.8} />
         </button>
       </div>

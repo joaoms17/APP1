@@ -175,6 +175,14 @@ export default function App() {
   const update  = async (table, id, patch) => { await updateRow(table, id, patch); await reload() }
   const remove  = async (table, id) => { await deleteRow(table, id); await reload() }
 
+  const sendMessage = async (convId, text) => {
+    const body = (text || '').trim()
+    if (!body) return
+    await insertRow('messages', { conversation_id: convId, from_type: 'me', content: body, time: 'agora' })
+    await updateRow('conversations', convId, { last_message: body, time: 'agora', unread_count: 0 })
+    await reload()
+  }
+
   // Paste WhatsApp text → conversation + messages + AI extract + lead
   const createLeadFromChat = async ({ name, phone, text, fields }) => {
     const convId = genId()
@@ -200,6 +208,7 @@ export default function App() {
     openCreate: (type, opts = {}) => setForm({ type, ...opts }),
     openPayment: (reserva) => setPayFor(reserva),
     openPasteChat: () => setPasteChat(true),
+    sendMessage,
     update, remove, reload,
   }
 
