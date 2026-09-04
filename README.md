@@ -1,87 +1,53 @@
-# Ramo — Operação para equipas de eventos
+# Joana — Agenda & Finanças
 
-App de gestão para hairstylist/maquilhadora de casamentos (leads via WhatsApp, pipeline,
-reservas, agenda, equipa, financeiro, propostas e cronogramas do dia).
+App de gestão do calendário e das finanças da Joana, cobrindo os dois trabalhos:
+**Cabelos/penteados** e **Música** (Banda do Algarve, Oitentamente, Noventamente,
+Tune Up, Gospel e Outros).
 
-Stack: **React + Vite** · **Supabase** (Postgres + Auth + Storage) · PDF no cliente (jsPDF).
+Stack: **React + Vite** · **Supabase** (Postgres + Auth) · **Recharts** (gráficos).
 
----
+## Funcionalidades
 
-## 1. Pré-requisitos
+- **Agenda** — calendário mensal próprio com os eventos coloridos por projeto
+- **Eventos** — cada concerto ou serviço de cabelo com valor, pago/por pagar
+  (+ data de pagamento) e recibo emitido/em falta; filtros de "por receber" e
+  "recibo em falta"
+- **Despesas** — custos por projeto ou gerais, com categoria
+- **Painel** — receita do ano, comparação mês a mês com o ano anterior
+  (ex.: maio vs maio), receita por projeto, receita vs despesa e resumo em tabela
+- **Importar** — carregar o histórico a partir de um CSV (Excel / Google Sheets)
 
-- **Node.js 18+** → https://nodejs.org (ou nvm-windows: https://github.com/coreybutler/nvm-windows)
-- **Git** → https://git-scm.com
-- **Claude Code** → https://docs.anthropic.com/claude-code  (instalar: `npm install -g @anthropic-ai/claude-code`)
-
-## 2. Clonar e arrancar
+## Arrancar
 
 ```bash
-git clone https://github.com/joaoms17/APP1.git
-cd APP1
 npm install
 npm run dev
 ```
 
 Abre **http://localhost:5173**
 
-> As credenciais do Supabase já estão em `src/supabase.js`, por isso liga à mesma base de dados.
-> Para usar OUTRO projeto Supabase, muda `SUPABASE_URL` e `SUPABASE_ANON` nesse ficheiro e corre os SQL abaixo.
+## Configurar a base de dados (uma vez)
 
-## 3. Abrir com Claude Code
+1. No Supabase → **SQL Editor → New query**, cola e corre `supabase/schema.sql`
+   (⚠️ apaga as tabelas da app antiga "Ramo" e cria as novas, já com os projetos).
+2. Em **Authentication → Users → Add user**, cria as duas contas (Joana e João).
+3. Em **Authentication → Sign In / Up**, desativa **Enable sign ups** para mais
+   ninguém se poder registar.
 
-```bash
-cd APP1
-claude
+As credenciais do projeto Supabase estão em `src/supabase.js`.
+
+## Importação de histórico (CSV)
+
+Separador `;` ou `,`, com cabeçalho. Para eventos:
+
+```csv
+data;projeto;titulo;valor;pago;recibo;local
+03/05/2025;Tune Up;Concerto em Faro;350;sim;sim;Faro
+10/05/2025;Cabelos;Casamento M. João;120;sim;nao;Loulé
 ```
 
-## 4. Base de dados (só se for um projeto Supabase NOVO)
+Para despesas: colunas `data;descricao;valor` (+ `projeto` e `categoria` opcionais).
 
-No Supabase → **SQL Editor → New query → Run**, pela ordem:
+## Próximos passos (v2)
 
-1. `supabase/schema.sql` — tabelas base (team, conversations, messages, leads, bookings, agenda…)
-2. `supabase/proposals.sql` — settings, tabela de preços, propostas (+ seed dos exemplos)
-3. `supabase/schedules.sql` — cronogramas do dia
-4. Colunas e Storage extra:
-
-```sql
--- versão enviada das propostas/cronogramas
-alter table proposals add column if not exists sent_content jsonb;
-alter table proposals add column if not exists sent_at timestamptz;
--- logótipos por serviço
-alter table settings  add column if not exists service_logos jsonb default '{}'::jsonb;
--- histórico de PDFs
-alter table proposals add column if not exists pdf_url text;
-alter table schedules add column if not exists pdf_url text;
--- Storage para os PDFs
-insert into storage.buckets (id, name, public) values ('documents','documents', true) on conflict (id) do nothing;
-create policy "documents_read"   on storage.objects for select using (bucket_id = 'documents');
-create policy "documents_insert" on storage.objects for insert with check (bucket_id = 'documents');
-create policy "documents_update" on storage.objects for update using (bucket_id = 'documents');
-```
-
-5. **Auth**: em Authentication → Providers → Email, desativar **"Confirm email"** para entrar logo.
-
-## 5. Build de produção (opcional)
-
-```bash
-npm run build      # gera /dist
-npm run preview    # serve o build localmente
-```
-
----
-
-## Estrutura
-
-```
-src/
-  App.jsx              shell + navegação + estado + CRUD Supabase
-  supabase.js          credenciais + cliente
-  data.jsx             i18n, paleta, loaders, geração de propostas
-  ui.jsx               componentes visuais (Icon, Card, Btn, Avatar…)
-  forms.jsx            modais (criar lead/reserva/equipa, WhatsApp, pagamento)
-  pdf.js               geração de PDF (jsPDF + html2canvas)
-  Auth.jsx             login/registo
-  screens/             Home, Negócios, Reserva, Lead, Agenda, Equipa,
-                       Financeiro, Definições, Proposta, Cronograma
-supabase/              SQL (schema, proposals, schedules)
-```
+- Integração com o Google Calendar (sincronização dos eventos)

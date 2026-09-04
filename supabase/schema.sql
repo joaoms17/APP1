@@ -1,155 +1,93 @@
--- ============================================================
--- RAMO — Supabase Schema
--- Supabase Dashboard → SQL Editor → New query → Run
--- ============================================================
+-- =============================================================
+-- Joana — Agenda & Finanças
+-- Corre este ficheiro no Supabase → SQL Editor → New query → Run
+-- ATENÇÃO: apaga as tabelas da app antiga (Ramo).
+-- =============================================================
 
--- ── TEAM ────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS team (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  role        TEXT NOT NULL,   -- maquilhadora | cabeleireira | fotografo | dj | musico | planner | assistente
-  initials    TEXT NOT NULL,
-  color       TEXT NOT NULL,
-  load_count  INTEGER DEFAULT 0,
-  status      TEXT DEFAULT 'disp'   -- disp | ferias | indisp
+-- 1. Limpar a app antiga -------------------------------------------------
+drop table if exists schedules cascade;
+drop table if exists proposals cascade;
+drop table if exists price_table cascade;
+drop table if exists settings cascade;
+drop table if exists agenda cascade;
+drop table if exists bookings cascade;
+drop table if exists leads cascade;
+drop table if exists messages cascade;
+drop table if exists conversations cascade;
+drop table if exists team cascade;
+
+drop table if exists expenses cascade;
+drop table if exists events cascade;
+drop table if exists projects cascade;
+
+-- 2. Projetos (áreas de trabalho) ---------------------------------------
+create table projects (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  kind       text not null check (kind in ('hair', 'music')),
+  color      text not null,          -- cor usada no calendário e nos gráficos
+  sort_order int  not null default 0,
+  active     boolean not null default true,
+  created_at timestamptz not null default now()
 );
 
--- ── CONVERSATIONS (WhatsApp) ─────────────────────────────────
-CREATE TABLE IF NOT EXISTS conversations (
-  id           TEXT PRIMARY KEY,
-  name         TEXT NOT NULL,
-  initials     TEXT NOT NULL,
-  color        TEXT NOT NULL,
-  last_message TEXT,
-  time         TEXT,
-  unread_count INTEGER DEFAULT 0,
-  ai_ready     BOOLEAN DEFAULT FALSE,
-  phone        TEXT
+-- 3. Eventos (concertos e serviços de cabelo) ---------------------------
+create table events (
+  id             uuid primary key default gen_random_uuid(),
+  project_id     uuid not null references projects(id),
+  title          text not null,
+  event_date     date not null,
+  start_time     time,
+  location       text,
+  value          numeric(10,2) not null default 0,
+  paid           boolean not null default false,
+  paid_at        date,
+  receipt_issued boolean not null default false,
+  notes          text,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
 );
 
--- ── MESSAGES ────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS messages (
-  id              SERIAL PRIMARY KEY,
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE,
-  from_type       TEXT NOT NULL,   -- 'them' | 'me'
-  content         TEXT NOT NULL,
-  time            TEXT
+create index events_date_idx    on events (event_date);
+create index events_project_idx on events (project_id);
+
+-- 4. Despesas ------------------------------------------------------------
+create table expenses (
+  id           uuid primary key default gen_random_uuid(),
+  project_id   uuid references projects(id),   -- opcional: despesa geral se nulo
+  expense_date date not null,
+  description  text not null,
+  amount       numeric(10,2) not null,
+  category     text,
+  created_at   timestamptz not null default now()
 );
 
--- ── AI EXTRACT DATA ──────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS extract_data (
-  id              SERIAL PRIMARY KEY,
-  conversation_id TEXT REFERENCES conversations(id) ON DELETE CASCADE UNIQUE,
-  nome            TEXT,
-  tipo_evento     TEXT,
-  data_evento     TEXT,
-  local           TEXT,
-  servicos        TEXT[],
-  convidados      INTEGER,
-  obs             TEXT
-);
+create index expenses_date_idx on expenses (expense_date);
 
--- ── LEADS (CRM pipeline) ─────────────────────────────────────
-CREATE TABLE IF NOT EXISTS leads (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  initials    TEXT NOT NULL,
-  color       TEXT NOT NULL,
-  estado      TEXT NOT NULL,   -- novo | contactado | qualificacao | proposta | negociacao | ganho | perdido
-  tipo        TEXT,
-  data_evento TEXT,
-  local       TEXT,
-  servicos    TEXT[],
-  convidados  INTEGER,
-  valor       TEXT,
-  origem      TEXT,
-  phone       TEXT,
-  email       TEXT
-);
+-- 5. Seed dos projetos ---------------------------------------------------
+insert into projects (name, kind, color, sort_order) values
+  ('Cabelos',          'hair',  '#2a78d6', 1),
+  ('Banda do Algarve', 'music', '#eb6834', 2),
+  ('Oitentamente',     'music', '#1baf7a', 3),
+  ('Noventamente',     'music', '#eda100', 4),
+  ('Tune Up',          'music', '#e87ba4', 5),
+  ('Gospel',           'music', '#008300', 6),
+  ('Outros',           'music', '#4a3aa7', 7);
 
--- ── BOOKINGS (Reservas) ──────────────────────────────────────
-CREATE TABLE IF NOT EXISTS bookings (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  initials    TEXT NOT NULL,
-  color       TEXT NOT NULL,
-  estado      TEXT NOT NULL,   -- pre | disp | proposta | sinal | confirmada | concluida | cancelada
-  data_evento TEXT NOT NULL,
-  hora        TEXT,
-  local       TEXT,
-  tipo        TEXT,
-  servicos    TEXT[],
-  total       INTEGER DEFAULT 0,
-  sinal       INTEGER DEFAULT 0,
-  pago        INTEGER DEFAULT 0,
-  pay_status  TEXT DEFAULT 'nao_pago',   -- pago | parcial | nao_pago
-  convidados  INTEGER DEFAULT 0,
-  notes       TEXT
-);
+-- 6. Segurança (RLS): só utilizadores autenticados ----------------------
+alter table projects enable row level security;
+alter table events   enable row level security;
+alter table expenses enable row level security;
 
--- ── BOOKING ↔ TEAM (many-to-many) ───────────────────────────
-CREATE TABLE IF NOT EXISTS booking_team (
-  booking_id TEXT REFERENCES bookings(id) ON DELETE CASCADE,
-  team_id    TEXT REFERENCES team(id) ON DELETE CASCADE,
-  PRIMARY KEY (booking_id, team_id)
-);
+create policy "auth read projects"  on projects for select to authenticated using (true);
+create policy "auth write projects" on projects for all    to authenticated using (true) with check (true);
+create policy "auth read events"    on events   for select to authenticated using (true);
+create policy "auth write events"   on events   for all    to authenticated using (true) with check (true);
+create policy "auth read expenses"  on expenses for select to authenticated using (true);
+create policy "auth write expenses" on expenses for all    to authenticated using (true) with check (true);
 
--- ── AGENDA EVENTS ────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS agenda_events (
-  id           TEXT PRIMARY KEY,
-  booking_id   TEXT REFERENCES bookings(id) ON DELETE CASCADE,
-  day          INTEGER,
-  name         TEXT,
-  local        TEXT,
-  team_ids     TEXT[],
-  servicos     TEXT[],
-  has_conflict BOOLEAN DEFAULT FALSE
-);
-
--- ── ROW LEVEL SECURITY ───────────────────────────────────────
-ALTER TABLE team            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE conversations   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE extract_data    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE leads           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bookings        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE booking_team    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agenda_events   ENABLE ROW LEVEL SECURITY;
-
--- Leitura anónima (a app usa a anon key)
-CREATE POLICY "allow_anon_select" ON team           FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON conversations   FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON messages        FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON extract_data    FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON leads           FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON bookings        FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON booking_team    FOR SELECT USING (true);
-CREATE POLICY "allow_anon_select" ON agenda_events   FOR SELECT USING (true);
-
--- Escrita autenticada (service role ou auth futura)
-CREATE POLICY "allow_anon_insert" ON team           FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON conversations   FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON messages        FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON extract_data    FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON leads           FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON bookings        FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON booking_team    FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_insert" ON agenda_events   FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "allow_anon_update" ON team           FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON conversations   FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON messages        FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON extract_data    FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON leads           FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON bookings        FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON booking_team    FOR UPDATE USING (true);
-CREATE POLICY "allow_anon_update" ON agenda_events   FOR UPDATE USING (true);
-
-CREATE POLICY "allow_anon_delete" ON team           FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON conversations   FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON messages        FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON extract_data    FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON leads           FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON bookings        FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON booking_team    FOR DELETE USING (true);
-CREATE POLICY "allow_anon_delete" ON agenda_events   FOR DELETE USING (true);
+-- 7. Contas de utilizador ------------------------------------------------
+-- No painel Supabase → Authentication → Users → "Add user":
+-- cria as contas (email + password) da Joana e do João.
+-- Em Authentication → Sign In / Up, desativa "Enable sign ups"
+-- para mais ninguém se poder registar.
