@@ -11,7 +11,7 @@ export function StoreProvider({ children }) {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [gcalUrl, setGcalUrl] = useState(null)
+  const [gcalCalendars, setGcalCalendars] = useState([])
   const [googleEvents, setGoogleEvents] = useState([])
   const [gcalError, setGcalError] = useState(null)
 
@@ -34,11 +34,11 @@ export function StoreProvider({ children }) {
         if (error) throw error
         setProjects(data)
         await Promise.all([loadEvents(), loadExpenses()])
-        // a tabela settings pode ainda não existir — nunca bloquear a app por isso
+        // a tabela gcal_calendars pode ainda não existir — nunca bloquear a app
         try {
-          const { data: s } = await db.from('settings').select('value').eq('key', 'gcal_ics_url').maybeSingle()
-          if (s?.value) setGcalUrl(s.value)
-        } catch { /* sem settings */ }
+          const { data: g } = await db.from('gcal_calendars').select('*').order('created_at')
+          if (g) setGcalCalendars(g)
+        } catch { /* sem gcal_calendars */ }
       } catch (e) {
         setError(e.message || String(e))
       } finally {
@@ -77,20 +77,28 @@ export function StoreProvider({ children }) {
   }
 
   useEffect(() => {
-    if (!gcalUrl) { setGoogleEvents([]); return }
+    if (gcalCalendars.length === 0) { setGoogleEvents([]); return }
     let alive = true
     setGcalError(null)
-    fetchGoogleEvents(gcalUrl)
-      .then((evs) => { if (alive) setGoogleEvents(evs) })
-      .catch((e) => { if (alive) { setGoogleEvents([]); setGcalError(e.message || String(e)) } })
+    Promise.all(gcalCalendars.map((cal) =>
+      fetchGoogleEvents(cal.url)
+        .then((evs) => evs.map((e) => ({ ...e, project_id: cal.project_id, calendar_id: cal.id })))
+        .catch((e) => { if (alive) setGcalError(e.message || String(e)); return [] })
+    )).then((lists) => { if (alive) setGoogleEvents(lists.flat()) })
     return () => { alive = false }
-  }, [gcalUrl])
+  }, [gcalCalendars])
 
-  const saveGcalUrl = async (url) => {
-    const value = url.trim()
-    const { error } = await db.from('settings').upsert({ key: 'gcal_ics_url', value })
+  const addGcalCalendar = async (url, project_id) => {
+    const { error } = await db.from('gcal_calendars').insert({ url: url.trim(), project_id })
     if (error) throw error
-    setGcalUrl(value || null)
+    const { data } = await db.from('gcal_calendars').select('*').order('created_at')
+    setGcalCalendars(data || [])
+  }
+
+  const removeGcalCalendar = async (id) => {
+    const { error } = await db.from('gcal_calendars').delete().eq('id', id)
+    if (error) throw error
+    setGcalCalendars((cs) => cs.filter((c) => c.id !== id))
   }
 
   const importRows = async (table, rows) => {
@@ -105,7 +113,7 @@ export function StoreProvider({ children }) {
     <Ctx.Provider value={{
       projects, events, expenses, loading, error, projectById,
       saveEvent, deleteEvent, saveExpense, deleteExpense, importRows,
-      gcalUrl, googleEvents, gcalError, saveGcalUrl,
+      gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
     }}>
       {children}
     </Ctx.Provider>

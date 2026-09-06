@@ -224,7 +224,6 @@ body {
 .gdot { background: none !important; border: 1.5px solid var(--muted); }
 .cal-day.sel .gdot { border-color: var(--on-accent); }
 .chip .dot.gdot { width: 9px; height: 9px; }
-.list-item.gcal { cursor: default; }
 .list-item.gcal .title { font-weight: 600; color: var(--ink-2); }
 
 /* Dashboard */

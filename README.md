@@ -44,14 +44,18 @@ O histórico de 2024–2026 (Extras_Joana.xlsx) foi convertido para
 
 ## Google Calendar (só leitura)
 
-Os eventos do Google Calendar aparecem na Agenda como só-leitura (anel oco em
-vez de ponto cheio; não entram nas finanças).
+Cada calendário Google fica ligado a um projeto; os eventos aparecem na Agenda
+como só-leitura (anel oco na cor do projeto) e não entram nas finanças.
+Tocar num evento do Google abre o formulário já preenchido para o registar na
+app; eventos da app do mesmo projeto no mesmo dia escondem o duplicado do
+Google.
 
-1. Corre `supabase/settings.sql` no SQL Editor (uma vez).
-2. No Google Calendar (computador): roda dentada → Definições → escolhe o
-   calendário → **Integrar calendário** → copia o **Endereço secreto em
-   formato iCal**.
-3. Na app: Agenda → botão **Google ⚙** → cola o endereço → Guardar.
+1. Corre `supabase/gcal_calendars.sql` no SQL Editor (uma vez).
+2. No Google Calendar (computador), **na conta dona do calendário**: roda
+   dentada → Definições → o calendário → **Integrar calendário** → copia o
+   **Endereço secreto em formato iCal**.
+3. Na app: Agenda → botão **Google ⚙** → cola o endereço, escolhe o projeto
+   e adiciona. Repete para cada calendário/projeto.
 
 A busca do feed passa por `api/gcal.js` (função Vercel, evita o CORS) e o
 Google atualiza o endereço secreto com algum atraso (minutos a horas).
