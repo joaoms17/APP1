@@ -19,6 +19,7 @@ export default function Auth() {
     <div className="login-wrap">
       <form className="login" onSubmit={submit}>
         <h1>Joana</h1>
+        <div className="hairline" />
         <div className="sub">Agenda &amp; Finanças</div>
         <div className="field">
           <label>Email</label>

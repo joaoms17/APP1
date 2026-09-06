@@ -66,16 +66,18 @@ create table expenses (
 create index expenses_date_idx on expenses (expense_date);
 
 -- 5. Seed dos projetos ---------------------------------------------------
+-- paleta pastel "Rosé Elegante"; a ordem (sort_order) é a ordem validada
+-- para daltonismo nas séries adjacentes dos gráficos — não trocar à toa
 insert into projects (name, kind, color, sort_order) values
-  ('Cabelos',          'hair',  '#2a78d6', 1),
-  ('Banda do Algarve', 'music', '#eb6834', 2),
-  ('Oitentamente',     'music', '#1baf7a', 3),
-  ('Noventamente',     'music', '#eda100', 4),
-  ('Tune Up',          'music', '#e87ba4', 5),
-  ('Gospel',           'music', '#008300', 6),
-  ('Outros',           'music', '#4a3aa7', 7),
-  ('Lady Gaga',        'music', '#e34948', 8),
-  ('Mickael',          'music', '#795548', 9);
+  ('Cabelos',          'hair',  '#d46a8f', 1),
+  ('Noventamente',     'music', '#cf9c3f', 2),
+  ('Banda do Algarve', 'music', '#12a89e', 3),
+  ('Outros',           'music', '#cd7c5a', 4),
+  ('Oitentamente',     'music', '#9c7ed4', 5),
+  ('Gospel',           'music', '#4f9f68', 6),
+  ('Tune Up',          'music', '#6d8ed6', 7),
+  ('Mickael',          'music', '#a49b3f', 8),
+  ('Lady Gaga',        'music', '#c263ac', 9);
 
 -- 6. Segurança (RLS): só utilizadores autenticados ----------------------
 alter table projects enable row level security;

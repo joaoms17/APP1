@@ -75,7 +75,7 @@ export default function Calendar() {
                 {c.day}
                 <span className="dots">
                   {evs.slice(0, 3).map((ev) => (
-                    <i key={ev.id} style={{ background: c.date === selected ? '#fff' : (projectById(ev.project_id)?.color || 'var(--muted)') }} />
+                    <i key={ev.id} style={{ background: c.date === selected ? 'var(--on-accent)' : (projectById(ev.project_id)?.color || 'var(--muted)') }} />
                   ))}
                 </span>
               </button>

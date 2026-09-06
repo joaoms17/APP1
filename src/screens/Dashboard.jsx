@@ -7,11 +7,12 @@ import { useStore } from '../store'
 import { db } from '../supabase'
 import { MONTHS_SHORT, fmtMoney, ymdParts } from '../util'
 
-// paleta validada (dataviz): variantes escuras dos mesmos tons para dark mode
+// paleta pastel "Rosé Elegante", validada (dataviz) nos dois modos;
+// variantes escuras derivadas em OKLCH com contraste >= 3:1 sobre #2c2122
 const DARK_VARIANT = {
-  '#2a78d6': '#3987e5', '#eb6834': '#d95926', '#1baf7a': '#199e70',
-  '#eda100': '#c98500', '#e87ba4': '#d55181', '#008300': '#008300',
-  '#4a3aa7': '#9085e9', '#e34948': '#e66767', '#795548': '#a1887f',
+  '#d46a8f': '#d46a8f', '#cf9c3f': '#ba8826', '#12a89e': '#01a89e',
+  '#cd7c5a': '#cc7956', '#9c7ed4': '#9d7fd5', '#4f9f68': '#56a66f',
+  '#6d8ed6': '#6f90d9', '#a49b3f': '#9e9537', '#c263ac': '#ca6bb4',
 }
 
 const useDark = () => {
@@ -33,12 +34,12 @@ export default function Dashboard() {
   const [year, setYear] = useState(new Date().getFullYear())
 
   const ink = {
-    muted: '#898781',
-    grid: dark ? '#2c2c2a' : '#e1e0d9',
-    surface: dark ? '#1a1a19' : '#fcfcfb',
-    text: dark ? '#ffffff' : '#0b0b0b',
-    s1: dark ? '#3987e5' : '#2a78d6', // ano atual / receita
-    s2: dark ? '#d95926' : '#eb6834', // ano anterior / despesa
+    muted: dark ? '#a68d8a' : '#876c6d',
+    grid: dark ? '#3c2e2e' : '#f1e3dd',
+    surface: dark ? '#2c2122' : '#fffdfb',
+    text: dark ? '#f6ebe8' : '#40292b',
+    s1: dark ? '#d16d84' : '#b45368', // ano atual / receita (accent rosé)
+    s2: dark ? '#6f90d9' : '#6d8ed6', // ano anterior / despesa (azul-pó)
   }
   const projColor = (p) => (dark ? (DARK_VARIANT[p.color] || p.color) : p.color)
 
