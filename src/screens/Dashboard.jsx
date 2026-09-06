@@ -117,22 +117,24 @@ export default function Dashboard() {
 
       <div className="tiles">
         <div className="tile">
-          <div className="label">Receita {year}</div>
+          <div className="label">Receita líquida {year}</div>
           <div className="value">{fmtMoney(totalRev)}</div>
-          {deltaPct !== null && (
-            <div className="delta">{deltaPct >= 0 ? '▲' : '▼'} {Math.abs(deltaPct)}% vs {year - 1}</div>
-          )}
+          <div className="delta">
+            Bruto: <b>{fmtMoney(totalGross)}</b>
+            {deltaPct !== null && <> · {deltaPct >= 0 ? '▲' : '▼'} {Math.abs(deltaPct)}% vs {year - 1}</>}
+          </div>
         </div>
         <div className="tile">
           <div className="label">Despesas {year}</div>
           <div className="value">{fmtMoney(totalExp)}</div>
           {totalGross - totalRev > 0.005 && (
-            <div className="delta">Bruto − Final: {fmtMoney(totalGross - totalRev)}</div>
+            <div className="delta">Recibos/descontos (bruto − líquido): {fmtMoney(totalGross - totalRev)}</div>
           )}
         </div>
         <div className="tile">
-          <div className="label">Saldo {year}</div>
+          <div className="label">Saldo líquido {year}</div>
           <div className={`value ${totalRev - totalExp >= 0 ? 'good' : 'bad'}`}>{fmtMoney(totalRev - totalExp)}</div>
+          <div className="delta">Líquido − despesas</div>
         </div>
         <div className="tile">
           <div className="label">Por receber (total)</div>
@@ -142,7 +144,7 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <h2>Receita mensal — {year} vs {year - 1}</h2>
+        <h2>Receita líquida mensal — {year} vs {year - 1}</h2>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={yoyData}>
             <CartesianGrid stroke={ink.grid} vertical={false} />
@@ -157,14 +159,14 @@ export default function Dashboard() {
           </LineChart>
         </ResponsiveContainer>
         <div className="chart-note">
-          Tracejado = média mensal.
+          Valores líquidos (o que é recebido). Tracejado = média mensal.
           {avgCur !== null && <> {year}: <b>{fmtMoney(avgCur)}</b>{closedMonths < 12 ? ` (${closedMonths} meses fechados)` : ''}.</>}
           {avgPrev !== null && <> {year - 1}: <b>{fmtMoney(avgPrev)}</b>.</>}
         </div>
       </div>
 
       <div className="card">
-        <h2>Receita por projeto — {year}</h2>
+        <h2>Receita líquida por projeto — {year}</h2>
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={projData}>
             <CartesianGrid stroke={ink.grid} vertical={false} />
@@ -199,7 +201,7 @@ export default function Dashboard() {
         <div className="table-scroll">
           <table className="data">
             <thead>
-              <tr><th>Mês</th><th className="num">Bruto</th><th className="num">Final</th><th className="num">Bruto−Final</th><th className="num">{year - 1}</th><th className="num">Despesa</th><th className="num">Saldo</th></tr>
+              <tr><th>Mês</th><th className="num">Bruto</th><th className="num">Líquido</th><th className="num">Bruto−Líq.</th><th className="num">{year - 1}</th><th className="num">Despesa</th><th className="num">Saldo</th></tr>
             </thead>
             <tbody>
               {MONTHS_SHORT.map((m, i) => (

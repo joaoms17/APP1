@@ -104,7 +104,8 @@ body {
   margin: 0 2px;
 }
 .tabbar button.active { color: var(--accent); background: var(--accent-soft); }
-.tabbar .icon { font-size: 20px; line-height: 1; }
+.tabbar .icon { line-height: 0; display: block; }
+.tabbar button.active .icon svg { stroke-width: 2.1; }
 
 .btn {
   background: var(--accent); color: var(--on-accent); border: none;

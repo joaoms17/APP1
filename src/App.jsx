@@ -8,11 +8,40 @@ import Expenses from './screens/Expenses'
 import Dashboard from './screens/Dashboard'
 import './styles.css'
 
+const ic = { width: 21, height: 21, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
+const ICONS = {
+  calendar: (
+    <svg {...ic}>
+      <rect x="3.5" y="5" width="17" height="16" rx="3.5" />
+      <path d="M3.5 10h17M8 2.8v3.4M16 2.8v3.4" />
+      <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  music: (
+    <svg {...ic}>
+      <path d="M9 18.5V6.2c0-.5.35-.93.84-1.02l8-1.6c.63-.13 1.16.35 1.16 1v11.4" />
+      <circle cx="6.5" cy="18.5" r="2.6" />
+      <circle cx="16.5" cy="16" r="2.6" />
+    </svg>
+  ),
+  wallet: (
+    <svg {...ic}>
+      <rect x="3" y="6.5" width="18" height="13" rx="3" />
+      <path d="M3 10h18M7 15h3.5" />
+    </svg>
+  ),
+  chart: (
+    <svg {...ic}>
+      <path d="M4 20h16" />
+      <path d="M7 20v-6.5M12 20V9.5M17 20V5.5" />
+    </svg>
+  ),
+}
 const TABS = [
-  { id: 'calendar', label: 'Agenda', icon: '📅' },
-  { id: 'events', label: 'Eventos', icon: '🎤' },
-  { id: 'expenses', label: 'Despesas', icon: '💸' },
-  { id: 'dashboard', label: 'Painel', icon: '📊' },
+  { id: 'calendar', label: 'Agenda', icon: ICONS.calendar },
+  { id: 'events', label: 'Eventos', icon: ICONS.music },
+  { id: 'expenses', label: 'Despesas', icon: ICONS.wallet },
+  { id: 'dashboard', label: 'Painel', icon: ICONS.chart },
 ]
 
 function Shell() {

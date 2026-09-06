@@ -90,7 +90,7 @@ export default function EventForm({ initial, onClose }) {
             <input inputMode="decimal" value={f.gross_value} onChange={(e) => set('gross_value', e.target.value)} placeholder="0,00" />
           </div>
           <div className="field">
-            <label>Valor final (€)</label>
+            <label>Valor líquido (€)</label>
             <input inputMode="decimal" value={f.value} onChange={(e) => set('value', e.target.value)} placeholder="= bruto" />
           </div>
         </div>
