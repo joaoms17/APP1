@@ -3,9 +3,15 @@ import { useStore } from './store'
 import { todayYMD } from './util'
 
 export default function EventForm({ initial, onClose }) {
-  const { projects, saveEvent, deleteEvent } = useStore()
+  const { projects, activeProjects, saveEvent, deleteEvent } = useStore()
+  // ao editar, o projeto atual do evento aparece mesmo que já esteja inativo
+  const options = (() => {
+    const act = activeProjects()
+    const cur = initial?.project_id && projects.find((p) => p.id === initial.project_id)
+    return cur && !act.some((p) => p.id === cur.id) ? [cur, ...act] : act
+  })()
   const [f, setF] = useState(() => ({
-    project_id: initial?.project_id || projects[0]?.id || '',
+    project_id: initial?.project_id || options[0]?.id || '',
     title: initial?.title || '',
     event_date: initial?.event_date || todayYMD(),
     start_time: initial?.start_time || '',
@@ -63,7 +69,7 @@ export default function EventForm({ initial, onClose }) {
         <div className="field">
           <label>Projeto</label>
           <select value={f.project_id} onChange={(e) => set('project_id', e.target.value)} required>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {options.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div className="field">

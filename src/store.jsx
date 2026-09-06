@@ -30,7 +30,7 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        const { data, error } = await db.from('projects').select('*').eq('active', true).order('sort_order')
+        const { data, error } = await db.from('projects').select('*').order('sort_order')
         if (error) throw error
         setProjects(data)
         await Promise.all([loadEvents(), loadExpenses()])
@@ -101,6 +101,26 @@ export function StoreProvider({ children }) {
     setGcalCalendars((cs) => cs.filter((c) => c.id !== id))
   }
 
+  const loadProjects = useCallback(async () => {
+    const { data, error } = await db.from('projects').select('*').order('sort_order')
+    if (error) throw error
+    setProjects(data)
+  }, [])
+
+  const saveProject = async (p) => {
+    const { error } = p.id
+      ? await db.from('projects').update(p).eq('id', p.id)
+      : await db.from('projects').insert(p)
+    if (error) throw error
+    await loadProjects()
+  }
+
+  const deleteProject = async (id) => {
+    const { error } = await db.from('projects').delete().eq('id', id)
+    if (error) throw error
+    await loadProjects()
+  }
+
   const importRows = async (table, rows) => {
     const { error } = await db.from(table).insert(rows)
     if (error) throw error
@@ -109,10 +129,17 @@ export function StoreProvider({ children }) {
 
   const projectById = (id) => projects.find((p) => p.id === id)
 
+  // projetos escolhíveis para eventos novos: ativos e dentro do período
+  const activeProjects = (yearRef = new Date().getFullYear()) => projects.filter((p) =>
+    p.active !== false
+    && (p.active_from == null || p.active_from <= yearRef)
+    && (p.active_to == null || p.active_to >= yearRef))
+
   return (
     <Ctx.Provider value={{
-      projects, events, expenses, loading, error, projectById,
+      projects, events, expenses, loading, error, projectById, activeProjects,
       saveEvent, deleteEvent, saveExpense, deleteExpense, importRows,
+      saveProject, deleteProject,
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
     }}>
       {children}

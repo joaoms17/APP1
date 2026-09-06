@@ -139,6 +139,17 @@ body {
 .field textarea { resize: vertical; min-height: 60px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatch {
+  width: 30px; height: 30px; border-radius: 15px; border: none; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+.swatch.sel { outline: 3px solid var(--accent-soft); box-shadow: 0 0 0 2px var(--accent); }
+.swatches input[type="color"] {
+  width: 34px; height: 34px; padding: 0; border: 1px dashed var(--line);
+  border-radius: 17px; background: none; cursor: pointer;
+}
+
 .check {
   display: flex; align-items: center; gap: 8px; padding: 10px 0;
   font-size: 15px; cursor: pointer;

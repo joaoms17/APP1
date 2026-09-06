@@ -6,6 +6,7 @@ import Calendar from './screens/Calendar'
 import Events from './screens/Events'
 import Expenses from './screens/Expenses'
 import Dashboard from './screens/Dashboard'
+import Projects from './screens/Projects'
 import './styles.css'
 
 const ic = { width: 21, height: 21, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -36,12 +37,19 @@ const ICONS = {
       <path d="M7 20v-6.5M12 20V9.5M17 20V5.5" />
     </svg>
   ),
+  gear: (
+    <svg {...ic}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8" />
+    </svg>
+  ),
 }
 const TABS = [
   { id: 'calendar', label: 'Agenda', icon: ICONS.calendar },
   { id: 'events', label: 'Eventos', icon: ICONS.music },
   { id: 'expenses', label: 'Despesas', icon: ICONS.wallet },
   { id: 'dashboard', label: 'Painel', icon: ICONS.chart },
+  { id: 'projects', label: 'Projetos', icon: ICONS.gear },
 ]
 
 function Shell() {
@@ -65,6 +73,7 @@ function Shell() {
       {tab === 'events' && <Events />}
       {tab === 'expenses' && <Expenses />}
       {tab === 'dashboard' && <Dashboard />}
+      {tab === 'projects' && <Projects />}
       <nav className="tabbar">
         {TABS.map((t) => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>

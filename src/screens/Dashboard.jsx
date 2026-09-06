@@ -70,7 +70,6 @@ export default function Dashboard() {
   const totalRevPrev = sum(revByMonth.rev[year - 1])
   const totalExp = sum(revByMonth.exp[year])
   const unpaid = sum(events.filter((e) => !e.paid).map((e) => Number(e.value)))
-  const noReceipt = events.filter((e) => e.paid && !e.receipt_issued).length
 
   const yoyData = MONTHS_SHORT.map((name, i) => ({
     name, [year]: revByMonth.rev[year][i], [year - 1]: revByMonth.rev[year - 1][i],
@@ -139,7 +138,6 @@ export default function Dashboard() {
         <div className="tile">
           <div className="label">Por receber (total)</div>
           <div className="value bad">{fmtMoney(unpaid)}</div>
-          {noReceipt > 0 && <div className="delta">⚠ {noReceipt} pago(s) sem recibo</div>}
         </div>
       </div>
 
@@ -174,7 +172,7 @@ export default function Dashboard() {
             <YAxis {...axis} width={44} />
             <Tooltip {...tipStyle} cursor={{ fill: ink.grid, opacity: 0.4 }} />
             <Legend {...legendStyle} />
-            {projects.map((p) => (
+            {projects.filter((p) => revByMonth.byProj.some((m) => m[p.name] > 0)).map((p) => (
               <Bar key={p.id} dataKey={p.name} stackId="a" fill={projColor(p)} stroke={ink.surface} strokeWidth={1} />
             ))}
           </BarChart>

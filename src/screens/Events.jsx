@@ -13,7 +13,6 @@ export default function Events() {
     if (projFilter !== 'all' && ev.project_id !== projFilter) return false
     if (stateFilter === 'unpaid' && ev.paid) return false
     if (stateFilter === 'paid' && !ev.paid) return false
-    if (stateFilter === 'noreceipt' && ev.receipt_issued) return false
     return true
   }), [events, projFilter, stateFilter])
 
@@ -52,7 +51,6 @@ export default function Events() {
           <option value="all">Todos os estados</option>
           <option value="unpaid">Por receber</option>
           <option value="paid">Pagos</option>
-          <option value="noreceipt">Recibo em falta</option>
         </select>
       </div>
 
@@ -77,7 +75,7 @@ export default function Events() {
                     <div className="amount">{fmtMoney(ev.value)}</div>
                     <div className="badges">
                       <span className={`badge ${ev.paid ? 'ok' : 'pend'}`}>{ev.paid ? 'Pago' : 'Por pagar'}</span>
-                      <span className={`badge ${ev.receipt_issued ? 'ok' : 'pend'}`}>{ev.receipt_issued ? 'Recibo ✓' : 'S/ recibo'}</span>
+                      {ev.receipt_issued && <span className="badge ok">Recibo ✓</span>}
                     </div>
                   </div>
                 </div>
