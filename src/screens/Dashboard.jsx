@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, BarChart, Bar, LineChart, Line, ReferenceLine,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import { useStore } from '../store'
 import { db } from '../supabase'
@@ -87,6 +88,14 @@ export default function Dashboard() {
   const legendStyle = { wrapperStyle: { fontSize: 12, color: ink.text } }
   const deltaPct = totalRevPrev > 0 ? Math.round(((totalRev - totalRevPrev) / totalRevPrev) * 100) : null
 
+  // média mensal: no ano corrente só contam os meses já fechados
+  const now2 = new Date()
+  const closedMonths = year > now2.getFullYear() ? 0
+    : year === now2.getFullYear() ? now2.getMonth()
+    : 12
+  const avgCur = closedMonths > 0 ? sum(revByMonth.rev[year].slice(0, closedMonths)) / closedMonths : null
+  const avgPrev = totalRevPrev > 0 ? totalRevPrev / 12 : null
+
   return (
     <>
       <div className="topbar">
@@ -134,17 +143,23 @@ export default function Dashboard() {
       <div className="card">
         <h2>Receita mensal — {year} vs {year - 1}</h2>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={yoyData} barGap={2}>
+          <LineChart data={yoyData}>
             <CartesianGrid stroke={ink.grid} vertical={false} />
             <XAxis dataKey="name" {...axis} />
             <YAxis {...axis} width={44} />
-            <Tooltip {...tipStyle} cursor={{ fill: ink.grid, opacity: 0.4 }} />
+            <Tooltip {...tipStyle} cursor={{ stroke: ink.muted, strokeDasharray: '3 3' }} />
             <Legend {...legendStyle} />
-            <Bar dataKey={year} fill={ink.s1} radius={[4, 4, 0, 0]} />
-            <Bar dataKey={year - 1} fill={ink.s2} radius={[4, 4, 0, 0]} />
-          </BarChart>
+            {avgCur !== null && <ReferenceLine y={avgCur} stroke={ink.s1} strokeDasharray="5 4" strokeOpacity={0.7} />}
+            {avgPrev !== null && <ReferenceLine y={avgPrev} stroke={ink.s2} strokeDasharray="5 4" strokeOpacity={0.7} />}
+            <Line type="monotone" dataKey={year} stroke={ink.s1} strokeWidth={2} dot={{ r: 3, fill: ink.s1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey={year - 1} stroke={ink.s2} strokeWidth={2} dot={{ r: 3, fill: ink.s2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+          </LineChart>
         </ResponsiveContainer>
-        <div className="chart-note">Compara cada mês com o mês homólogo do ano anterior.</div>
+        <div className="chart-note">
+          Tracejado = média mensal.
+          {avgCur !== null && <> {year}: <b>{fmtMoney(avgCur)}</b>{closedMonths < 12 ? ` (${closedMonths} meses fechados)` : ''}.</>}
+          {avgPrev !== null && <> {year - 1}: <b>{fmtMoney(avgPrev)}</b>.</>}
+        </div>
       </div>
 
       <div className="card">
