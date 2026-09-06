@@ -9,13 +9,13 @@ Stack: **React + Vite** · **Supabase** (Postgres + Auth) · **Recharts** (gráf
 ## Funcionalidades
 
 - **Agenda** — calendário mensal próprio com os eventos coloridos por projeto
-- **Eventos** — cada concerto ou serviço de cabelo com valor, pago/por pagar
-  (+ data de pagamento) e recibo emitido/em falta; filtros de "por receber" e
-  "recibo em falta"
+- **Eventos** — cada concerto ou serviço de cabelo com valor bruto e valor final
+  (o recebido, depois de recibo/descontos), pago/por pagar (+ data de pagamento)
+  e recibo emitido/em falta; filtros de "por receber" e "recibo em falta"
 - **Despesas** — custos por projeto ou gerais, com categoria
 - **Painel** — receita do ano, comparação mês a mês com o ano anterior
-  (ex.: maio vs maio), receita por projeto, receita vs despesa e resumo em tabela
-- **Importar** — carregar o histórico a partir de um CSV (Excel / Google Sheets)
+  (ex.: maio vs maio), receita por projeto, receita vs despesa, Bruto−Final
+  por mês/ano e resumo em tabela
 
 ## Arrancar
 
@@ -36,17 +36,11 @@ Abre **http://localhost:5173**
 
 As credenciais do projeto Supabase estão em `src/supabase.js`.
 
-## Importação de histórico (CSV)
+## Histórico
 
-Separador `;` ou `,`, com cabeçalho. Para eventos:
-
-```csv
-data;projeto;titulo;valor;pago;recibo;local
-03/05/2025;Tune Up;Concerto em Faro;350;sim;sim;Faro
-10/05/2025;Cabelos;Casamento M. João;120;sim;nao;Loulé
-```
-
-Para despesas: colunas `data;descricao;valor` (+ `projeto` e `categoria` opcionais).
+O histórico de 2024–2026 (Extras_Joana.xlsx) foi convertido para
+`supabase/import_historico.sql` — corre-o uma vez no SQL Editor, depois do
+`schema.sql`.
 
 ## Próximos passos (v2)
 

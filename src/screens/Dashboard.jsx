@@ -10,7 +10,7 @@ import { MONTHS_SHORT, fmtMoney, ymdParts } from '../util'
 const DARK_VARIANT = {
   '#2a78d6': '#3987e5', '#eb6834': '#d95926', '#1baf7a': '#199e70',
   '#eda100': '#c98500', '#e87ba4': '#d55181', '#008300': '#008300',
-  '#4a3aa7': '#9085e9', '#e34948': '#e66767',
+  '#4a3aa7': '#9085e9', '#e34948': '#e66767', '#795548': '#a1887f',
 }
 
 const useDark = () => {
@@ -44,12 +44,14 @@ export default function Dashboard() {
   const revByMonth = useMemo(() => {
     const mk = () => Array(12).fill(0)
     const rev = { [year]: mk(), [year - 1]: mk() }
+    const gross = mk()
     const exp = { [year]: mk() }
     const byProj = Array.from({ length: 12 }, () => ({}))
     for (const ev of events) {
       const { year: y, month: m } = ymdParts(ev.event_date)
       if (rev[y]) rev[y][m] += Number(ev.value)
       if (y === year) {
+        gross[m] += Number(ev.gross_value ?? ev.value)
         const p = projects.find((pr) => pr.id === ev.project_id)
         if (p) byProj[m][p.name] = (byProj[m][p.name] || 0) + Number(ev.value)
       }
@@ -58,10 +60,11 @@ export default function Dashboard() {
       const { year: y, month: m } = ymdParts(ex.expense_date)
       if (exp[y]) exp[y][m] += Number(ex.amount)
     }
-    return { rev, exp, byProj }
+    return { rev, gross, exp, byProj }
   }, [events, expenses, projects, year])
 
   const totalRev = sum(revByMonth.rev[year])
+  const totalGross = sum(revByMonth.gross)
   const totalRevPrev = sum(revByMonth.rev[year - 1])
   const totalExp = sum(revByMonth.exp[year])
   const unpaid = sum(events.filter((e) => !e.paid).map((e) => Number(e.value)))
@@ -113,6 +116,9 @@ export default function Dashboard() {
         <div className="tile">
           <div className="label">Despesas {year}</div>
           <div className="value">{fmtMoney(totalExp)}</div>
+          {totalGross - totalRev > 0.005 && (
+            <div className="delta">Bruto − Final: {fmtMoney(totalGross - totalRev)}</div>
+          )}
         </div>
         <div className="tile">
           <div className="label">Saldo {year}</div>
@@ -177,18 +183,29 @@ export default function Dashboard() {
         <div className="table-scroll">
           <table className="data">
             <thead>
-              <tr><th>Mês</th><th className="num">Receita</th><th className="num">{year - 1}</th><th className="num">Despesa</th><th className="num">Saldo</th></tr>
+              <tr><th>Mês</th><th className="num">Bruto</th><th className="num">Final</th><th className="num">Bruto−Final</th><th className="num">{year - 1}</th><th className="num">Despesa</th><th className="num">Saldo</th></tr>
             </thead>
             <tbody>
               {MONTHS_SHORT.map((m, i) => (
                 <tr key={m}>
                   <td>{m}</td>
+                  <td className="num">{fmtMoney(revByMonth.gross[i])}</td>
                   <td className="num">{fmtMoney(revByMonth.rev[year][i])}</td>
+                  <td className="num">{fmtMoney(revByMonth.gross[i] - revByMonth.rev[year][i])}</td>
                   <td className="num">{fmtMoney(revByMonth.rev[year - 1][i])}</td>
                   <td className="num">{fmtMoney(revByMonth.exp[year][i])}</td>
                   <td className="num">{fmtMoney(revByMonth.rev[year][i] - revByMonth.exp[year][i])}</td>
                 </tr>
               ))}
+              <tr style={{ fontWeight: 700 }}>
+                <td>Total</td>
+                <td className="num">{fmtMoney(totalGross)}</td>
+                <td className="num">{fmtMoney(totalRev)}</td>
+                <td className="num">{fmtMoney(totalGross - totalRev)}</td>
+                <td className="num">{fmtMoney(totalRevPrev)}</td>
+                <td className="num">{fmtMoney(totalExp)}</td>
+                <td className="num">{fmtMoney(totalRev - totalExp)}</td>
+              </tr>
             </tbody>
           </table>
         </div>

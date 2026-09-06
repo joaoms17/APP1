@@ -6,7 +6,6 @@ import Calendar from './screens/Calendar'
 import Events from './screens/Events'
 import Expenses from './screens/Expenses'
 import Dashboard from './screens/Dashboard'
-import ImportCsv from './screens/ImportCsv'
 import './styles.css'
 
 const TABS = [
@@ -14,7 +13,6 @@ const TABS = [
   { id: 'events', label: 'Eventos', icon: '🎤' },
   { id: 'expenses', label: 'Despesas', icon: '💸' },
   { id: 'dashboard', label: 'Painel', icon: '📊' },
-  { id: 'import', label: 'Importar', icon: '⬆️' },
 ]
 
 function Shell() {
@@ -38,7 +36,6 @@ function Shell() {
       {tab === 'events' && <Events />}
       {tab === 'expenses' && <Expenses />}
       {tab === 'dashboard' && <Dashboard />}
-      {tab === 'import' && <ImportCsv />}
       <nav className="tabbar">
         {TABS.map((t) => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>

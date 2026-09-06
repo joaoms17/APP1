@@ -10,6 +10,7 @@ export default function EventForm({ initial, onClose }) {
     event_date: initial?.event_date || todayYMD(),
     start_time: initial?.start_time || '',
     location: initial?.location || '',
+    gross_value: initial?.gross_value ?? initial?.value ?? '',
     value: initial?.value ?? '',
     paid: initial?.paid || false,
     paid_at: initial?.paid_at || '',
@@ -23,6 +24,9 @@ export default function EventForm({ initial, onClose }) {
   const submit = async (e) => {
     e.preventDefault()
     setBusy(true); setErr(null)
+    const gross = Number(String(f.gross_value).replace(',', '.')) || 0
+    // sem valor final indicado, o que a Joana recebe é o próprio bruto
+    const final = Number(String(f.value).replace(',', '.')) || gross
     try {
       await saveEvent({
         ...(initial?.id ? { id: initial.id } : {}),
@@ -31,7 +35,8 @@ export default function EventForm({ initial, onClose }) {
         event_date: f.event_date,
         start_time: f.start_time || null,
         location: f.location.trim() || null,
-        value: Number(String(f.value).replace(',', '.')) || 0,
+        gross_value: gross || final,
+        value: final,
         paid: f.paid,
         paid_at: f.paid ? (f.paid_at || todayYMD()) : null,
         receipt_issued: f.receipt_issued,
@@ -75,14 +80,18 @@ export default function EventForm({ initial, onClose }) {
             <input type="time" value={f.start_time || ''} onChange={(e) => set('start_time', e.target.value)} />
           </div>
         </div>
+        <div className="field">
+          <label>Local</label>
+          <input value={f.location} onChange={(e) => set('location', e.target.value)} />
+        </div>
         <div className="row2">
           <div className="field">
-            <label>Local</label>
-            <input value={f.location} onChange={(e) => set('location', e.target.value)} />
+            <label>Valor bruto (€)</label>
+            <input inputMode="decimal" value={f.gross_value} onChange={(e) => set('gross_value', e.target.value)} placeholder="0,00" />
           </div>
           <div className="field">
-            <label>Valor (€)</label>
-            <input inputMode="decimal" value={f.value} onChange={(e) => set('value', e.target.value)} placeholder="0,00" />
+            <label>Valor final (€)</label>
+            <input inputMode="decimal" value={f.value} onChange={(e) => set('value', e.target.value)} placeholder="= bruto" />
           </div>
         </div>
         <label className="check">

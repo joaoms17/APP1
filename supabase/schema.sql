@@ -39,7 +39,8 @@ create table events (
   event_date     date not null,
   start_time     time,
   location       text,
-  value          numeric(10,2) not null default 0,
+  gross_value    numeric(10,2),          -- valor bruto acordado
+  value          numeric(10,2) not null default 0,  -- valor final (o que é recebido)
   paid           boolean not null default false,
   paid_at        date,
   receipt_issued boolean not null default false,
@@ -72,7 +73,9 @@ insert into projects (name, kind, color, sort_order) values
   ('Noventamente',     'music', '#eda100', 4),
   ('Tune Up',          'music', '#e87ba4', 5),
   ('Gospel',           'music', '#008300', 6),
-  ('Outros',           'music', '#4a3aa7', 7);
+  ('Outros',           'music', '#4a3aa7', 7),
+  ('Lady Gaga',        'music', '#e34948', 8),
+  ('Mickael',          'music', '#795548', 9);
 
 -- 6. Segurança (RLS): só utilizadores autenticados ----------------------
 alter table projects enable row level security;
