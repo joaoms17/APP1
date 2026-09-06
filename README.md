@@ -42,6 +42,20 @@ O histórico de 2024–2026 (Extras_Joana.xlsx) foi convertido para
 `supabase/import_historico.sql` — corre-o uma vez no SQL Editor, depois do
 `schema.sql`.
 
+## Google Calendar (só leitura)
+
+Os eventos do Google Calendar aparecem na Agenda como só-leitura (anel oco em
+vez de ponto cheio; não entram nas finanças).
+
+1. Corre `supabase/settings.sql` no SQL Editor (uma vez).
+2. No Google Calendar (computador): roda dentada → Definições → escolhe o
+   calendário → **Integrar calendário** → copia o **Endereço secreto em
+   formato iCal**.
+3. Na app: Agenda → botão **Google ⚙** → cola o endereço → Guardar.
+
+A busca do feed passa por `api/gcal.js` (função Vercel, evita o CORS) e o
+Google atualiza o endereço secreto com algum atraso (minutos a horas).
+
 ## Próximos passos (v2)
 
-- Integração com o Google Calendar (sincronização dos eventos)
+- Criar/editar eventos diretamente no Google Calendar (OAuth)

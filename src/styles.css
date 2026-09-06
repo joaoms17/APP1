@@ -220,6 +220,13 @@ body {
 .cal-day .dots { display: flex; gap: 2px; height: 5px; }
 .cal-day .dots i { width: 5px; height: 5px; border-radius: 3px; }
 
+/* eventos vindos do Google Calendar: anel oco em vez de ponto cheio */
+.gdot { background: none !important; border: 1.5px solid var(--muted); }
+.cal-day.sel .gdot { border-color: var(--on-accent); }
+.chip .dot.gdot { width: 9px; height: 9px; }
+.list-item.gcal { cursor: default; }
+.list-item.gcal .title { font-weight: 600; color: var(--ink-2); }
+
 /* Dashboard */
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
 .tile {

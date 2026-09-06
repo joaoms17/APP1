@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { db } from './supabase'
+import { fetchGoogleEvents } from './gcal'
 
 const Ctx = createContext(null)
 export const useStore = () => useContext(Ctx)
@@ -10,6 +11,9 @@ export function StoreProvider({ children }) {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [gcalUrl, setGcalUrl] = useState(null)
+  const [googleEvents, setGoogleEvents] = useState([])
+  const [gcalError, setGcalError] = useState(null)
 
   const loadEvents = useCallback(async () => {
     const { data, error } = await db.from('events').select('*').order('event_date', { ascending: false })
@@ -30,6 +34,11 @@ export function StoreProvider({ children }) {
         if (error) throw error
         setProjects(data)
         await Promise.all([loadEvents(), loadExpenses()])
+        // a tabela settings pode ainda não existir — nunca bloquear a app por isso
+        try {
+          const { data: s } = await db.from('settings').select('value').eq('key', 'gcal_ics_url').maybeSingle()
+          if (s?.value) setGcalUrl(s.value)
+        } catch { /* sem settings */ }
       } catch (e) {
         setError(e.message || String(e))
       } finally {
@@ -67,6 +76,23 @@ export function StoreProvider({ children }) {
     await loadExpenses()
   }
 
+  useEffect(() => {
+    if (!gcalUrl) { setGoogleEvents([]); return }
+    let alive = true
+    setGcalError(null)
+    fetchGoogleEvents(gcalUrl)
+      .then((evs) => { if (alive) setGoogleEvents(evs) })
+      .catch((e) => { if (alive) { setGoogleEvents([]); setGcalError(e.message || String(e)) } })
+    return () => { alive = false }
+  }, [gcalUrl])
+
+  const saveGcalUrl = async (url) => {
+    const value = url.trim()
+    const { error } = await db.from('settings').upsert({ key: 'gcal_ics_url', value })
+    if (error) throw error
+    setGcalUrl(value || null)
+  }
+
   const importRows = async (table, rows) => {
     const { error } = await db.from(table).insert(rows)
     if (error) throw error
@@ -79,6 +105,7 @@ export function StoreProvider({ children }) {
     <Ctx.Provider value={{
       projects, events, expenses, loading, error, projectById,
       saveEvent, deleteEvent, saveExpense, deleteExpense, importRows,
+      gcalUrl, googleEvents, gcalError, saveGcalUrl,
     }}>
       {children}
     </Ctx.Provider>
