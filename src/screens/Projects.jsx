@@ -6,7 +6,22 @@ import { fmtMoney } from '../util'
 const PRESET_COLORS = ['#d46a8f', '#cf9c3f', '#12a89e', '#cd7c5a', '#9c7ed4', '#4f9f68', '#6d8ed6', '#a49b3f', '#c263ac']
 
 function ProjectForm({ initial, onClose }) {
-  const { saveProject, deleteProject, projects, events } = useStore()
+  const { saveProject, deleteProject, projects, events, gcalCalendars, addGcalCalendar, removeGcalCalendar } = useStore()
+  const [calUrl, setCalUrl] = useState('')
+  const [calErr, setCalErr] = useState(null)
+  const [calBusy, setCalBusy] = useState(false)
+  const myCals = initial?.id ? gcalCalendars.filter((c) => c.project_id === initial.id) : []
+
+  const addCal = async () => {
+    setCalBusy(true); setCalErr(null)
+    try { await addGcalCalendar(calUrl, initial.id); setCalUrl('') }
+    catch (ex) {
+      setCalErr(ex.code === '42P01'
+        ? 'Falta criar a tabela gcal_calendars — corre o supabase/gcal_calendars.sql.'
+        : ex.code === '23505' ? 'Esse calendário já está adicionado.'
+        : (ex.message || String(ex)))
+    } finally { setCalBusy(false) }
+  }
   const [f, setF] = useState(() => ({
     name: initial?.name || '',
     kind: initial?.kind || 'music',
@@ -105,6 +120,33 @@ function ProjectForm({ initial, onClose }) {
           <input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />
           Ativo (aparece ao criar eventos novos)
         </label>
+
+        {initial?.id && (
+          <div className="field" style={{ marginTop: 4 }}>
+            <label>Calendários Google ligados a este projeto</label>
+            {myCals.map((cal) => (
+              <div key={cal.id} className="list-item" style={{ cursor: 'default', padding: '8px 2px' }}>
+                <div className="main"><div className="meta">…{cal.url.slice(-34)}</div></div>
+                <button type="button" className="btn danger" style={{ width: 'auto', padding: '5px 10px', fontSize: 12 }}
+                  disabled={calBusy}
+                  onClick={async () => { setCalBusy(true); setCalErr(null); try { await removeGcalCalendar(cal.id) } catch (ex) { setCalErr(String(ex.message || ex)) } finally { setCalBusy(false) } }}>
+                  Remover
+                </button>
+              </div>
+            ))}
+            {myCals.length === 0 && <div className="chart-note">Nenhum calendário ligado.</div>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input style={{ flex: 1 }} value={calUrl} onChange={(e) => setCalUrl(e.target.value)} inputMode="url"
+                placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" />
+              <button type="button" className="btn secondary" style={{ width: 'auto', padding: '8px 14px' }}
+                onClick={addCal} disabled={calBusy || !calUrl.trim()}>
+                {calBusy ? '…' : 'Ligar'}
+              </button>
+            </div>
+            {calErr && <div className="err">{calErr}</div>}
+          </div>
+        )}
+
         {err && <div className="err">{err}</div>}
         <button className="btn" disabled={busy}>{busy ? 'A guardar…' : 'Guardar'}</button>
         {initial?.id && (
@@ -118,7 +160,7 @@ function ProjectForm({ initial, onClose }) {
 }
 
 export default function Projects() {
-  const { projects, events } = useStore()
+  const { projects, events, gcalCalendars } = useStore()
   const [form, setForm] = useState(null)
   const nowYear = new Date().getFullYear()
 
@@ -154,7 +196,10 @@ export default function Projects() {
               <span className="chip"><span className="dot" style={{ background: p.color, width: 14, height: 14, borderRadius: 7 }} /></span>
               <div className="main">
                 <div className="title">{p.name}</div>
-                <div className="meta">{p.kind === 'hair' ? 'Cabelos' : 'Música'} · {period(p)} · {s.n} evento{s.n === 1 ? '' : 's'}</div>
+                <div className="meta">
+                  {p.kind === 'hair' ? 'Cabelos' : 'Música'} · {period(p)} · {s.n} evento{s.n === 1 ? '' : 's'}
+                  {gcalCalendars.some((c) => c.project_id === p.id) && ' · 📆 Google'}
+                </div>
               </div>
               <div className="amount">{fmtMoney(s.total)}</div>
             </div>
