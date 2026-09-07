@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useStore } from './store'
 import Attachments from './Attachments'
-import ScheduleModal from './Schedule'
 import { fmtDate, fmtMoney, todayYMD } from './util'
 
 function PaymentsSection({ ev }) {
@@ -107,7 +106,6 @@ export default function EventForm({ initial, onClose }) {
   }))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
-  const [schedule, setSchedule] = useState(false)
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }))
 
   const submit = async (e) => {
@@ -181,9 +179,6 @@ export default function EventForm({ initial, onClose }) {
           <>
             <PaymentsSection ev={initial} />
             <Attachments kind="event" id={initial.id} />
-            <button type="button" className="btn secondary" style={{ marginBottom: 12 }} onClick={() => setSchedule(true)}>
-              🗓 Cronograma do dia
-            </button>
           </>
         ) : (
           <>
@@ -214,7 +209,6 @@ export default function EventForm({ initial, onClose }) {
             Apagar
           </button>
         )}
-        {schedule && <ScheduleModal ev={initial} onClose={() => setSchedule(false)} />}
       </form>
     </div>
   )
