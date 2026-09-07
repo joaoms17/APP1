@@ -186,6 +186,22 @@ body {
 .badge.pend { color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, transparent); }
 .badge.mid { color: var(--accent); background: var(--accent-soft); }
 
+/* anexos (fotos de recibos) */
+.attach-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.attach-item { position: relative; }
+.attach-item img, .attach-doc, .attach-add {
+  width: 68px; height: 68px; border-radius: 12px; object-fit: cover;
+  border: 1px solid var(--line); background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+  color: var(--accent); font-family: var(--sans);
+}
+.attach-add { border-style: dashed; font-size: 17px; font-weight: 700; }
+.attach-del {
+  position: absolute; top: -6px; right: -6px;
+  width: 22px; height: 22px; border-radius: 11px; border: none; cursor: pointer;
+  background: var(--critical); color: #fff; font-size: 14px; line-height: 1; padding: 0;
+}
+
 .linkish {
   background: none; border: none; padding: 0; cursor: pointer;
   color: var(--accent); font: inherit; text-decoration: underline;

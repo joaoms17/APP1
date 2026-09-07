@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { db } from './supabase'
 import { fetchGoogleEvents } from './gcal'
+import { compressImage } from './img'
 
 const Ctx = createContext(null)
 export const useStore = () => useContext(Ctx)
@@ -12,6 +13,7 @@ export function StoreProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [payments, setPayments] = useState([])
+  const [attachments, setAttachments] = useState([])
   const [gcalCalendars, setGcalCalendars] = useState([])
   const [googleEvents, setGoogleEvents] = useState([])
   const [gcalError, setGcalError] = useState(null)
@@ -40,13 +42,20 @@ export function StoreProvider({ children }) {
     } catch { /* sem payments */ }
   }, [])
 
+  const loadAttachments = useCallback(async () => {
+    try {
+      const { data } = await db.from('attachments').select('*').order('created_at')
+      setAttachments(data || [])
+    } catch { /* sem attachments */ }
+  }, [])
+
   useEffect(() => {
     (async () => {
       try {
         const { data, error } = await db.from('projects').select('*').order('sort_order')
         if (error) throw error
         setProjects(data)
-        await Promise.all([loadEvents(), loadExpenses(), loadPayments()])
+        await Promise.all([loadEvents(), loadExpenses(), loadPayments(), loadAttachments()])
         // a tabela gcal_calendars pode ainda não existir — nunca bloquear a app
         try {
           const { data: g } = await db.from('gcal_calendars').select('*').order('created_at')
@@ -58,7 +67,7 @@ export function StoreProvider({ children }) {
         setLoading(false)
       }
     })()
-  }, [loadEvents, loadExpenses, loadPayments])
+  }, [loadEvents, loadExpenses, loadPayments, loadAttachments])
 
   // ao voltar à app, refrescar o Google Calendar (com folga de 5 min)
   useEffect(() => {
@@ -124,9 +133,46 @@ export function StoreProvider({ children }) {
     await Promise.all([loadEvents(), loadPayments()])
   }
 
+  // --- anexos (fotos de recibos/faturas) ---------------------------------
+  const attachmentsFor = useCallback((kind, id) =>
+    attachments.filter((a) => a.parent_kind === kind && a.parent_id === id), [attachments])
+
+  const addAttachment = async (kind, id, file) => {
+    const blob = await compressImage(file)
+    const ext = blob.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'bin')
+    const path = `${kind}/${id}/${Date.now()}.${ext}`
+    const { error: upErr } = await db.storage.from('anexos').upload(path, blob, { contentType: blob.type || file.type })
+    if (upErr) throw upErr
+    const { error } = await db.from('attachments').insert({ parent_kind: kind, parent_id: id, path, name: file.name })
+    if (error) throw error
+    await loadAttachments()
+  }
+
+  const deleteAttachment = async (att) => {
+    await db.storage.from('anexos').remove([att.path])
+    const { error } = await db.from('attachments').delete().eq('id', att.id)
+    if (error) throw error
+    await loadAttachments()
+  }
+
+  const attachmentUrl = async (att) => {
+    const { data, error } = await db.storage.from('anexos').createSignedUrl(att.path, 3600)
+    if (error) throw error
+    return data.signedUrl
+  }
+
   // --- apagar com Anular (o registo só sai da base de dados após 6s) ----
   const finalizeUndo = useCallback(async (p) => {
     if (!p) return
+    try {
+      // limpar anexos órfãos antes de apagar o registo
+      const kind = p.kind === 'event' ? 'event' : 'expense'
+      const { data: atts } = await db.from('attachments').select('*').eq('parent_kind', kind).eq('parent_id', p.row.id)
+      if (atts?.length) {
+        await db.storage.from('anexos').remove(atts.map((a) => a.path))
+        await db.from('attachments').delete().eq('parent_kind', kind).eq('parent_id', p.row.id)
+      }
+    } catch { /* tabela de anexos pode não existir */ }
     try {
       await db.from(p.kind === 'event' ? 'events' : 'expenses').delete().eq('id', p.row.id)
     } catch { /* se falhar, o registo reaparece no próximo carregamento */ }
@@ -235,6 +281,7 @@ export function StoreProvider({ children }) {
       saveEvent, deleteEvent, saveExpense, deleteExpense, importRows,
       saveProject, deleteProject,
       paymentsByEvent, paidAmount, paymentState, addPayment, deletePayment,
+      attachmentsFor, addAttachment, deleteAttachment, attachmentUrl,
       pendingUndo, undoDelete,
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
     }}>

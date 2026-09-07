@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
+import Attachments from '../Attachments'
 import { MONTHS, fmtDate, fmtMoney, todayYMD, ymdParts } from '../util'
 
 function ExpenseForm({ initial, onClose }) {
@@ -67,6 +68,7 @@ function ExpenseForm({ initial, onClose }) {
             <input value={f.category} onChange={(e) => set('category', e.target.value)} placeholder="Ex.: Material" />
           </div>
         </div>
+        {initial?.id && <Attachments kind="expense" id={initial.id} />}
         {err && <div className="err">{err}</div>}
         <button className="btn" disabled={busy}>{busy ? 'A guardar…' : 'Guardar'}</button>
         {initial?.id && (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from './store'
+import Attachments from './Attachments'
 import { fmtDate, fmtMoney, todayYMD } from './util'
 
 function PaymentsSection({ ev }) {
@@ -164,7 +165,10 @@ export default function EventForm({ initial, onClose }) {
           </div>
         </div>
         {initial?.id ? (
-          <PaymentsSection ev={initial} />
+          <>
+            <PaymentsSection ev={initial} />
+            <Attachments kind="event" id={initial.id} />
+          </>
         ) : (
           <>
             <label className="check">
