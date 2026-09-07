@@ -1,6 +1,6 @@
 {
-  "name": "ramo",
-  "version": "0.1.0",
+  "name": "joana-gestao",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
+    "ical.js": "^2.2.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

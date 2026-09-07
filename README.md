@@ -1,87 +1,65 @@
-# Ramo — Operação para equipas de eventos
+# Joana — Agenda & Finanças
 
-App de gestão para hairstylist/maquilhadora de casamentos (leads via WhatsApp, pipeline,
-reservas, agenda, equipa, financeiro, propostas e cronogramas do dia).
+App de gestão do calendário e das finanças da Joana, cobrindo os dois trabalhos:
+**Cabelos/penteados** e **Música** (Banda do Algarve, Oitentamente, Noventamente,
+Tune Up, Gospel e Outros).
 
-Stack: **React + Vite** · **Supabase** (Postgres + Auth + Storage) · PDF no cliente (jsPDF).
+Stack: **React + Vite** · **Supabase** (Postgres + Auth) · **Recharts** (gráficos).
 
----
+## Funcionalidades
 
-## 1. Pré-requisitos
+- **Agenda** — calendário mensal próprio com os eventos coloridos por projeto
+- **Eventos** — cada concerto ou serviço de cabelo com valor bruto e valor final
+  (o recebido, depois de recibo/descontos), pago/por pagar (+ data de pagamento)
+  e recibo emitido/em falta; filtros de "por receber" e "recibo em falta"
+- **Despesas** — custos por projeto ou gerais, com categoria
+- **Painel** — receita do ano, comparação mês a mês com o ano anterior
+  (ex.: maio vs maio), receita por projeto, receita vs despesa, Bruto−Final
+  por mês/ano e resumo em tabela
 
-- **Node.js 18+** → https://nodejs.org (ou nvm-windows: https://github.com/coreybutler/nvm-windows)
-- **Git** → https://git-scm.com
-- **Claude Code** → https://docs.anthropic.com/claude-code  (instalar: `npm install -g @anthropic-ai/claude-code`)
-
-## 2. Clonar e arrancar
+## Arrancar
 
 ```bash
-git clone https://github.com/joaoms17/APP1.git
-cd APP1
 npm install
 npm run dev
 ```
 
 Abre **http://localhost:5173**
 
-> As credenciais do Supabase já estão em `src/supabase.js`, por isso liga à mesma base de dados.
-> Para usar OUTRO projeto Supabase, muda `SUPABASE_URL` e `SUPABASE_ANON` nesse ficheiro e corre os SQL abaixo.
+## Configurar a base de dados (uma vez)
 
-## 3. Abrir com Claude Code
+1. No Supabase → **SQL Editor → New query**, cola e corre `supabase/schema.sql`
+   (⚠️ apaga as tabelas da app antiga "Ramo" e cria as novas, já com os projetos).
+2. Em **Authentication → Users → Add user**, cria as duas contas (Joana e João).
+3. Em **Authentication → Sign In / Up**, desativa **Enable sign ups** para mais
+   ninguém se poder registar.
 
-```bash
-cd APP1
-claude
-```
+As credenciais do projeto Supabase estão em `src/supabase.js`.
 
-## 4. Base de dados (só se for um projeto Supabase NOVO)
+## Histórico
 
-No Supabase → **SQL Editor → New query → Run**, pela ordem:
+O histórico de 2024–2026 (Extras_Joana.xlsx) foi convertido para
+`supabase/import_historico.sql` — corre-o uma vez no SQL Editor, depois do
+`schema.sql`.
 
-1. `supabase/schema.sql` — tabelas base (team, conversations, messages, leads, bookings, agenda…)
-2. `supabase/proposals.sql` — settings, tabela de preços, propostas (+ seed dos exemplos)
-3. `supabase/schedules.sql` — cronogramas do dia
-4. Colunas e Storage extra:
+## Google Calendar (só leitura)
 
-```sql
--- versão enviada das propostas/cronogramas
-alter table proposals add column if not exists sent_content jsonb;
-alter table proposals add column if not exists sent_at timestamptz;
--- logótipos por serviço
-alter table settings  add column if not exists service_logos jsonb default '{}'::jsonb;
--- histórico de PDFs
-alter table proposals add column if not exists pdf_url text;
-alter table schedules add column if not exists pdf_url text;
--- Storage para os PDFs
-insert into storage.buckets (id, name, public) values ('documents','documents', true) on conflict (id) do nothing;
-create policy "documents_read"   on storage.objects for select using (bucket_id = 'documents');
-create policy "documents_insert" on storage.objects for insert with check (bucket_id = 'documents');
-create policy "documents_update" on storage.objects for update using (bucket_id = 'documents');
-```
+Cada calendário Google fica ligado a um projeto; os eventos aparecem na Agenda
+como só-leitura (anel oco na cor do projeto) e não entram nas finanças.
+Tocar num evento do Google abre o formulário já preenchido para o registar na
+app; eventos da app do mesmo projeto no mesmo dia escondem o duplicado do
+Google.
 
-5. **Auth**: em Authentication → Providers → Email, desativar **"Confirm email"** para entrar logo.
+1. Corre `supabase/gcal_calendars.sql` no SQL Editor (uma vez).
+2. No Google Calendar (computador), **na conta dona do calendário**: roda
+   dentada → Definições → o calendário → **Integrar calendário** → copia o
+   **Endereço secreto em formato iCal**.
+3. Na app: Agenda → botão **Google ⚙** → cola o endereço, escolhe o projeto
+   e adiciona. Repete para cada calendário/projeto.
 
-## 5. Build de produção (opcional)
+A busca do feed passa por `api/gcal.js` (função Vercel, evita o CORS) e o
+Google atualiza o endereço secreto com algum atraso (minutos a horas).
 
-```bash
-npm run build      # gera /dist
-npm run preview    # serve o build localmente
-```
+## Próximos passos (v2)
 
----
-
-## Estrutura
-
-```
-src/
-  App.jsx              shell + navegação + estado + CRUD Supabase
-  supabase.js          credenciais + cliente
-  data.jsx             i18n, paleta, loaders, geração de propostas
-  ui.jsx               componentes visuais (Icon, Card, Btn, Avatar…)
-  forms.jsx            modais (criar lead/reserva/equipa, WhatsApp, pagamento)
-  pdf.js               geração de PDF (jsPDF + html2canvas)
-  Auth.jsx             login/registo
-  screens/             Home, Negócios, Reserva, Lead, Agenda, Equipa,
-                       Financeiro, Definições, Proposta, Cronograma
-supabase/              SQL (schema, proposals, schedules)
-```
+- Criar/editar eventos diretamente no Google Calendar (OAuth)
