@@ -193,6 +193,8 @@ body {
 .badge.pend { color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, transparent); }
 .badge.mid { color: var(--accent); background: var(--accent-soft); }
 
+.pay-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+
 /* anexos (fotos de recibos) */
 .attach-grid { display: flex; flex-wrap: wrap; gap: 10px; }
 .attach-item { position: relative; }

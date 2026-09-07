@@ -26,16 +26,21 @@ function PaymentsSection({ ev }) {
   }
 
   const add = () => {
-    const a = Number(String(amount || remaining).replace(',', '.'))
+    const a = Number(String(amount).replace(',', '.'))
     if (!a || a <= 0) return
     run(async () => { await addPayment(ev, a, date); setAmount('') })
   }
 
   return (
     <div className="field" style={{ marginTop: 4 }}>
-      <label>
-        Pagamentos — {state === 'paid' ? 'pago ✓' : state === 'partial' ? `parcial (${fmtMoney(got)} de ${fmtMoney(total)})` : 'por receber'}
-      </label>
+      <label>Pagamentos</label>
+      <div className="pay-summary">
+        <span className="badge ok">Já pago: {fmtMoney(got)}</span>
+        {state === 'paid'
+          ? <span className="badge ok">Tudo pago ✓</span>
+          : <span className="badge pend">Falta: {fmtMoney(remaining)}</span>}
+      </div>
+
       {ps.map((p) => (
         <div key={p.id} className="list-item" style={{ cursor: 'default', padding: '7px 2px' }}>
           <div className="main"><div className="meta">{fmtDate(p.paid_at)}</div></div>
@@ -44,6 +49,7 @@ function PaymentsSection({ ev }) {
             disabled={busy} onClick={() => run(() => deletePayment(p, ev))}>×</button>
         </div>
       ))}
+
       {ps.length === 0 && ev.paid && (
         <div className="chart-note">
           Marcado como pago{ev.paid_at ? ` em ${fmtDate(ev.paid_at)}` : ''}.{' '}
@@ -53,15 +59,24 @@ function PaymentsSection({ ev }) {
           </button>
         </div>
       )}
+
       {state !== 'paid' && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input style={{ flex: 1 }} inputMode="decimal" value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder={remaining > 0 ? `${String(remaining).replace('.', ',')} (resto)` : '0,00'} />
-          <input type="date" style={{ flex: 1.2 }} value={date} onChange={(e) => setDate(e.target.value)} />
-          <button type="button" className="btn secondary" style={{ width: 'auto', padding: '8px 12px' }}
-            onClick={add} disabled={busy}>✓ Recebi</button>
-        </div>
+        <>
+          {remaining > 0 && (
+            <button type="button" className="btn secondary" style={{ marginTop: 8 }} disabled={busy}
+              onClick={() => run(async () => { await addPayment(ev, remaining, todayYMD()) })}>
+              ✓ Recebi tudo ({fmtMoney(remaining)})
+            </button>
+          )}
+          <div className="chart-note" style={{ marginTop: 10 }}>…ou registar um sinal / pagamento parcial:</div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+            <input style={{ flex: 1, minWidth: 0 }} inputMode="decimal" value={amount}
+              onChange={(e) => setAmount(e.target.value)} placeholder="Valor (€)" />
+            <input type="date" style={{ flex: 1.2, minWidth: 0 }} value={date} onChange={(e) => setDate(e.target.value)} />
+            <button type="button" className="btn secondary" style={{ width: 'auto', padding: '8px 12px' }}
+              onClick={add} disabled={busy || !amount}>+</button>
+          </div>
+        </>
       )}
       {err && <div className="err">{err}</div>}
     </div>
@@ -146,13 +161,9 @@ export default function EventForm({ initial, onClose }) {
             <input type="date" value={f.event_date} onChange={(e) => set('event_date', e.target.value)} required />
           </div>
           <div className="field">
-            <label>Hora</label>
-            <input type="time" value={f.start_time || ''} onChange={(e) => set('start_time', e.target.value)} />
+            <label>Local</label>
+            <input value={f.location} onChange={(e) => set('location', e.target.value)} />
           </div>
-        </div>
-        <div className="field">
-          <label>Local</label>
-          <input value={f.location} onChange={(e) => set('location', e.target.value)} />
         </div>
         <div className="row2">
           <div className="field">
