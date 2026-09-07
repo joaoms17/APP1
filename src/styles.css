@@ -128,7 +128,8 @@ body {
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
 .field input, .field select, .field textarea {
-  width: 100%; padding: 11px 12px; font-size: 15px; font-family: var(--sans);
+  /* 16px evita o zoom automático do iOS ao focar um campo */
+  width: 100%; padding: 11px 12px; font-size: 16px; font-family: var(--sans);
   border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); color: var(--ink);
 }
