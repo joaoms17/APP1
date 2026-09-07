@@ -104,6 +104,8 @@ body {
   margin: 0 2px;
 }
 .tabbar button.active { color: var(--accent); background: var(--accent-soft); }
+.tabbar button.subtle { opacity: 0.55; flex: 0.7; }
+.tabbar button.subtle.active { opacity: 1; }
 .tabbar .icon { line-height: 0; display: block; }
 .tabbar button.active .icon svg { stroke-width: 2.1; }
 

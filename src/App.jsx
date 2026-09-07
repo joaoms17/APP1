@@ -54,10 +54,10 @@ const ICONS = {
 const TABS = [
   { id: 'calendar', label: 'Agenda', icon: ICONS.calendar },
   { id: 'events', label: 'Eventos', icon: ICONS.music },
-  { id: 'quotes', label: 'Orçamentos', icon: ICONS.doc },
   { id: 'expenses', label: 'Despesas', icon: ICONS.wallet },
   { id: 'dashboard', label: 'Painel', icon: ICONS.chart },
   { id: 'projects', label: 'Projetos', icon: ICONS.gear },
+  { id: 'doc', label: 'Doc', icon: ICONS.doc, subtle: true },
 ]
 
 function Shell() {
@@ -82,7 +82,7 @@ function Shell() {
       {tab === 'expenses' && <Expenses />}
       {tab === 'dashboard' && <Dashboard />}
       {tab === 'projects' && <Projects />}
-      {tab === 'quotes' && <Quotes />}
+      {tab === 'doc' && <Quotes />}
       {pendingUndo && (
         <div className="undo-toast">
           <span>{pendingUndo.kind === 'event' ? 'Evento apagado.' : 'Despesa apagada.'}</span>
@@ -91,7 +91,7 @@ function Shell() {
       )}
       <nav className="tabbar">
         {TABS.map((t) => (
-          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
+          <button key={t.id} className={`${tab === t.id ? 'active' : ''}${t.subtle ? ' subtle' : ''}`} onClick={() => setTab(t.id)}>
             <span className="icon">{t.icon}</span>
             {t.label}
           </button>

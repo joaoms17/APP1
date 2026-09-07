@@ -292,8 +292,8 @@ export default function Quotes() {
     <>
       <div className="topbar">
         <div>
-          <h1>Orçamentos</h1>
-          <div className="sub">Noivas e eventos de cabelos</div>
+          <h1>Documentos</h1>
+          <div className="sub">Orçamentos, preços e brochura</div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button className="btn secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }} onClick={() => setPrices(true)}>Preços</button>
