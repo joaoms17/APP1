@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import EventForm from '../EventForm'
-import { MONTHS, WEEKDAYS, fmtMoney, todayYMD } from '../util'
+import { MONTHS, WEEKDAYS, todayYMD } from '../util'
 
 const pad = (n) => String(n).padStart(2, '0')
 const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`
@@ -191,7 +191,6 @@ export default function Calendar() {
                 </div>
               </div>
               <div>
-                <div className="amount">{fmtMoney(ev.value)}</div>
                 <div className="badges">
                   {(() => {
                     const st = paymentState(ev)
