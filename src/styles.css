@@ -139,6 +139,12 @@ body {
 }
 .field textarea { resize: vertical; min-height: 60px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2 .field { min-width: 0; }
+/* inputs de data/hora do iOS têm largura mínima intrínseca — sem isto
+   transbordam da coluna e sobrepõem-se */
+.field input[type="date"], .field input[type="time"] {
+  min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none;
+}
 
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .swatch {
