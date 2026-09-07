@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import { useStore } from '../store'
 import { db } from '../supabase'
-import { MONTHS_SHORT, fmtMoney, ymdParts } from '../util'
+import { MONTHS_SHORT, fmtMoney, todayYMD, ymdParts } from '../util'
 
 // paleta pastel "Rosé Elegante", validada (dataviz) nos dois modos;
 // variantes escuras derivadas em OKLCH com contraste >= 3:1 sobre #2c2122
@@ -69,7 +69,10 @@ export default function Dashboard() {
   const totalGross = sum(revByMonth.gross)
   const totalRevPrev = sum(revByMonth.rev[year - 1])
   const totalExp = sum(revByMonth.exp[year])
-  const unpaid = sum(events.map((e) => Math.max(0, Number(e.value) - paidAmount(e))))
+  // por receber: só eventos já ocorridos — os futuros ainda não são devidos
+  const today = todayYMD()
+  const unpaid = sum(events.filter((e) => e.event_date <= today)
+    .map((e) => Math.max(0, Number(e.value) - paidAmount(e))))
 
   const yoyData = MONTHS_SHORT.map((name, i) => ({
     name, [year]: revByMonth.rev[year][i], [year - 1]: revByMonth.rev[year - 1][i],
@@ -136,8 +139,9 @@ export default function Dashboard() {
           <div className="delta">Líquido − despesas</div>
         </div>
         <div className="tile">
-          <div className="label">Por receber (total)</div>
+          <div className="label">Por receber (até hoje)</div>
           <div className="value bad">{fmtMoney(unpaid)}</div>
+          <div className="delta">Só eventos já realizados</div>
         </div>
       </div>
 
