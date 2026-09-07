@@ -48,12 +48,17 @@ export default function Dashboard() {
     const rev = { [year]: mk(), [year - 1]: mk() }
     const gross = mk()
     const exp = { [year]: mk() }
+    const paid = mk()
+    const unpaid = mk()
     const byProj = Array.from({ length: 12 }, () => ({}))
     for (const ev of events) {
       const { year: y, month: m } = ymdParts(ev.event_date)
       if (rev[y]) rev[y][m] += Number(ev.value)
       if (y === year) {
         gross[m] += Number(ev.gross_value ?? ev.value)
+        const got = paidAmount(ev)
+        paid[m] += Math.min(Number(ev.value), got)
+        unpaid[m] += Math.max(0, Number(ev.value) - got)
         const p = projects.find((pr) => pr.id === ev.project_id)
         if (p) byProj[m][p.name] = (byProj[m][p.name] || 0) + Number(ev.value)
       }
@@ -62,8 +67,8 @@ export default function Dashboard() {
       const { year: y, month: m } = ymdParts(ex.expense_date)
       if (exp[y]) exp[y][m] += Number(ex.amount)
     }
-    return { rev, gross, exp, byProj }
-  }, [events, expenses, projects, year])
+    return { rev, gross, exp, paid, unpaid, byProj }
+  }, [events, expenses, projects, year, paidAmount])
 
   const totalRev = sum(revByMonth.rev[year])
   const totalGross = sum(revByMonth.gross)
@@ -75,7 +80,10 @@ export default function Dashboard() {
     .map((e) => Math.max(0, Number(e.value) - paidAmount(e))))
 
   const yoyData = MONTHS_SHORT.map((name, i) => ({
-    name, [year]: revByMonth.rev[year][i], [year - 1]: revByMonth.rev[year - 1][i],
+    name,
+    [`${year} pago`]: revByMonth.paid[i],
+    [`${year} por pagar`]: revByMonth.unpaid[i],
+    [year - 1]: revByMonth.rev[year - 1][i],
   }))
   const projData = MONTHS_SHORT.map((name, i) => ({ name, ...revByMonth.byProj[i] }))
   const balData = MONTHS_SHORT.map((name, i) => ({
@@ -156,12 +164,13 @@ export default function Dashboard() {
             <Legend {...legendStyle} />
             {avgCur !== null && <ReferenceLine y={avgCur} stroke={ink.s1} strokeDasharray="5 4" strokeOpacity={0.7} />}
             {avgPrev !== null && <ReferenceLine y={avgPrev} stroke={ink.s2} strokeDasharray="5 4" strokeOpacity={0.7} />}
-            <Line type="monotone" dataKey={year} stroke={ink.s1} strokeWidth={2} dot={{ r: 3, fill: ink.s1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey={`${year} pago`} stroke={ink.s1} strokeWidth={2} dot={{ r: 3, fill: ink.s1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey={`${year} por pagar`} stroke={ink.s1} strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3, fill: ink.surface, stroke: ink.s1, strokeWidth: 1.5 }} activeDot={{ r: 5 }} />
             <Line type="monotone" dataKey={year - 1} stroke={ink.s2} strokeWidth={2} dot={{ r: 3, fill: ink.s2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
         <div className="chart-note">
-          Valores líquidos (o que é recebido). Tracejado = média mensal.
+          Valores líquidos. Linha cheia = pago; tracejado curto = por pagar; tracejado longo = média mensal.
           {avgCur !== null && <> {year}: <b>{fmtMoney(avgCur)}</b>{closedMonths < 12 ? ` (${closedMonths} meses fechados)` : ''}.</>}
           {avgPrev !== null && <> {year - 1}: <b>{fmtMoney(avgPrev)}</b>.</>}
         </div>
