@@ -1,16 +1,26 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import EventForm from '../EventForm'
-import { MONTHS, fmtDate, fmtMoney, ymdParts } from '../util'
+import { MONTHS, fmtDate, fmtMoney, todayYMD, ymdParts } from '../util'
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 export default function Events() {
-  const { events, projects, projectById, paymentState, paidAmount } = useStore()
+  const { events, projects, projectById, paymentState, paidAmount, googleEvents } = useStore()
   const [projFilter, setProjFilter] = useState('all')
   const [stateFilter, setStateFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [form, setForm] = useState(null)
+
+  // pendentes de registo: eventos Google de hoje em diante ainda sem evento
+  // na app (mesma regra da agenda: projeto + dia já registados = o mesmo compromisso)
+  const pending = useMemo(() => {
+    const taken = new Set(events.map((ev) => `${ev.project_id}|${ev.event_date}`))
+    const today = todayYMD()
+    return googleEvents
+      .filter((g) => g.date >= today && !taken.has(`${g.project_id}|${g.date}`))
+      .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))
+  }, [googleEvents, events])
 
   const filtered = useMemo(() => {
     const q = norm(query.trim())
@@ -49,6 +59,35 @@ export default function Events() {
           <div className="sub">{filtered.length} evento{filtered.length === 1 ? '' : 's'}</div>
         </div>
       </div>
+
+      {pending.length > 0 && (
+        <>
+          <div className="month-head">
+            Pendentes de registo <small>· {pending.length} do calendário</small>
+          </div>
+          <div className="card">
+            {pending.map((g, i) => {
+              const p = projectById(g.project_id)
+              return (
+                <div key={`${g.calendar_id}|${g.date}|${i}`} className="list-item gcal"
+                  onClick={() => setForm({
+                    event_date: g.date, project_id: g.project_id, title: g.title,
+                    start_time: g.time, location: g.location,
+                  })}>
+                  <span className="chip"><span className="dot gdot" style={{ borderColor: p?.color }} /></span>
+                  <div className="main">
+                    <div className="title">{g.title}</div>
+                    <div className="meta">
+                      {fmtDate(g.date)}{g.time ? ` · ${g.time}` : ''} · {p?.name}{g.location ? ` · ${g.location}` : ''}
+                    </div>
+                  </div>
+                  <span className="badge pend">Registar +</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       <div className="field" style={{ marginBottom: 10 }}>
         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
@@ -103,7 +142,7 @@ export default function Events() {
       ))}
 
       <button className="fab" onClick={() => setForm({})} aria-label="Novo evento">+</button>
-      {form && <EventForm initial={form.id ? form : null} onClose={() => setForm(null)} />}
+      {form && <EventForm initial={form} onClose={() => setForm(null)} />}
     </>
   )
 }
