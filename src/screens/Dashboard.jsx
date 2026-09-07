@@ -79,10 +79,16 @@ export default function Dashboard() {
   const unpaid = sum(events.filter((e) => e.event_date <= today)
     .map((e) => Math.max(0, Number(e.value) - paidAmount(e))))
 
+  // o tracejado do total só se desenha à volta dos meses com por pagar
+  // (senão fica sobreposto à linha cheia); vizinhos entram para a linha
+  // sair da cheia e voltar a ela
+  const hasPend = (i) => i >= 0 && i < 12 && revByMonth.unpaid[i] > 0.005
+  const anyPend = revByMonth.unpaid.some((v) => v > 0.005)
   const yoyData = MONTHS_SHORT.map((name, i) => ({
     name,
     [`${year} pago`]: revByMonth.paid[i],
-    [`${year} total`]: revByMonth.paid[i] + revByMonth.unpaid[i],
+    [`${year} total`]: hasPend(i) || hasPend(i - 1) || hasPend(i + 1)
+      ? revByMonth.paid[i] + revByMonth.unpaid[i] : null,
     [year - 1]: revByMonth.rev[year - 1][i],
   }))
   const projData = MONTHS_SHORT.map((name, i) => ({ name, ...revByMonth.byProj[i] }))
@@ -165,12 +171,12 @@ export default function Dashboard() {
             {avgCur !== null && <ReferenceLine y={avgCur} stroke={ink.s1} strokeDasharray="5 4" strokeOpacity={0.7} />}
             {avgPrev !== null && <ReferenceLine y={avgPrev} stroke={ink.s2} strokeDasharray="5 4" strokeOpacity={0.7} />}
             <Line type="monotone" dataKey={`${year} pago`} stroke={ink.s1} strokeWidth={2} dot={{ r: 3, fill: ink.s1, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-            <Line type="monotone" dataKey={`${year} total`} stroke={ink.s1} strokeWidth={2} strokeDasharray="2 3" dot={{ r: 3, fill: ink.surface, stroke: ink.s1, strokeWidth: 1.5 }} activeDot={{ r: 5 }} />
+            {anyPend && <Line type="monotone" dataKey={`${year} total`} stroke={ink.s1} strokeWidth={2} strokeDasharray="2 3" dot={false} activeDot={{ r: 5 }} />}
             <Line type="monotone" dataKey={year - 1} stroke={ink.s2} strokeWidth={2} dot={{ r: 3, fill: ink.s2, strokeWidth: 0 }} activeDot={{ r: 5 }} />
           </LineChart>
         </ResponsiveContainer>
         <div className="chart-note">
-          Valores líquidos. Linha cheia = pago; tracejado curto = total (pago + por pagar); tracejado longo = média mensal.
+          Valores líquidos. Linha cheia = pago{anyPend ? '; tracejado curto = total, nos meses com por pagar' : ''}; tracejado longo = média mensal.
           {avgCur !== null && <> {year}: <b>{fmtMoney(avgCur)}</b>{closedMonths < 12 ? ` (${closedMonths} meses fechados)` : ''}.</>}
           {avgPrev !== null && <> {year - 1}: <b>{fmtMoney(avgPrev)}</b>.</>}
         </div>
