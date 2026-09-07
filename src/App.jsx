@@ -7,6 +7,7 @@ import Events from './screens/Events'
 import Expenses from './screens/Expenses'
 import Dashboard from './screens/Dashboard'
 import Projects from './screens/Projects'
+import Quotes from './screens/Quotes'
 import './styles.css'
 
 const ic = { width: 21, height: 21, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -37,6 +38,12 @@ const ICONS = {
       <path d="M7 20v-6.5M12 20V9.5M17 20V5.5" />
     </svg>
   ),
+  doc: (
+    <svg {...ic}>
+      <path d="M7 2.8h7l4 4V19a2.2 2.2 0 0 1-2.2 2.2H7A2.2 2.2 0 0 1 4.8 19V5A2.2 2.2 0 0 1 7 2.8Z" />
+      <path d="M13.6 3v4.2h4.2M8.5 12h7M8.5 15.8h7" />
+    </svg>
+  ),
   gear: (
     <svg {...ic}>
       <circle cx="12" cy="12" r="3.2" />
@@ -47,6 +54,7 @@ const ICONS = {
 const TABS = [
   { id: 'calendar', label: 'Agenda', icon: ICONS.calendar },
   { id: 'events', label: 'Eventos', icon: ICONS.music },
+  { id: 'quotes', label: 'Orçamentos', icon: ICONS.doc },
   { id: 'expenses', label: 'Despesas', icon: ICONS.wallet },
   { id: 'dashboard', label: 'Painel', icon: ICONS.chart },
   { id: 'projects', label: 'Projetos', icon: ICONS.gear },
@@ -74,6 +82,7 @@ function Shell() {
       {tab === 'expenses' && <Expenses />}
       {tab === 'dashboard' && <Dashboard />}
       {tab === 'projects' && <Projects />}
+      {tab === 'quotes' && <Quotes />}
       {pendingUndo && (
         <div className="undo-toast">
           <span>{pendingUndo.kind === 'event' ? 'Evento apagado.' : 'Despesa apagada.'}</span>

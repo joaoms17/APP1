@@ -6,6 +6,11 @@ import { compressImage } from './img'
 const Ctx = createContext(null)
 export const useStore = () => useContext(Ctx)
 
+const todayLocal = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function StoreProvider({ children }) {
   const [projects, setProjects] = useState([])
   const [events, setEvents] = useState([])
@@ -14,6 +19,10 @@ export function StoreProvider({ children }) {
   const [error, setError] = useState(null)
   const [payments, setPayments] = useState([])
   const [attachments, setAttachments] = useState([])
+  const [services, setServices] = useState([])
+  const [quotes, setQuotes] = useState([])
+  const [quoteItems, setQuoteItems] = useState([])
+  const [scheduleItems, setScheduleItems] = useState([])
   const [gcalCalendars, setGcalCalendars] = useState([])
   const [googleEvents, setGoogleEvents] = useState([])
   const [gcalError, setGcalError] = useState(null)
@@ -49,13 +58,29 @@ export function StoreProvider({ children }) {
     } catch { /* sem attachments */ }
   }, [])
 
+  const loadQuotes = useCallback(async () => {
+    // estas tabelas podem ainda não existir — nunca bloquear a app
+    try {
+      const [s, q, qi, sc] = await Promise.all([
+        db.from('services').select('*').order('sort_order'),
+        db.from('quotes').select('*').order('created_at', { ascending: false }),
+        db.from('quote_items').select('*').order('sort_order'),
+        db.from('schedule_items').select('*').order('time_at'),
+      ])
+      setServices(s.data || [])
+      setQuotes(q.data || [])
+      setQuoteItems(qi.data || [])
+      setScheduleItems(sc.data || [])
+    } catch { /* sem orçamentos */ }
+  }, [])
+
   useEffect(() => {
     (async () => {
       try {
         const { data, error } = await db.from('projects').select('*').order('sort_order')
         if (error) throw error
         setProjects(data)
-        await Promise.all([loadEvents(), loadExpenses(), loadPayments(), loadAttachments()])
+        await Promise.all([loadEvents(), loadExpenses(), loadPayments(), loadAttachments(), loadQuotes()])
         // a tabela gcal_calendars pode ainda não existir — nunca bloquear a app
         try {
           const { data: g } = await db.from('gcal_calendars').select('*').order('created_at')
@@ -67,7 +92,7 @@ export function StoreProvider({ children }) {
         setLoading(false)
       }
     })()
-  }, [loadEvents, loadExpenses, loadPayments, loadAttachments])
+  }, [loadEvents, loadExpenses, loadPayments, loadAttachments, loadQuotes])
 
   // ao voltar à app, refrescar o Google Calendar (com folga de 5 min)
   useEffect(() => {
@@ -131,6 +156,94 @@ export function StoreProvider({ children }) {
     if (error) throw error
     await syncPaidFlag(ev)
     await Promise.all([loadEvents(), loadPayments()])
+  }
+
+  // --- orçamentos, tabela de preços e cronograma -------------------------
+  const itemsForQuote = useCallback((quoteId) =>
+    quoteItems.filter((i) => i.quote_id === quoteId), [quoteItems])
+
+  const quoteTotal = useCallback((q) => {
+    const items = quoteItems.filter((i) => i.quote_id === q.id)
+    return items.reduce((a, i) => a + Number(i.unit_price) * i.qty, 0) - Number(q.discount || 0)
+  }, [quoteItems])
+
+  const saveService = async (s) => {
+    const { error } = s.id
+      ? await db.from('services').update(s).eq('id', s.id)
+      : await db.from('services').insert(s)
+    if (error) throw error
+    await loadQuotes()
+  }
+
+  const deleteService = async (id) => {
+    const { error } = await db.from('services').delete().eq('id', id)
+    if (error) throw error
+    await loadQuotes()
+  }
+
+  // guarda o orçamento e substitui as linhas de uma vez
+  const saveQuote = async (q, items) => {
+    let quoteId = q.id
+    const row = { ...q, updated_at: new Date().toISOString() }
+    if (quoteId) {
+      const { error } = await db.from('quotes').update(row).eq('id', quoteId)
+      if (error) throw error
+    } else {
+      const { data, error } = await db.from('quotes').insert(row).select('id').single()
+      if (error) throw error
+      quoteId = data.id
+    }
+    if (items) {
+      await db.from('quote_items').delete().eq('quote_id', quoteId)
+      if (items.length) {
+        const { error } = await db.from('quote_items').insert(
+          items.map((i, n) => ({ quote_id: quoteId, service_name: i.service_name, unit_price: i.unit_price, qty: i.qty, sort_order: n })))
+        if (error) throw error
+      }
+    }
+    await loadQuotes()
+    return quoteId
+  }
+
+  const deleteQuote = async (id) => {
+    const { error } = await db.from('quotes').delete().eq('id', id)
+    if (error) throw error
+    await loadQuotes()
+  }
+
+  // aceitar: cria o evento de Cabelos com o valor do orçamento e liga-o
+  const acceptQuote = async (q) => {
+    const hair = projects.find((p) => p.kind === 'hair') || projects[0]
+    const total = quoteTotal(q)
+    const { data: ev, error } = await db.from('events').insert({
+      project_id: hair.id,
+      title: `Casamento ${q.client_name}`,
+      event_date: q.event_date || todayLocal(),
+      location: q.location || null,
+      gross_value: total,
+      value: total,
+      paid: false,
+      notes: 'Criado a partir de orçamento aceite',
+    }).select('id').single()
+    if (error) throw error
+    await db.from('quotes').update({ status: 'accepted', event_id: ev.id, updated_at: new Date().toISOString() }).eq('id', q.id)
+    await Promise.all([loadEvents(), loadQuotes()])
+    return ev.id
+  }
+
+  const scheduleFor = useCallback((eventId) =>
+    scheduleItems.filter((s) => s.event_id === eventId), [scheduleItems])
+
+  // substitui o cronograma do evento pelas linhas dadas
+  const saveSchedule = async (eventId, rows) => {
+    await db.from('schedule_items').delete().eq('event_id', eventId)
+    const clean = rows.filter((r) => r.time_at && r.person?.trim())
+    if (clean.length) {
+      const { error } = await db.from('schedule_items').insert(
+        clean.map((r) => ({ event_id: eventId, time_at: r.time_at, person: r.person.trim(), service: r.service?.trim() || null })))
+      if (error) throw error
+    }
+    await loadQuotes()
   }
 
   // --- anexos (fotos de recibos/faturas) ---------------------------------
@@ -282,6 +395,8 @@ export function StoreProvider({ children }) {
       saveProject, deleteProject,
       paymentsByEvent, paidAmount, paymentState, addPayment, deletePayment,
       attachmentsFor, addAttachment, deleteAttachment, attachmentUrl,
+      services, quotes, itemsForQuote, quoteTotal, saveService, deleteService,
+      saveQuote, deleteQuote, acceptQuote, scheduleFor, saveSchedule,
       pendingUndo, undoDelete,
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
     }}>
