@@ -128,7 +128,8 @@ body {
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 5px; }
 .field input, .field select, .field textarea {
-  width: 100%; padding: 11px 12px; font-size: 15px; font-family: var(--sans);
+  /* 16px evita o zoom automático do iOS ao focar um campo */
+  width: 100%; padding: 11px 12px; font-size: 16px; font-family: var(--sans);
   border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); color: var(--ink);
 }
@@ -138,6 +139,12 @@ body {
 }
 .field textarea { resize: vertical; min-height: 60px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2 .field { min-width: 0; }
+/* inputs de data/hora do iOS têm largura mínima intrínseca — sem isto
+   transbordam da coluna e sobrepõem-se */
+.field input[type="date"], .field input[type="time"] {
+  min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none;
+}
 
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .swatch {
@@ -185,6 +192,8 @@ body {
 .badge.ok { color: var(--good-text); background: color-mix(in srgb, var(--good) 12%, transparent); }
 .badge.pend { color: var(--critical); background: color-mix(in srgb, var(--critical) 10%, transparent); }
 .badge.mid { color: var(--accent); background: var(--accent-soft); }
+
+.pay-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 
 /* anexos (fotos de recibos) */
 .attach-grid { display: flex; flex-wrap: wrap; gap: 10px; }

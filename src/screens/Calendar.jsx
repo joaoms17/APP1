@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import EventForm from '../EventForm'
-import { MONTHS, WEEKDAYS, fmtMoney, fmtTime, todayYMD } from '../util'
+import { MONTHS, WEEKDAYS, fmtMoney, todayYMD } from '../util'
 
 const pad = (n) => String(n).padStart(2, '0')
 const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`
@@ -187,7 +187,7 @@ export default function Calendar() {
               <div className="main">
                 <div className="title">{ev.title}</div>
                 <div className="meta">
-                  {p?.name}{ev.start_time ? ` · ${fmtTime(ev.start_time)}` : ''}{ev.location ? ` · ${ev.location}` : ''}
+                  {p?.name}{ev.location ? ` · ${ev.location}` : ''}
                 </div>
               </div>
               <div>
@@ -216,7 +216,7 @@ export default function Calendar() {
               <div className="main">
                 <div className="title">{g.title}</div>
                 <div className="meta">
-                  Google · {p?.name}{g.time ? ` · ${g.time}` : ''}{g.location ? ` · ${g.location}` : ''}
+                  Google · {p?.name}{g.location ? ` · ${g.location}` : ''}
                 </div>
               </div>
               <span className="badge pend">Registar +</span>
