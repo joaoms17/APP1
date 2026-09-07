@@ -53,7 +53,7 @@ const TABS = [
 ]
 
 function Shell() {
-  const { loading, error } = useStore()
+  const { loading, error, pendingUndo, undoDelete } = useStore()
   const [tab, setTab] = useState('calendar')
 
   if (loading) return <div className="empty">A carregar…</div>
@@ -74,6 +74,12 @@ function Shell() {
       {tab === 'expenses' && <Expenses />}
       {tab === 'dashboard' && <Dashboard />}
       {tab === 'projects' && <Projects />}
+      {pendingUndo && (
+        <div className="undo-toast">
+          <span>{pendingUndo.kind === 'event' ? 'Evento apagado.' : 'Despesa apagada.'}</span>
+          <button onClick={undoDelete}>Anular</button>
+        </div>
+      )}
       <nav className="tabbar">
         {TABS.map((t) => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>

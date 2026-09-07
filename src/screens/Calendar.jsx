@@ -76,7 +76,7 @@ function GcalConfig({ onClose }) {
 }
 
 export default function Calendar() {
-  const { events, projectById, googleEvents } = useStore()
+  const { events, projectById, googleEvents, paymentState } = useStore()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
@@ -193,7 +193,12 @@ export default function Calendar() {
               <div>
                 <div className="amount">{fmtMoney(ev.value)}</div>
                 <div className="badges">
-                  <span className={`badge ${ev.paid ? 'ok' : 'pend'}`}>{ev.paid ? 'Pago' : 'Por pagar'}</span>
+                  {(() => {
+                    const st = paymentState(ev)
+                    if (st === 'paid') return <span className="badge ok">Pago</span>
+                    if (st === 'partial') return <span className="badge mid">Parcial</span>
+                    return <span className="badge pend">Por pagar</span>
+                  })()}
                 </div>
               </div>
             </div>

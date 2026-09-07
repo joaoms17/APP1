@@ -31,11 +31,9 @@ function ExpenseForm({ initial, onClose }) {
     } catch (ex) { setErr(ex.message || String(ex)); setBusy(false) }
   }
 
-  const remove = async () => {
-    if (!confirm('Apagar esta despesa?')) return
-    setBusy(true)
-    try { await deleteExpense(initial.id); onClose() }
-    catch (ex) { setErr(ex.message || String(ex)); setBusy(false) }
+  const remove = () => {
+    deleteExpense(initial) // com Anular durante uns segundos
+    onClose()
   }
 
   return (

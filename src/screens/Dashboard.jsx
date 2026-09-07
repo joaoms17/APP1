@@ -29,7 +29,7 @@ const useDark = () => {
 const sum = (arr) => arr.reduce((a, b) => a + b, 0)
 
 export default function Dashboard() {
-  const { events, expenses, projects } = useStore()
+  const { events, expenses, projects, paidAmount } = useStore()
   const dark = useDark()
   const [year, setYear] = useState(new Date().getFullYear())
 
@@ -69,7 +69,7 @@ export default function Dashboard() {
   const totalGross = sum(revByMonth.gross)
   const totalRevPrev = sum(revByMonth.rev[year - 1])
   const totalExp = sum(revByMonth.exp[year])
-  const unpaid = sum(events.filter((e) => !e.paid).map((e) => Number(e.value)))
+  const unpaid = sum(events.map((e) => Math.max(0, Number(e.value) - paidAmount(e))))
 
   const yoyData = MONTHS_SHORT.map((name, i) => ({
     name, [year]: revByMonth.rev[year][i], [year - 1]: revByMonth.rev[year - 1][i],

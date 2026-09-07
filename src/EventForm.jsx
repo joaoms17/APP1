@@ -1,6 +1,71 @@
 import { useState } from 'react'
 import { useStore } from './store'
-import { todayYMD } from './util'
+import { fmtDate, fmtMoney, todayYMD } from './util'
+
+function PaymentsSection({ ev }) {
+  const { paymentsByEvent, paidAmount, paymentState, addPayment, deletePayment, saveEvent } = useStore()
+  const ps = paymentsByEvent.get(ev.id) || []
+  const got = paidAmount(ev)
+  const total = Number(ev.value)
+  const remaining = Math.max(0, total - got)
+  const state = paymentState(ev)
+  const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(todayYMD())
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  const run = async (fn) => {
+    setBusy(true); setErr(null)
+    try { await fn() }
+    catch (ex) {
+      setErr(ex.code === '42P01'
+        ? 'Falta criar a tabela payments — corre o supabase/payments.sql no SQL Editor.'
+        : (ex.message || String(ex)))
+    } finally { setBusy(false) }
+  }
+
+  const add = () => {
+    const a = Number(String(amount || remaining).replace(',', '.'))
+    if (!a || a <= 0) return
+    run(async () => { await addPayment(ev, a, date); setAmount('') })
+  }
+
+  return (
+    <div className="field" style={{ marginTop: 4 }}>
+      <label>
+        Pagamentos — {state === 'paid' ? 'pago ✓' : state === 'partial' ? `parcial (${fmtMoney(got)} de ${fmtMoney(total)})` : 'por receber'}
+      </label>
+      {ps.map((p) => (
+        <div key={p.id} className="list-item" style={{ cursor: 'default', padding: '7px 2px' }}>
+          <div className="main"><div className="meta">{fmtDate(p.paid_at)}</div></div>
+          <div className="amount" style={{ fontSize: 14 }}>{fmtMoney(p.amount)}</div>
+          <button type="button" className="btn danger" style={{ width: 'auto', padding: '4px 9px', fontSize: 12 }}
+            disabled={busy} onClick={() => run(() => deletePayment(p, ev))}>×</button>
+        </div>
+      ))}
+      {ps.length === 0 && ev.paid && (
+        <div className="chart-note">
+          Marcado como pago{ev.paid_at ? ` em ${fmtDate(ev.paid_at)}` : ''}.{' '}
+          <button type="button" className="linkish" disabled={busy}
+            onClick={() => run(() => saveEvent({ id: ev.id, paid: false, paid_at: null }))}>
+            Marcar como não pago
+          </button>
+        </div>
+      )}
+      {state !== 'paid' && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <input style={{ flex: 1 }} inputMode="decimal" value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={remaining > 0 ? `${String(remaining).replace('.', ',')} (resto)` : '0,00'} />
+          <input type="date" style={{ flex: 1.2 }} value={date} onChange={(e) => setDate(e.target.value)} />
+          <button type="button" className="btn secondary" style={{ width: 'auto', padding: '8px 12px' }}
+            onClick={add} disabled={busy}>✓ Recebi</button>
+        </div>
+      )}
+      {err && <div className="err">{err}</div>}
+    </div>
+  )
+}
 
 export default function EventForm({ initial, onClose }) {
   const { projects, activeProjects, saveEvent, deleteEvent } = useStore()
@@ -55,11 +120,9 @@ export default function EventForm({ initial, onClose }) {
     }
   }
 
-  const remove = async () => {
-    if (!confirm('Apagar este evento?')) return
-    setBusy(true)
-    try { await deleteEvent(initial.id); onClose() }
-    catch (ex) { setErr(ex.message || String(ex)); setBusy(false) }
+  const remove = () => {
+    deleteEvent(initial) // com Anular durante uns segundos
+    onClose()
   }
 
   return (
@@ -100,15 +163,21 @@ export default function EventForm({ initial, onClose }) {
             <input inputMode="decimal" value={f.value} onChange={(e) => set('value', e.target.value)} placeholder="= bruto" />
           </div>
         </div>
-        <label className="check">
-          <input type="checkbox" checked={f.paid} onChange={(e) => set('paid', e.target.checked)} />
-          Pago
-        </label>
-        {f.paid && (
-          <div className="field">
-            <label>Data de pagamento</label>
-            <input type="date" value={f.paid_at || ''} onChange={(e) => set('paid_at', e.target.value)} />
-          </div>
+        {initial?.id ? (
+          <PaymentsSection ev={initial} />
+        ) : (
+          <>
+            <label className="check">
+              <input type="checkbox" checked={f.paid} onChange={(e) => set('paid', e.target.checked)} />
+              Pago
+            </label>
+            {f.paid && (
+              <div className="field">
+                <label>Data de pagamento</label>
+                <input type="date" value={f.paid_at || ''} onChange={(e) => set('paid_at', e.target.value)} />
+              </div>
+            )}
+          </>
         )}
         <label className="check">
           <input type="checkbox" checked={f.receipt_issued} onChange={(e) => set('receipt_issued', e.target.checked)} />

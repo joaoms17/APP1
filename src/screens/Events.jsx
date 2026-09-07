@@ -3,18 +3,26 @@ import { useStore } from '../store'
 import EventForm from '../EventForm'
 import { MONTHS, fmtDate, fmtMoney, ymdParts } from '../util'
 
+const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
 export default function Events() {
-  const { events, projects, projectById } = useStore()
+  const { events, projects, projectById, paymentState, paidAmount } = useStore()
   const [projFilter, setProjFilter] = useState('all')
   const [stateFilter, setStateFilter] = useState('all')
+  const [query, setQuery] = useState('')
   const [form, setForm] = useState(null)
 
-  const filtered = useMemo(() => events.filter((ev) => {
-    if (projFilter !== 'all' && ev.project_id !== projFilter) return false
-    if (stateFilter === 'unpaid' && ev.paid) return false
-    if (stateFilter === 'paid' && !ev.paid) return false
-    return true
-  }), [events, projFilter, stateFilter])
+  const filtered = useMemo(() => {
+    const q = norm(query.trim())
+    return events.filter((ev) => {
+      if (projFilter !== 'all' && ev.project_id !== projFilter) return false
+      const st = paymentState(ev)
+      if (stateFilter === 'unpaid' && st === 'paid') return false
+      if (stateFilter === 'paid' && st !== 'paid') return false
+      if (q && !norm(`${ev.title} ${ev.location || ''} ${ev.notes || ''}`).includes(q)) return false
+      return true
+    })
+  }, [events, projFilter, stateFilter, query, paymentState])
 
   // agrupar por mês (já vêm ordenados por data desc)
   const groups = useMemo(() => {
@@ -42,6 +50,10 @@ export default function Events() {
         </div>
       </div>
 
+      <div className="field" style={{ marginBottom: 10 }}>
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="🔍 Pesquisar título, local ou notas…" />
+      </div>
       <div className="filters">
         <select value={projFilter} onChange={(e) => setProjFilter(e.target.value)}>
           <option value="all">Todos os projetos</option>
@@ -74,7 +86,12 @@ export default function Events() {
                   <div>
                     <div className="amount">{fmtMoney(ev.value)}</div>
                     <div className="badges">
-                      <span className={`badge ${ev.paid ? 'ok' : 'pend'}`}>{ev.paid ? 'Pago' : 'Por pagar'}</span>
+                      {(() => {
+                        const st = paymentState(ev)
+                        if (st === 'paid') return <span className="badge ok">Pago</span>
+                        if (st === 'partial') return <span className="badge mid">Falta {fmtMoney(Number(ev.value) - paidAmount(ev))}</span>
+                        return <span className="badge pend">Por pagar</span>
+                      })()}
                       {ev.receipt_issued && <span className="badge ok">Recibo ✓</span>}
                     </div>
                   </div>
