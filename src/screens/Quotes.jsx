@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import PrintSheet from '../PrintSheet'
+import ScheduleModal from '../Schedule'
 import { fmtDate, fmtMoney, todayYMD } from '../util'
 
 const STATUS = {
@@ -27,7 +28,7 @@ function PricesModal({ onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Tabela de preços</h2>
+        <div className="modal-head"><h2>Tabela de preços</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         {services.map((s) => (
           <div key={s.id} className="list-item" style={{ cursor: 'default' }}>
             <div className="main"><div className="title" style={{ fontWeight: 600 }}>{s.name}</div></div>
@@ -58,8 +59,9 @@ function PricesModal({ onClose }) {
 }
 
 function QuoteForm({ initial, onClose, onPrint }) {
-  const { services, itemsForQuote, saveQuote, deleteQuote, acceptQuote } = useStore()
+  const { services, itemsForQuote, saveQuote, deleteQuote, acceptQuote, projects } = useStore()
   const [f, setF] = useState(() => ({
+    project_id: initial?.project_id || projects.find((p) => p.kind === 'hair')?.id || projects[0]?.id || null,
     client_name: initial?.client_name || '',
     event_date: initial?.event_date || '',
     location: initial?.location || '',
@@ -94,6 +96,7 @@ function QuoteForm({ initial, onClose, onPrint }) {
 
   const buildRow = () => ({
     ...(initial?.id ? { id: initial.id } : {}),
+    project_id: f.project_id || null,
     client_name: f.client_name.trim(),
     event_date: f.event_date || null,
     location: f.location.trim() || null,
@@ -111,10 +114,18 @@ function QuoteForm({ initial, onClose, onPrint }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>{initial?.id ? 'Editar orçamento' : 'Novo orçamento'}</h2>
-        <div className="field">
-          <label>Cliente / noiva</label>
-          <input value={f.client_name} onChange={(e) => set('client_name', e.target.value)} placeholder="Ex.: Maria Silva" />
+        <div className="modal-head"><h2>{initial?.id ? 'Editar orçamento' : 'Novo orçamento'}</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
+        <div className="row2">
+          <div className="field">
+            <label>Cliente</label>
+            <input value={f.client_name} onChange={(e) => set('client_name', e.target.value)} placeholder="Ex.: Maria Silva" />
+          </div>
+          <div className="field">
+            <label>Projeto</label>
+            <select value={f.project_id || ''} onChange={(e) => set('project_id', e.target.value)}>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
         </div>
         <div className="row2">
           <div className="field">
@@ -255,58 +266,36 @@ function QuotePrint({ quote, items, onClose }) {
   )
 }
 
-export function BrochurePrint({ onClose }) {
-  const { services } = useStore()
-  return (
-    <PrintSheet onClose={onClose}>
-      <div className="doc-head">
-        <div className="doc-brand">Joana</div>
-        <div className="doc-hairline" />
-        <div className="doc-sub">Hairstyling · Penteados de noiva e eventos</div>
-      </div>
-      <p className="doc-notes" style={{ textAlign: 'center' }}>
-        Penteados elegantes para o dia mais especial — noivas, madrinhas e convidadas,
-        com prova prévia e deslocação ao local do evento.
-      </p>
-      <table className="doc-table">
-        <thead><tr><th>Serviço</th><th className="num">Preço</th></tr></thead>
-        <tbody>
-          {services.filter((s) => s.active !== false).map((s) => (
-            <tr key={s.id}><td>{s.name}</td><td className="num">{fmtMoney(s.price)}</td></tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="doc-foot">Peça o seu orçamento personalizado 🌹</p>
-    </PrintSheet>
-  )
-}
-
 export default function Quotes() {
-  const { quotes, quoteTotal, itemsForQuote } = useStore()
+  const { quotes, quoteTotal, projectById, events, scheduleItems } = useStore()
   const [form, setForm] = useState(null)
   const [prices, setPrices] = useState(false)
-  const [brochure, setBrochure] = useState(false)
   const [printing, setPrinting] = useState(null) // {quote, items}
+  const [scheduleEv, setScheduleEv] = useState(null)
+  const [pickEvent, setPickEvent] = useState(false)
+
+  // eventos que já têm cronograma
+  const withSchedule = events.filter((ev) => scheduleItems.some((s) => s.event_id === ev.id))
 
   return (
     <>
       <div className="topbar">
         <div>
           <h1>Documentos</h1>
-          <div className="sub">Orçamentos, preços e brochura</div>
+          <div className="sub">Orçamentos e cronogramas</div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }} onClick={() => setPrices(true)}>Preços</button>
-          <button className="btn secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }} onClick={() => setBrochure(true)}>Brochura</button>
-        </div>
+        <button className="btn secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }} onClick={() => setPrices(true)}>Preços</button>
       </div>
 
       <div className="card">
+        <h2>Orçamentos</h2>
         {quotes.length === 0 && <div className="empty">Sem orçamentos. Toca em + para criar o primeiro.</div>}
         {quotes.map((q) => {
           const st = STATUS[q.status] || STATUS.draft
+          const p = q.project_id ? projectById(q.project_id) : null
           return (
             <div key={q.id} className="list-item" onClick={() => setForm(q)}>
+              {p && <span className="chip"><span className="dot" style={{ background: p.color }} /></span>}
               <div className="main">
                 <div className="title">{q.client_name}</div>
                 <div className="meta">{q.event_date ? fmtDate(q.event_date) : 'sem data'}{q.location ? ` · ${q.location}` : ''}</div>
@@ -320,6 +309,26 @@ export default function Quotes() {
         })}
       </div>
 
+      <div className="card">
+        <h2>Cronogramas do dia</h2>
+        {withSchedule.length === 0 && <div className="empty">Sem cronogramas ainda.</div>}
+        {withSchedule.map((ev) => {
+          const p = projectById(ev.project_id)
+          return (
+            <div key={ev.id} className="list-item" onClick={() => setScheduleEv(ev)}>
+              <span className="chip"><span className="dot" style={{ background: p?.color }} /></span>
+              <div className="main">
+                <div className="title">{ev.title}</div>
+                <div className="meta">{fmtDate(ev.event_date)}{ev.location ? ` · ${ev.location}` : ''}</div>
+              </div>
+            </div>
+          )
+        })}
+        <button className="btn secondary" style={{ marginTop: 10 }} onClick={() => setPickEvent(true)}>
+          + Novo cronograma
+        </button>
+      </div>
+
       <button className="fab" onClick={() => setForm({})} aria-label="Novo orçamento">+</button>
       {form && (
         <QuoteForm initial={form.id ? form : null}
@@ -327,8 +336,41 @@ export default function Quotes() {
           onPrint={(q, items) => { setForm(null); setPrinting({ quote: q, items }) }} />
       )}
       {prices && <PricesModal onClose={() => setPrices(false)} />}
-      {brochure && <BrochurePrint onClose={() => setBrochure(false)} />}
       {printing && <QuotePrint quote={printing.quote} items={printing.items} onClose={() => setPrinting(null)} />}
+      {scheduleEv && <ScheduleModal ev={scheduleEv} onClose={() => setScheduleEv(null)} />}
+      {pickEvent && (
+        <EventPicker events={events} projectById={projectById}
+          onClose={() => setPickEvent(false)}
+          onPick={(ev) => { setPickEvent(false); setScheduleEv(ev) }} />
+      )}
     </>
+  )
+}
+
+function EventPicker({ events, projectById, onClose, onPick }) {
+  const today = todayYMD()
+  // próximos eventos primeiro, depois os passados recentes
+  const upcoming = events.filter((e) => e.event_date >= today).sort((a, b) => a.event_date.localeCompare(b.event_date))
+  const past = events.filter((e) => e.event_date < today).slice(0, 10)
+  const list = [...upcoming, ...past]
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head"><h2>Cronograma para que evento?</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
+        {list.length === 0 && <div className="empty">Sem eventos — cria primeiro o evento na Agenda.</div>}
+        {list.map((ev) => {
+          const p = projectById(ev.project_id)
+          return (
+            <div key={ev.id} className="list-item" onClick={() => onPick(ev)}>
+              <span className="chip"><span className="dot" style={{ background: p?.color }} /></span>
+              <div className="main">
+                <div className="title">{ev.title}</div>
+                <div className="meta">{fmtDate(ev.event_date)} · {p?.name}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

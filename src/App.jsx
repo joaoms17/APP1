@@ -57,7 +57,8 @@ const TABS = [
   { id: 'expenses', label: 'Despesas', icon: ICONS.wallet },
   { id: 'dashboard', label: 'Painel', icon: ICONS.chart },
   { id: 'projects', label: 'Projetos', icon: ICONS.gear },
-  { id: 'doc', label: 'Doc', icon: ICONS.doc, subtle: true },
+  // separador Doc escondido até os templates (bases com logotipo) chegarem
+  // { id: 'doc', label: 'Doc', icon: ICONS.doc, subtle: true },
 ]
 
 function Shell() {

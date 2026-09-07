@@ -1,6 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { fmtMoney } from '../util'
+
+function LogoField({ project }) {
+  const { setProjectLogo, removeProjectLogo, logoUrl, projects } = useStore()
+  const current = projects.find((p) => p.id === project.id) || project
+  const [url, setUrl] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+  const fileRef = useRef(null)
+
+  useEffect(() => {
+    let alive = true
+    if (current.logo_path) logoUrl(current).then((u) => { if (alive) setUrl(u) }).catch(() => {})
+    else setUrl(null)
+    return () => { alive = false }
+  }, [current.logo_path]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const run = async (fn) => {
+    setBusy(true); setErr(null)
+    try { await fn() }
+    catch (ex) {
+      setErr(ex.code === '42703'
+        ? 'Falta a coluna logo_path — corre o supabase/docs_prep.sql no SQL Editor.'
+        : (ex.message || String(ex)))
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="field">
+      <label>Logotipo (aparece nos documentos)</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {url
+          ? <img src={url} alt="logotipo" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 12, border: '1px solid var(--line)', background: '#fff' }} />
+          : <div className="attach-add" style={{ cursor: 'default' }}>—</div>}
+        <button type="button" className="btn secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }}
+          disabled={busy} onClick={() => fileRef.current?.click()}>
+          {busy ? '…' : (url ? 'Substituir' : 'Carregar')}
+        </button>
+        {url && (
+          <button type="button" className="btn danger" style={{ width: 'auto', padding: '8px 12px', fontSize: 13 }}
+            disabled={busy} onClick={() => run(() => removeProjectLogo(current))}>
+            Remover
+          </button>
+        )}
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" hidden
+        onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) run(() => setProjectLogo(current, file)) }} />
+      {err && <div className="err">{err}</div>}
+    </div>
+  )
+}
 
 // paleta pastel validada para daltonismo (mesma ordem do seed)
 const PRESET_COLORS = ['#d46a8f', '#cf9c3f', '#12a89e', '#cd7c5a', '#9c7ed4', '#4f9f68', '#6d8ed6', '#a49b3f', '#c263ac']
@@ -74,7 +124,7 @@ function ProjectForm({ initial, onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h2>{initial?.id ? 'Editar projeto' : 'Novo projeto'}</h2>
+        <div className="modal-head"><h2>{initial?.id ? 'Editar projeto' : 'Novo projeto'}</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="field">
           <label>Nome</label>
           <input value={f.name} onChange={(e) => set('name', e.target.value)} required />
@@ -120,6 +170,8 @@ function ProjectForm({ initial, onClose }) {
           <input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />
           Ativo (aparece ao criar eventos novos)
         </label>
+
+        {initial?.id && <LogoField project={initial} />}
 
         {initial?.id && (
           <div className="field" style={{ marginTop: 4 }}>

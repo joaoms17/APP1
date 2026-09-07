@@ -146,7 +146,7 @@ export default function EventForm({ initial, onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h2>{initial?.id ? 'Editar evento' : 'Novo evento'}</h2>
+        <div className="modal-head"><h2>{initial?.id ? 'Editar evento' : 'Novo evento'}</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="field">
           <label>Projeto</label>
           <select value={f.project_id} onChange={(e) => set('project_id', e.target.value)} required>
@@ -181,11 +181,9 @@ export default function EventForm({ initial, onClose }) {
           <>
             <PaymentsSection ev={initial} />
             <Attachments kind="event" id={initial.id} />
-            {projects.find((p) => p.id === f.project_id)?.kind === 'hair' && (
-              <button type="button" className="btn secondary" style={{ marginBottom: 12 }} onClick={() => setSchedule(true)}>
-                🗓 Cronograma do dia
-              </button>
-            )}
+            <button type="button" className="btn secondary" style={{ marginBottom: 12 }} onClick={() => setSchedule(true)}>
+              🗓 Cronograma do dia
+            </button>
           </>
         ) : (
           <>

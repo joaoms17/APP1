@@ -211,12 +211,13 @@ export function StoreProvider({ children }) {
     await loadQuotes()
   }
 
-  // aceitar: cria o evento de Cabelos com o valor do orçamento e liga-o
+  // aceitar: cria o evento no projeto do orçamento e liga-o
   const acceptQuote = async (q) => {
-    const hair = projects.find((p) => p.kind === 'hair') || projects[0]
+    const proj = projects.find((p) => p.id === q.project_id)
+      || projects.find((p) => p.kind === 'hair') || projects[0]
     const total = quoteTotal(q)
     const { data: ev, error } = await db.from('events').insert({
-      project_id: hair.id,
+      project_id: proj.id,
       title: `Casamento ${q.client_name}`,
       event_date: q.event_date || todayLocal(),
       location: q.location || null,
@@ -270,6 +271,28 @@ export function StoreProvider({ children }) {
 
   const attachmentUrl = async (att) => {
     const { data, error } = await db.storage.from('anexos').createSignedUrl(att.path, 3600)
+    if (error) throw error
+    return data.signedUrl
+  }
+
+  // logotipo do projeto (para os documentos)
+  const setProjectLogo = async (project, file) => {
+    const blob = await compressImage(file, 800)
+    const path = `logos/${project.id}-${Date.now()}.jpg`
+    const { error: upErr } = await db.storage.from('anexos').upload(path, blob, { contentType: blob.type || file.type })
+    if (upErr) throw upErr
+    if (project.logo_path) await db.storage.from('anexos').remove([project.logo_path]).catch(() => {})
+    await saveProject({ id: project.id, logo_path: path })
+  }
+
+  const removeProjectLogo = async (project) => {
+    if (project.logo_path) await db.storage.from('anexos').remove([project.logo_path]).catch(() => {})
+    await saveProject({ id: project.id, logo_path: null })
+  }
+
+  const logoUrl = async (project) => {
+    if (!project?.logo_path) return null
+    const { data, error } = await db.storage.from('anexos').createSignedUrl(project.logo_path, 3600)
     if (error) throw error
     return data.signedUrl
   }
@@ -396,7 +419,8 @@ export function StoreProvider({ children }) {
       paymentsByEvent, paidAmount, paymentState, addPayment, deletePayment,
       attachmentsFor, addAttachment, deleteAttachment, attachmentUrl,
       services, quotes, itemsForQuote, quoteTotal, saveService, deleteService,
-      saveQuote, deleteQuote, acceptQuote, scheduleFor, saveSchedule,
+      saveQuote, deleteQuote, acceptQuote, scheduleFor, saveSchedule, scheduleItems,
+      setProjectLogo, removeProjectLogo, logoUrl,
       pendingUndo, undoDelete,
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
     }}>

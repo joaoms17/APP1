@@ -57,7 +57,7 @@ export default function ScheduleModal({ ev, onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Cronograma do dia</h2>
+        <div className="modal-head"><h2>Cronograma do dia</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="note">Quem se penteia a que horas — ordena-se sozinho por hora. Partilha com a noiva em PDF.</div>
         {rows.map((r, n) => (
           <div key={n} style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
