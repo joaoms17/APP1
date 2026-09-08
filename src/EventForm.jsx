@@ -144,7 +144,7 @@ export default function EventForm({ initial, onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h2>{initial?.id ? 'Editar evento' : 'Novo evento'}</h2>
+        <div className="modal-head"><h2>{initial?.id ? 'Editar evento' : 'Novo evento'}</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="field">
           <label>Projeto</label>
           <select value={f.project_id} onChange={(e) => set('project_id', e.target.value)} required>

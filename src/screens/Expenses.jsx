@@ -40,7 +40,7 @@ function ExpenseForm({ initial, onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h2>{initial?.id ? 'Editar despesa' : 'Nova despesa'}</h2>
+        <div className="modal-head"><h2>{initial?.id ? 'Editar despesa' : 'Nova despesa'}</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="field">
           <label>Descrição</label>
           <input value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Ex.: Cordas, gasolina, material…" required />

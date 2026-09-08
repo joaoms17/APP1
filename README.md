@@ -60,6 +60,15 @@ Google.
 A busca do feed passa por `api/gcal.js` (função Vercel, evita o CORS) e o
 Google atualiza o endereço secreto com algum atraso (minutos a horas).
 
+## Orçamentos, brochura e cronograma (Cabelos)
+
+Corre `supabase/orcamentos.sql` uma vez. No separador **Orçamentos**: tabela de
+preços editável, orçamentos por cliente (serviços + quantidades + desconto) com
+página elegante para partilhar/guardar em PDF, estados
+rascunho→enviado→aceite — ao aceitar cria o evento de Cabelos no calendário.
+A **brochura** gera-se do mesmo sítio (privada). Nos eventos de Cabelos, o botão
+**Cronograma do dia** edita as linhas hora→pessoa→serviço e partilha em PDF.
+
 ## Próximos passos (v2)
 
 - Criar/editar eventos diretamente no Google Calendar (OAuth)

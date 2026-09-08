@@ -28,7 +28,7 @@ function GcalConfig({ onClose }) {
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Calendários Google</h2>
+        <div className="modal-head"><h2>Calendários Google</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
         <div className="note">
           Cada calendário fica ligado a um projeto. No Google Calendar (computador), na <b>conta dona</b> do
           calendário: Definições → o calendário → <b>Integrar calendário</b> → copia o
