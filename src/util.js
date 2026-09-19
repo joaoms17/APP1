@@ -2,7 +2,9 @@ export const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Ju
 export const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 export const WEEKDAYS = ['S','T','Q','Q','S','S','D'] // semana começa à segunda
 
-const eur = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' })
+// useGrouping 'always': em pt-PT o Intl só separa milhares a partir de 5
+// dígitos (2549,75 aparecia "colado"); assim 2 549,75 € sai sempre separado
+const eur = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', useGrouping: 'always' })
 export const fmtMoney = (n) => eur.format(Number(n) || 0)
 
 export const todayYMD = () => {

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import EventForm from '../EventForm'
-import { MONTHS, WEEKDAYS, todayYMD } from '../util'
+import { MONTHS, MONTHS_SHORT, WEEKDAYS, todayYMD } from '../util'
 
 const pad = (n) => String(n).padStart(2, '0')
 const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`
@@ -75,6 +75,30 @@ function GcalConfig({ onClose }) {
   )
 }
 
+// escolher mês e ano num toque (em vez de andar seta a seta)
+function MonthPicker({ year, month, onPick, onToday, onClose }) {
+  const [y, setY] = useState(year)
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head"><h2>Ir para mês</h2><button type="button" className="modal-close" onClick={onClose} aria-label="Fechar">×</button></div>
+        <div className="yearsel">
+          <button onClick={() => setY(y - 1)} aria-label="Ano anterior">‹</button>
+          <b>{y}</b>
+          <button onClick={() => setY(y + 1)} aria-label="Ano seguinte">›</button>
+        </div>
+        <div className="month-grid">
+          {MONTHS_SHORT.map((m, i) => (
+            <button key={m} type="button" className={y === year && i === month ? 'sel' : ''}
+              onClick={() => onPick(y, i)}>{m}</button>
+          ))}
+        </div>
+        <button type="button" className="btn secondary" style={{ marginTop: 14 }} onClick={onToday}>Ir para hoje</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Calendar() {
   const { events, projectById, googleEvents, paymentState } = useStore()
   const now = new Date()
@@ -83,6 +107,9 @@ export default function Calendar() {
   const [selected, setSelected] = useState(todayYMD())
   const [form, setForm] = useState(null) // null | {} | evento
   const [showGcal, setShowGcal] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const touchRef = useRef(null)
+  const wheelAt = useRef(0)
 
   const byDay = useMemo(() => {
     const m = new Map()
@@ -126,6 +153,26 @@ export default function Calendar() {
 
   const prev = () => { if (month === 0) { setMonth(11); setYear(year - 1) } else setMonth(month - 1) }
   const next = () => { if (month === 11) { setMonth(0); setYear(year + 1) } else setMonth(month + 1) }
+  const goToday = () => { const n = new Date(); setYear(n.getFullYear()); setMonth(n.getMonth()); setSelected(todayYMD()) }
+
+  // deslizar o dedo para o lado (ou a roda do rato) muda de mês
+  const onTouchStart = (e) => { touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  const onTouchEnd = (e) => {
+    const t = touchRef.current
+    touchRef.current = null
+    if (!t) return
+    const dx = e.changedTouches[0].clientX - t.x
+    const dy = e.changedTouches[0].clientY - t.y
+    if (Math.abs(dx) > 48 && Math.abs(dx) > 1.5 * Math.abs(dy)) { if (dx < 0) next(); else prev() }
+  }
+  const onWheel = (e) => {
+    const nowMs = Date.now()
+    if (nowMs - wheelAt.current < 400) return
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+    if (Math.abs(d) < 8) return
+    wheelAt.current = nowMs
+    if (d > 0) next(); else prev()
+  }
 
   const today = todayYMD()
   const dayEvents = byDay.get(selected) || []
@@ -142,10 +189,12 @@ export default function Calendar() {
         </button>
       </div>
 
-      <div className="card">
+      <div className="card" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onWheel={onWheel}>
         <div className="cal-nav">
           <button onClick={prev} aria-label="Mês anterior">‹</button>
-          <b>{MONTHS[month]} {year}</b>
+          <button type="button" className="cal-title" onClick={() => setShowPicker(true)} aria-label="Escolher mês e ano">
+            {MONTHS[month]} {year} <span className="v">▾</span>
+          </button>
           <button onClick={next} aria-label="Mês seguinte">›</button>
         </div>
         <div className="cal-grid">
@@ -194,9 +243,9 @@ export default function Calendar() {
                 <div className="badges">
                   {(() => {
                     const st = paymentState(ev)
-                    if (st === 'paid') return <span className="badge ok">Pago</span>
+                    if (st === 'paid') return <span className="badge ok">Recebido</span>
                     if (st === 'partial') return <span className="badge mid">Parcial</span>
-                    return <span className="badge pend">Por pagar</span>
+                    return <span className="badge pend">Por receber</span>
                   })()}
                 </div>
               </div>
@@ -227,6 +276,12 @@ export default function Calendar() {
       <button className="fab" onClick={() => setForm({ event_date: selected })} aria-label="Novo evento">+</button>
       {form && <EventForm initial={form} onClose={() => setForm(null)} />}
       {showGcal && <GcalConfig onClose={() => setShowGcal(false)} />}
+      {showPicker && (
+        <MonthPicker year={year} month={month}
+          onPick={(y, m) => { setYear(y); setMonth(m); setShowPicker(false) }}
+          onToday={() => { goToday(); setShowPicker(false) }}
+          onClose={() => setShowPicker(false)} />
+      )}
     </>
   )
 }

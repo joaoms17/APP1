@@ -10,7 +10,7 @@ Stack: **React + Vite** · **Supabase** (Postgres + Auth) · **Recharts** (gráf
 
 - **Agenda** — calendário mensal próprio com os eventos coloridos por projeto
 - **Eventos** — cada concerto ou serviço de cabelo com valor bruto e valor final
-  (o recebido, depois de recibo/descontos), pago/por pagar (+ data de pagamento)
+  (o recebido, depois de recibo/descontos), recebido/por receber (+ data de recebimento)
   e recibo emitido/em falta; filtros de "por receber" e "recibo em falta"
 - **Despesas** — custos por projeto ou gerais, com categoria
 - **Painel** — receita do ano, comparação mês a mês com o ano anterior
