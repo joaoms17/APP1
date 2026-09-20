@@ -3,13 +3,17 @@ import { useStore } from './store'
 import Attachments from './Attachments'
 import { fmtDate, fmtMoney, todayYMD } from './util'
 
-function PaymentsSection({ ev }) {
-  const { paymentsByEvent, paidAmount, paymentState, addPayment, deletePayment, saveEvent } = useStore()
+function PaymentsSection({ ev, liveTotal }) {
+  const { paymentsByEvent, paidAmount, addPayment, deletePayment, saveEvent } = useStore()
   const ps = paymentsByEvent.get(ev.id) || []
   const got = paidAmount(ev)
-  const total = Number(ev.value)
+  // o total acompanha o valor escrito no formulário — o "por receber"
+  // atualiza-se enquanto se escreve, sem ser preciso guardar
+  const total = liveTotal ?? Number(ev.value)
   const remaining = Math.max(0, total - got)
-  const state = paymentState(ev)
+  const state = total > 0
+    ? (got >= total - 0.005 ? 'paid' : got > 0.005 ? 'partial' : 'unpaid')
+    : (ev.paid ? 'paid' : 'unpaid')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(todayYMD())
   const [busy, setBusy] = useState(false)
@@ -35,10 +39,10 @@ function PaymentsSection({ ev }) {
     <div className="field" style={{ marginTop: 4 }}>
       <label>Pagamentos</label>
       <div className="pay-summary">
-        <span className="badge ok">Já pago: {fmtMoney(got)}</span>
+        <span className="badge ok">Recebido: {fmtMoney(got)}</span>
         {state === 'paid'
-          ? <span className="badge ok">Tudo pago ✓</span>
-          : <span className="badge pend">Falta: {fmtMoney(remaining)}</span>}
+          ? <span className="badge ok">Tudo recebido ✓</span>
+          : <span className="badge pend">Por receber: {fmtMoney(remaining)}</span>}
       </div>
 
       {ps.map((p) => (
@@ -52,10 +56,10 @@ function PaymentsSection({ ev }) {
 
       {ps.length === 0 && ev.paid && (
         <div className="chart-note">
-          Marcado como pago{ev.paid_at ? ` em ${fmtDate(ev.paid_at)}` : ''}.{' '}
+          Marcado como recebido{ev.paid_at ? ` em ${fmtDate(ev.paid_at)}` : ''}.{' '}
           <button type="button" className="linkish" disabled={busy}
             onClick={() => run(() => saveEvent({ id: ev.id, paid: false, paid_at: null }))}>
-            Marcar como não pago
+            Marcar como não recebido
           </button>
         </div>
       )}
@@ -177,18 +181,19 @@ export default function EventForm({ initial, onClose }) {
         </div>
         {initial?.id ? (
           <>
-            <PaymentsSection ev={initial} />
+            <PaymentsSection ev={initial}
+              liveTotal={Number(String(f.value).replace(',', '.')) || Number(String(f.gross_value).replace(',', '.')) || 0} />
             <Attachments kind="event" id={initial.id} />
           </>
         ) : (
           <>
             <label className="check">
               <input type="checkbox" checked={f.paid} onChange={(e) => set('paid', e.target.checked)} />
-              Pago
+              Recebido
             </label>
             {f.paid && (
               <div className="field">
-                <label>Data de pagamento</label>
+                <label>Data de recebimento</label>
                 <input type="date" value={f.paid_at || ''} onChange={(e) => set('paid_at', e.target.value)} />
               </div>
             )}

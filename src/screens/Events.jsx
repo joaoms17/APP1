@@ -101,7 +101,7 @@ export default function Events() {
         <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)}>
           <option value="all">Todos os estados</option>
           <option value="unpaid">Por receber</option>
-          <option value="paid">Pagos</option>
+          <option value="paid">Recebidos</option>
         </select>
       </div>
 
@@ -127,9 +127,9 @@ export default function Events() {
                     <div className="badges">
                       {(() => {
                         const st = paymentState(ev)
-                        if (st === 'paid') return <span className="badge ok">Pago</span>
+                        if (st === 'paid') return <span className="badge ok">Recebido</span>
                         if (st === 'partial') return <span className="badge mid">Falta {fmtMoney(Number(ev.value) - paidAmount(ev))}</span>
-                        return <span className="badge pend">Por pagar</span>
+                        return <span className="badge pend">Por receber</span>
                       })()}
                       {ev.receipt_issued && <span className="badge ok">Recibo ✓</span>}
                     </div>
