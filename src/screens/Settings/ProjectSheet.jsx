@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   Button, EmptyState, Field, Icon, IconButton, Segmented, Sheet, Switch, TextInput,
-  useConfirm, useField, useSheet,
+  useConfirm, useField, useSheet, useToast,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate } from '../../router.js'
@@ -125,6 +125,7 @@ const subscribeLogos = (fn) => { logoSubs.add(fn); return () => logoSubs.delete(
 
 function LogoField({ project }) {
   const { projects, setProjectLogo, removeProjectLogo, logoUrl, notify, undoable } = useStore()
+  const { dismiss } = useToast()
   const labelId = useId()
   const helpId = useId()
   const cur = project ? projects.find((p) => p.id === project.id) || project : null
@@ -146,6 +147,8 @@ function LogoField({ project }) {
     setBusy(true)
     setErr(null)
     try {
+      // "Remover" ainda à espera do Anular: grava-se já, senão apagaria o logotipo novo ao expirar
+      if (hidden) await dismiss()
       await setProjectLogo(cur, file)
       notify({ text: 'Logotipo guardado', icon: 'checkCircle' })
     } catch (ex) {
@@ -206,6 +209,7 @@ function ProjectForm({ project: p, onClose }) {
     projects, events, expenses, gcalCalendars, gcalStatus, saveProject, deleteProject, notify, today,
   } = useStore()
   const confirm = useConfirm()
+  const { dismiss } = useToast()
   const formId = useId()
   const ordId = useId()
   const [init] = useState(() => initialOf(p, projects))
@@ -312,6 +316,7 @@ function ProjectForm({ project: p, onClose }) {
     setBusy(true)
     setSaveErr(null)
     try {
+      await dismiss() // um calendário deste projeto removido há pouco (Anular) sai primeiro da base de dados
       await deleteProject(p.id)
     } catch (ex) {
       setBusy(false)

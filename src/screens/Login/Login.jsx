@@ -14,8 +14,9 @@ const OFFLINE = 'Sem ligação. Verifica a internet e tenta de novo.'
 const PasswordInput = forwardRef(function PasswordInput({ value, onChange, shown, onToggle }, ref) {
   const f = useField()
   return (
-    <div className="control lg-pw">
-      <input ref={ref} id={f?.id} aria-describedby={f?.describedBy} type={shown ? 'text' : 'password'}
+    <div className={`control lg-pw${f?.invalid ? ' invalid' : ''}`}>
+      <input ref={ref} id={f?.id} aria-describedby={f?.describedBy} aria-invalid={f?.invalid || undefined}
+        type={shown ? 'text' : 'password'}
         value={value} onChange={(e) => onChange(e.target.value)} autoComplete="current-password"
         enterKeyHint="go" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
       <IconButton icon={shown ? 'eyeOff' : 'eye'} label={shown ? 'Esconder password' : 'Mostrar password'}
@@ -29,6 +30,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [shown, setShown] = useState(false)
   const [err, setErr] = useState(null)
+  const [missing, setMissing] = useState({}) // campos por preencher: { email, password }
   const [busy, setBusy] = useState(false)
   const emailRef = useRef(null)
   const pwRef = useRef(null)
@@ -39,8 +41,16 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault()
     if (busy) return
-    if (!email.trim()) { emailRef.current?.focus(); return }
-    if (!password) { pwRef.current?.focus(); return }
+    // campo vazio: diz qual é, junto ao campo (não só o foco)
+    const miss = { email: !email.trim(), password: !password }
+    if (miss.email || miss.password) {
+      setMissing(miss)
+      setErr(null)
+      if (miss.email) emailRef.current?.focus()
+      else pwRef.current?.focus()
+      return
+    }
+    setMissing({})
     setBusy(true)
     setErr(null)
     try {
@@ -53,6 +63,12 @@ export default function Login() {
     }
   }
 
+  // ao escrever, o aviso desse campo sai
+  const typing = (set, k) => (v) => {
+    set(v)
+    if (missing[k]) setMissing((m) => ({ ...m, [k]: false }))
+  }
+
   return (
     <main className="lg-wrap">
       <form className="lg-form" aria-labelledby="lg-title" onSubmit={submit} noValidate>
@@ -63,12 +79,12 @@ export default function Login() {
         </div>
         <div className="card lg-card">
           {err && <Callout tone="error">{err}</Callout>}
-          <Field label="Email">
-            <TextInput ref={emailRef} type="email" value={email} onChange={setEmail} autoComplete="email"
+          <Field label="Email" error={missing.email && 'Escreve o teu email.'}>
+            <TextInput ref={emailRef} type="email" value={email} onChange={typing(setEmail, 'email')} autoComplete="email"
               inputMode="email" enterKeyHint="next" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           </Field>
-          <Field label="Password">
-            <PasswordInput ref={pwRef} value={password} onChange={setPassword} shown={shown}
+          <Field label="Password" error={missing.password && 'Escreve a tua password.'}>
+            <PasswordInput ref={pwRef} value={password} onChange={typing(setPassword, 'password')} shown={shown}
               onToggle={() => setShown((s) => !s)} />
           </Field>
           <Button type="submit" variant="primary" size="lg" block loading={busy} loadingLabel="A entrar…">

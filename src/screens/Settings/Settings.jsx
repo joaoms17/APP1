@@ -233,12 +233,10 @@ export default function Settings() {
     setLeaving(true)
     try {
       await dismiss() // o que estiver à espera do Anular grava-se antes de sair
+      // sem rede o supabase-js não termina a sessão (nem com scope 'local', que também chama o servidor):
+      // fica o aviso "Sem ligação" com Tentar de novo
       const { error } = await db.auth.signOut()
-      // sem rede o servidor não responde: termina pelo menos neste aparelho
-      if (error) {
-        const local = await db.auth.signOut({ scope: 'local' })
-        if (local.error) throw local.error
-      }
+      if (error) throw error
       navigate('#/agenda', { replace: true }) // a próxima entrada começa na Agenda
     } catch (ex) {
       setLeaving(false)

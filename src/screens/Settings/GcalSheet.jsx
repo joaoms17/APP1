@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Button, Field, ProjectChips, Sheet, TextInput } from '../../ui'
+import { Button, Field, ProjectChips, Sheet, TextInput, useToast } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { useRoute } from '../../router.js'
 import { humanError } from '../../errors.js'
@@ -18,6 +18,7 @@ const sameUrl = (a, b) => normUrl(a).toLowerCase() === normUrl(b).toLowerCase()
 
 export default function GcalSheet({ onClose }) {
   const { projects, projectOptions, gcalCalendars, addGcalCalendar, notify } = useStore()
+  const { dismiss } = useToast()
   const { sheet } = useRoute()
   const formId = useId()
   const urlRef = useRef(null)
@@ -61,6 +62,8 @@ export default function GcalSheet({ onClose }) {
     setBusy(true)
     setFail(null)
     try {
+      // o mesmo endereço removido há instantes (ainda com Anular) sai primeiro: pode voltar a ligar-se
+      await dismiss()
       await addGcalCalendar(clean, projectId)
     } catch (ex) {
       setBusy(false)

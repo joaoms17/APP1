@@ -252,7 +252,11 @@ function QuoteForm({ quote, preset, onClose }) {
     const saved = await save()
     if (!saved) return
     setBusy(true)
-    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))) // store já com as linhas novas
+    // espera que o store já tenha as linhas gravadas (o valor do evento é calculado a partir delas)
+    const want = itemsKey(items)
+    for (let i = 0; i < 30 && itemsKey(latest.current.itemsForQuote(saved.id)) !== want; i++) {
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)))
+    }
     try {
       const evId = await latest.current.acceptQuote(saved.row)
       notify({ text: <>Orçamento aceite · evento de <b>{saved.row.client_name}</b> criado</>, icon: 'checkCircle',
