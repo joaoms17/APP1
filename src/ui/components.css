@@ -69,6 +69,7 @@ dialog.confirm[open] { animation: ui-fade var(--dur-2) var(--ease-out); }
 .sheet .grabber { position: relative; touch-action: none; cursor: grab; }
 .sheet .grabber::before { content: ''; position: absolute; inset: -14px -80px; }
 .sheet-head h2 { min-width: 0; outline: none; }
+dialog.sheet:focus, dialog.sheet:focus-visible { outline: none; } /* foco inicial na folha (sem título a focar) */
 .sheet-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) - 1); background: var(--scrim); }
 .confirm-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 1); background: var(--scrim); }
 dialog.sheet.full {
@@ -89,7 +90,8 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 /* ---- visualizador de anexo ------------------------------------------------------ */
 .viewer .sheet-body { padding: 0; gap: 0; align-content: stretch; }
 .viewer-stage { display: grid; place-items: center; min-height: 100%; padding: 16px; }
-.viewer-stage.img { background: rgba(0, 0, 0, .92); }
+.viewer-stage.img { background: rgba(0, 0, 0, .92); touch-action: none; overflow: hidden; }
+.viewer-stage.img img { will-change: transform; user-select: none; -webkit-user-drag: none; }
 .viewer-stage img { display: block; max-width: 100%; max-height: calc(var(--vvh, 100dvh) - 170px); object-fit: contain; border-radius: var(--radius-xs); }
 .viewer-file { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; color: var(--ink-2); text-align: center; }
 .viewer-file svg.i { width: 64px; height: 64px; stroke-width: 1.4; color: var(--muted); }
@@ -106,6 +108,10 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .toast .timer { width: 100%; animation: toast-timer var(--toast-dur, 10s) linear var(--toast-delay, 0s) forwards; }
 .toast.paused .timer { animation-play-state: paused; }
 @keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
+/* dentro de uma folha (telemóvel): por cima da barra de ações e do teclado, não colado a ela */
+@media (max-width: 1023.98px) {
+  dialog.sheet .toast { bottom: calc(var(--kb, 0px) + 89px + env(safe-area-inset-bottom)); }
+}
 
 /* ---- vazio compacto, esqueleto, linha de sincronização ---------------------------- */
 .empty.compact { padding: 16px 12px; }

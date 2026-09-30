@@ -35,11 +35,14 @@ export const paidAmountOf = (ev, pbe) => {
 
 export const missingOf = (ev, pbe) => Math.max(0, num(ev.value) - paidAmountOf(ev, pbe))
 
-// 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso
+// 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
+// Recebido = não falta nada (spec §9.1). O flag paid só conta sem pagamentos (legado, via
+// paidAmountOf): com pagamentos manda a soma, mesmo que o flag tenha ficado desatualizado.
+// Um evento de 0 € não tem nada a receber (nunca fica "Em atraso").
 export const eventStateOf = (ev, pbe, today) => {
   const got = paidAmountOf(ev, pbe)
   const total = num(ev.value)
-  if (ev.paid || (total > 0 && got >= total - EPS)) return 'paid'
+  if (got >= total - EPS) return 'paid'
   const past = ev.event_date < today
   if (got > EPS) return past ? 'partial-overdue' : 'partial'
   return past ? 'overdue' : 'due'
@@ -98,9 +101,12 @@ export function agingGroups(overdue, today, pbe) {
     .filter((g) => g.events.length)
 }
 
-// recibos por emitir: recebidos, sem recibo, já realizados (≤ hoje), do mais recente
-export const receiptsToIssueOf = (events, pbe, today) => sortDesc(events.filter((e) =>
-  e.event_date <= today && !e.receipt_issued && eventStateOf(e, pbe, today) === 'paid'))
+// recibo em falta: recebido, já realizado (≤ hoje), sem recibo e com valor (0 € não leva recibo)
+export const needsReceipt = (ev, pbe, today) =>
+  ev.event_date <= today && !ev.receipt_issued && num(ev.value) > 0 && eventStateOf(ev, pbe, today) === 'paid'
+
+// recibos por emitir, do mais recente
+export const receiptsToIssueOf = (events, pbe, today) => sortDesc(events.filter((e) => needsReceipt(e, pbe, today)))
 
 // resumo de uma lista de eventos (cabeçalhos de grupo, cartão do mês, pesquisa)
 // total = faturado; got = recebido (limitado ao valor de cada evento); missing = o que falta

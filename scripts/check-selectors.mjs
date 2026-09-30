@@ -145,6 +145,16 @@ section('Extra · deduplicação do Google (spec §14.3, casos sintéticos)')
   check('outro projeto no mesmo dia → por registar', by([ev('a', 'p', '2026-10-10', '21:00:00', 'Concerto')], [g('q', '2026-10-10', '21:00', 'Concerto')]), [['Concerto'], []])
 }
 
+section('Extra · estados (spec §9.1, casos sintéticos)')
+{
+  const e = (id, value, paid, event_date = '2026-09-20') => ({ id, value, paid, event_date, receipt_issued: false })
+  const pays = S.paymentsByEventOf([{ id: 'p1', event_id: 'flag', amount: 100 }])
+  check('legado (paid sem pagamentos) → paid', S.eventStateOf(e('leg', 300, true), pays, TODAY), 'paid')
+  check('flag desatualizado: paid mas pagamentos < valor → conta a soma', [S.eventStateOf(e('flag', 300, true), pays, TODAY), S.missingOf(e('flag', 300, true), pays)], ['partial-overdue', 200])
+  check('0 € no passado → paid (nada a receber)', S.eventStateOf(e('zero', 0, false), pays, TODAY), 'paid')
+  check('0 € não pede recibo', S.receiptsToIssueOf([e('zero', 0, false)], pays, TODAY).length, 0)
+}
+
 section('Extra · projetos e categorias')
 const usage = S.projectsByUsage(F.projects, events, TODAY, 'p-gospel')
 check('projetos ativos em 2026', F.projects.filter((p) => S.isProjectActive(p, 2026)).length, 7)

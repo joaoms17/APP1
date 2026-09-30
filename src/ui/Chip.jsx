@@ -23,8 +23,8 @@ export default function Chip({ selected, onClick, icon, count, project, classNam
   )
 }
 
-// setas ←/→ movem o foco entre os botões do grupo
-function arrowFocus(e) {
+// setas ←/→ movem o foco entre os botões do grupo; num grupo de rádio também escolhem
+function arrowFocus(e, select = false) {
   const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]
   if (!d) return
   const btns = [...e.currentTarget.querySelectorAll('button:not([disabled])')]
@@ -34,6 +34,7 @@ function arrowFocus(e) {
   const next = btns[(i + d + btns.length) % btns.length]
   next.focus()
   next.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  if (select && next.getAttribute('role') === 'radio' && next.getAttribute('aria-checked') !== 'true') next.click()
 }
 
 // filtros: uma linha com scroll horizontal (role="toolbar")
@@ -51,7 +52,7 @@ export function ChipGroup({ label, wrap = true, className = '', children }) {
   return (
     <div className={`chips${wrap ? ' wrap' : ''} ${className}`.trim()} role="radiogroup"
       aria-label={label || (field ? undefined : 'Opções')} aria-labelledby={!label ? field?.labelId : undefined}
-      onKeyDown={arrowFocus}>
+      onKeyDown={(e) => arrowFocus(e, true)}>
       <GroupCtx.Provider value="radio">{children}</GroupCtx.Provider>
     </div>
   )

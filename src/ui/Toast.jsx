@@ -6,9 +6,11 @@ import { humanError } from '../errors.js'
 import './hooks.js'
 import './components.css'
 
-// Toast único (spec §9.13). role="status"; 10 s com Anular · 6 s com "Ver" · 4 s informativo;
+// Toast único (spec §9.13). 10 s com Anular · 6 s com "Ver" · 4 s informativo;
 // pausa com toque, foco ou rato por cima. Um toast novo confirma (commit) a operação pendente
 // do anterior. Com uma folha aberta, o toast vai para dentro dela (senão ficava inerte).
+// O anúncio aos leitores de ecrã vai por um contentor role="status" que já existe antes de o
+// texto chegar (.toast-host): uma região viva inserida já com texto muitas vezes não é lida.
 //
 //   const { notify, undoable } = useToast()
 //   notify({ text, action: { label: 'Ver', run }, duration })
@@ -52,14 +54,16 @@ export function ToastProvider({ children }) {
     return id
   }, [])
 
+  // confirma a operação pendente (toast novo ou tempo esgotado); se falhar, desfaz e avisa
+  const settleRef = useRef(null)
   const notifyError = useCallback((ex, retry) => {
     const h = humanError(ex)
     console.warn(h.detail)
+    settleRef.current?.() // o erro substitui o toast anterior: o que estava pendente fica gravado
     show({ text: h.text, icon: 'alert', tone: 'error', duration: DUR.error,
       action: retry ? { label: 'Tentar de novo', run: retry } : null })
   }, [show])
 
-  // confirma a operação pendente (toast novo ou tempo esgotado); se falhar, desfaz e avisa
   const settle = useCallback(async () => {
     const p = pending.current
     pending.current = null
@@ -71,6 +75,7 @@ export function ToastProvider({ children }) {
       notifyError(ex)
     }
   }, [notifyError])
+  settleRef.current = settle
 
   const notify = useCallback(({ text, action = null, duration, icon = 'checkCircle', tone } = {}) => {
     settle()
@@ -88,6 +93,8 @@ export function ToastProvider({ children }) {
       notifyError(ex, () => run(opts))
       return null
     }
+    // outra operação terminou entretanto (dois toques seguidos): fica gravada antes de ser substituída
+    if (pending.current) settle()
     const id = show({ text: opts.text, icon: opts.icon || 'checkCircle', duration: opts.duration ?? DUR.undo,
       action: undo ? { label: 'Anular', undo: true } : null })
     pending.current = { id, row, undo, commit: opts.commit }
@@ -113,7 +120,8 @@ export function ToastProvider({ children }) {
     if (pending.current?.id === t.id) settle()
   }, [settle])
 
-  const dismiss = useCallback(() => { setToast(null); settle() }, [settle])
+  // fecha o toast e grava o pendente (devolve a promessa: ex. antes de terminar sessão)
+  const dismiss = useCallback(() => { setToast(null); return settle() }, [settle])
 
   // ao sair da página, grava o que estava à espera do Anular
   useEffect(() => {
@@ -128,8 +136,10 @@ export function ToastProvider({ children }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      {toast && createPortal(
-        <ToastView key={toast.id} toast={toast} remaining={remaining.current} onAction={onAction} onExpire={onExpire} />,
+      {createPortal(
+        <div className="toast-host" role="status" aria-live="polite">
+          {toast && <ToastView key={toast.id} toast={toast} remaining={remaining.current} onAction={onAction} onExpire={onExpire} />}
+        </div>,
         top || document.body,
       )}
     </Ctx.Provider>
@@ -160,7 +170,6 @@ function ToastView({ toast, remaining, onAction, onExpire }) {
 
   return (
     <div ref={ref} className={`toast${paused ? ' paused' : ''}${toast.tone === 'error' ? ' error' : ''}`}
-      role="status" aria-live="polite"
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPaused(true) }}
       onPointerLeave={(e) => { if (e.pointerType === 'mouse') setPaused(false) }}
       onTouchStart={() => setPaused(true)}

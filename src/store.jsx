@@ -32,6 +32,20 @@ const K_GCAL_OK = 'joana.v2.gcal'
 const NO_HIDDEN = { events: new Set(), expenses: new Set(), payments: new Set(), attachments: new Set(), gcal: new Set() }
 const visible = (rows, hidden) => (hidden.size ? rows.filter((r) => !hidden.has(r.id)) : rows)
 
+// campos vazios dos formulários → null (a BD recusa '' em time/numeric)
+const blank = (v) => v == null || (typeof v === 'string' && !v.trim())
+function cleanEvent(ev) {
+  const row = { ...ev }
+  for (const k of ['start_time', 'location', 'notes', 'gross_value']) if (k in row && blank(row[k])) row[k] = null
+  return row
+}
+function cleanExpense(ex) {
+  const row = { ...ex }
+  for (const k of ['project_id', 'category']) if (k in row && blank(row[k])) row[k] = null
+  return row
+}
+let ghostSeq = 0
+
 export function StoreProvider({ children }) {
   const [projects, setProjects] = useState([])
   const [rawEvents, setEvents] = useState([])
@@ -52,6 +66,8 @@ export function StoreProvider({ children }) {
   const [pendingUndo, setPendingUndo] = useState(null) // {kind:'event'|'expense', row} (compatibilidade v1)
   const [hidden, setHidden] = useState(NO_HIDDEN)
   const [overrides, setOverrides] = useState({}) // event_id → campos otimistas (paid, receipt_issued…)
+  const [ghosts, setGhosts] = useState([]) // pagamentos a gravar (aparecem logo; pending: true)
+  const ghostRef = useRef([])
   const [today, setToday] = useState(todayYMD)
   const [lastProjectId, setLastProjectIdState] = useState(() => LS.get(K_LAST_PROJECT) || null)
   const [receberSeenAt, setReceberSeenAt] = useState(() => LS.get(K_RECEBER_SEEN))
@@ -165,7 +181,10 @@ export function StoreProvider({ children }) {
     return Object.keys(overrides).length ? rows.map((e) => (overrides[e.id] ? { ...e, ...overrides[e.id] } : e)) : rows
   }, [rawEvents, hidden.events, overrides])
   const expenses = useMemo(() => visible(rawExpenses, hidden.expenses), [rawExpenses, hidden.expenses])
-  const payments = useMemo(() => visible(rawPayments, hidden.payments), [rawPayments, hidden.payments])
+  const payments = useMemo(() => {
+    const rows = visible(rawPayments, hidden.payments)
+    return ghosts.length ? [...rows, ...ghosts] : rows
+  }, [rawPayments, hidden.payments, ghosts])
   const attachments = useMemo(() => visible(rawAttachments, hidden.attachments), [rawAttachments, hidden.attachments])
   const gcalCalendars = useMemo(() => visible(rawGcal, hidden.gcal), [rawGcal, hidden.gcal])
 
@@ -185,7 +204,7 @@ export function StoreProvider({ children }) {
   }), [])
 
   const saveEvent = async (ev) => {
-    const row = { ...ev, updated_at: nowIso() }
+    const row = { ...cleanEvent(ev), updated_at: nowIso() }
     const { error } = ev.id
       ? await db.from('events').update(row).eq('id', ev.id)
       : await db.from('events').insert(row)
@@ -375,10 +394,12 @@ export function StoreProvider({ children }) {
   }
 
   // --- apagar com Anular (o registo só sai da base de dados quando o toast expira) ----
+  // apaga o registo (se falhar, lança: o toast repõe a linha e avisa) e depois os anexos órfãos
   const finalizeUndo = useCallback(async (p) => {
     if (!p) return
+    const { error } = await db.from(p.kind === 'event' ? 'events' : 'expenses').delete().eq('id', p.row.id)
+    if (error) throw error
     try {
-      // limpar anexos órfãos antes de apagar o registo
       const kind = p.kind === 'event' ? 'event' : 'expense'
       const { data: atts } = await db.from('attachments').select('*').eq('parent_kind', kind).eq('parent_id', p.row.id)
       if (atts?.length) {
@@ -386,9 +407,6 @@ export function StoreProvider({ children }) {
         await db.from('attachments').delete().eq('parent_kind', kind).eq('parent_id', p.row.id)
       }
     } catch { /* tabela de anexos pode não existir */ }
-    try {
-      await db.from(p.kind === 'event' ? 'events' : 'expenses').delete().eq('id', p.row.id)
-    } catch { /* se falhar, o registo reaparece no próximo carregamento */ }
   }, [])
 
   const softDelete = (kind, row) => {
@@ -421,9 +439,10 @@ export function StoreProvider({ children }) {
   const deleteExpense = (row) => softDelete('expense', row)
 
   const saveExpense = async (ex) => {
+    const row = cleanExpense(ex)
     const { error } = ex.id
-      ? await db.from('expenses').update(ex).eq('id', ex.id)
-      : await db.from('expenses').insert(ex)
+      ? await db.from('expenses').update(row).eq('id', ex.id)
+      : await db.from('expenses').insert(row)
     if (error) throw error
     await loadExpenses()
   }
@@ -553,6 +572,7 @@ export function StoreProvider({ children }) {
   const receivables = useMemo(() => S.receivablesOf(events, pbe, today), [events, pbe, today])
   const agingGroups = useMemo(() => S.agingGroups(receivables.overdue, today, pbe), [receivables, today, pbe])
   const receiptsToIssue = useMemo(() => S.receiptsToIssueOf(events, pbe, today), [events, pbe, today])
+  const needsReceipt = useCallback((ev) => S.needsReceipt(ev, pbe, today), [pbe, today])
   const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents), [events, googleEvents])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
@@ -607,6 +627,18 @@ export function StoreProvider({ children }) {
   live.current = { events, pbe, today }
   const liveEvent = (ev) => live.current.events.find((e) => e.id === (ev?.id ?? ev)) || ev
 
+  // pagamentos a caminho: entram logo na lista (otimista) e contam para o que falta, mesmo antes
+  // do re-render — dois toques seguidos em "Recebi" nunca registam o resto duas vezes
+  const putGhost = (g) => { ghostRef.current = [...ghostRef.current, g]; setGhosts(ghostRef.current) }
+  const dropGhost = (id) => { ghostRef.current = ghostRef.current.filter((g) => g.id !== id); setGhosts(ghostRef.current) }
+  const liveGot = (cur) => {
+    const rows = live.current.pbe.get(cur.id) || []
+    const ids = new Set(rows.map((p) => p.id))
+    const all = [...rows, ...ghostRef.current.filter((g) => g.event_id === cur.id && !ids.has(g.id))]
+    return S.paidAmountOf(cur, new Map([[cur.id, all]]))
+  }
+  const liveMissing = (cur) => Math.max(0, Math.round((Number(cur.value) - liveGot(cur)) * 100) / 100)
+
   const insertPayment = async (event_id, amount, paid_at) => {
     const { data, error } = await db.from('payments').insert({ event_id, amount, paid_at }).select().single()
     if (error) throw error
@@ -622,17 +654,23 @@ export function StoreProvider({ children }) {
     const amt = Math.round(Number(amount) * 100) / 100
     if (!(amt > 0)) throw userError('O valor tem de ser maior do que 0 €.')
     const cur = liveEvent(ev)
-    const got = S.paidAmountOf(cur, live.current.pbe)
-    const miss = S.missingOf(cur, live.current.pbe)
+    const got = liveGot(cur)
+    const miss = liveMissing(cur)
     const text = amt >= miss - EPS
       ? <><b>{money(amt)} registados</b> · {cur.title}</>
       : got > EPS ? <>Pagamento de <b>{money(amt)}</b> registado</> : <>Sinal de <b>{money(amt)}</b> registado</>
+    const ghost = { id: `a-gravar-${++ghostSeq}`, event_id: cur.id, amount: amt, paid_at: date || live.current.today, created_at: nowIso(), pending: true }
+    putGhost(ghost)
     return toast.undoable({
       text,
       run: async () => {
-        const row = await insertPayment(cur.id, amt, date || live.current.today)
-        await resyncPaid(cur)
-        return row
+        try {
+          const row = await insertPayment(cur.id, amt, ghost.paid_at)
+          await resyncPaid(cur)
+          return row
+        } finally {
+          dropGhost(ghost.id)
+        }
       },
       undo: async (row) => {
         const { error } = await db.from('payments').delete().eq('id', row.id)
@@ -645,7 +683,7 @@ export function StoreProvider({ children }) {
   // "Recebi 370 €": regista o que falta, com a data de hoje
   const receiveRemaining = async (ev) => {
     const cur = liveEvent(ev)
-    const miss = S.missingOf(cur, live.current.pbe)
+    const miss = liveMissing(cur)
     if (miss <= EPS) return null
     return recordPayment(cur, miss, live.current.today)
   }
@@ -665,8 +703,8 @@ export function StoreProvider({ children }) {
   // payment: { kind: 'none'|'deposit'|'full', amount, date } → id; toast "Evento guardado · Ver"
   const createEvent = async (fields, { payment, files } = {}) => {
     const { id: _id, paid: _p, paid_at: _pa, ...rest } = fields || {}
-    const row = { ...rest, paid: false, paid_at: null, updated_at: nowIso() }
-    if (row.value === '' || row.value == null) row.value = row.gross_value
+    const row = { ...cleanEvent(rest), paid: false, paid_at: null, updated_at: nowIso() }
+    if (blank(row.value)) row.value = row.gross_value ?? 0
     const { data, error } = await db.from('events').insert(row).select('id').single()
     if (error) throw error
     const id = data.id
@@ -691,7 +729,7 @@ export function StoreProvider({ children }) {
   // despesa nova (+ ficheiros) → id; toast "Despesa guardada · Ver"
   const createExpense = async (fields, { files } = {}) => {
     const { id: _id, ...rest } = fields || {}
-    const { data, error } = await db.from('expenses').insert(rest).select('id').single()
+    const { data, error } = await db.from('expenses').insert(cleanExpense(rest)).select('id').single()
     if (error) throw error
     const id = data.id
     const failed = await uploadAll('expense', id, files)
@@ -701,20 +739,14 @@ export function StoreProvider({ children }) {
     return id
   }
 
-  // Editar → Guardar: nunca envia paid/paid_at (o estado de pagamento só muda por pagamentos)
+  // Editar → Guardar: nunca envia paid/paid_at (o estado de pagamento só muda por pagamentos e
+  // markUnpaid; com pagamentos, o estado vem da soma e o flag não conta). Líquido vazio = bruto.
   const updateEventFields = async (id, fields) => {
     const { id: _id, paid: _p, paid_at: _pa, ...rest } = fields || {}
-    await saveEvent({ id, ...rest })
-    // o valor mudou e há pagamentos: acerta o flag só se ficou errado (PATCH à parte, só nesse caso)
-    const ps = live.current.pbe.get(id)
-    if ('value' in rest && ps?.length) {
-      const full = Number(rest.value) > 0 && sumAmount(ps) >= Number(rest.value) - EPS
-      const cur = live.current.events.find((e) => e.id === id)
-      if (cur && !!cur.paid !== full) {
-        await syncPaidFlag({ id, value: rest.value })
-        await loadEvents()
-      }
+    if ('value' in rest && blank(rest.value)) {
+      rest.value = !blank(rest.gross_value) ? rest.gross_value : liveEvent(id)?.gross_value ?? 0
     }
+    await saveEvent({ id, ...rest })
   }
 
   // Recibo emitido (Detalhe, Receber › Recibos) — grava logo, com Anular
@@ -753,6 +785,7 @@ export function StoreProvider({ children }) {
 
   // apagar pagamento: sai logo da lista; só é apagado na base de dados quando o toast expira
   const removePaymentDeferred = async (p, ev) => {
+    if (p?.pending) return null // ainda a gravar
     const cur = liveEvent(ev || p.event_id)
     const rest = (live.current.pbe.get(cur.id) || []).filter((x) => x.id !== p.id)
     const full = Number(cur.value) > 0 && sumAmount(rest) >= Number(cur.value) - EPS
@@ -816,7 +849,7 @@ export function StoreProvider({ children }) {
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
       // v2 — estado
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
-      today, eventsAsc, eventState, missing, receivables, agingGroups, receiptsToIssue,
+      today, eventsAsc, eventState, missing, needsReceipt, receivables, agingGroups, receiptsToIssue,
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen,

@@ -17,16 +17,17 @@ const hm = (t) => (t ? String(t).slice(0, 5) : '')
 const pvOf = (color) => ({ 'data-p': '', style: projectVars(color || '#929292') })
 const cx = (...xs) => xs.filter(Boolean).join(' ')
 
-function Lead({ kind, ymd, time, today }) {
+function Lead({ kind, ymd, time, today, hidden }) {
+  const h = hidden ? { 'aria-hidden': true } : {}
   if (kind === 'time') {
-    return <span className="lead">{time ? <span className="t">{time}</span> : <span className="t none">s/ hora</span>}</span>
+    return <span className="lead" {...h}>{time ? <span className="t">{time}</span> : <span className="t none">s/ hora</span>}</span>
   }
   const d = Number(ymd.slice(8, 10))
   if (kind === 'month') {
     const y = ymd.slice(0, 4) !== today.slice(0, 4) ? ` ${ymd.slice(2, 4)}` : ''
-    return <span className="lead"><span className="d">{d}</span><span className="w">{MONTHS_ABBR[Number(ymd.slice(5, 7)) - 1]}{y}</span></span>
+    return <span className="lead" {...h}><span className="d">{d}</span><span className="w">{MONTHS_ABBR[Number(ymd.slice(5, 7)) - 1]}{y}</span></span>
   }
-  return <span className="lead"><span className="d">{d}</span><span className="w">{WEEKDAYS_ABBR[weekdayOf(ymd)]}</span></span>
+  return <span className="lead" {...h}><span className="d">{d}</span><span className="w">{WEEKDAYS_ABBR[weekdayOf(ymd)]}</span></span>
 }
 
 // "hoje quarta 30 de setembro" · "sábado 3 de outubro" · "12 de julho de 2025"
@@ -52,7 +53,7 @@ export function EventRow({
   flash = false, onOpen, onAction, className = '',
 }) {
   const store = useStore()
-  const { today, projectById, eventState, missing, attachmentsFor, receiveRemaining, setReceipt } = store
+  const { today, projectById, eventState, missing, needsReceipt, attachmentsFor, receiveRemaining, setReceipt } = store
   const p = projectById(ev.project_id)
   const t = hm(ev.start_time)
   const st = eventState(ev)
@@ -63,11 +64,13 @@ export function EventRow({
     .filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
 
   const showsMissing = end === 'missing' || end === 'recebi'
+  const noReceipt = needsReceipt(ev)
   const receiptWord = ev.event_date > today ? null
-    : ev.receipt_issued ? 'recibo emitido' : st === 'paid' ? 'sem recibo' : null
+    : ev.receipt_issued ? 'recibo emitido' : noReceipt ? 'sem recibo' : null
   const label = [
     ev.title, datePhrase(ev.event_date, today), t, p?.name, ev.location,
-    showsMissing ? null : money(ev.value), STATE_PHRASE[st](money(mis)),
+    showsMissing ? null : money(ev.value),
+    STATE_PHRASE[st](money(mis)) + (showsMissing && (st === 'overdue' || st === 'due') ? `, falta ${money(mis)}` : ''),
     marks ? receiptWord : null, hasAtt ? 'tem anexo' : null,
   ].filter(Boolean).join(', ')
 
@@ -80,7 +83,7 @@ export function EventRow({
 
   // a 3.ª linha só existe quando há algo a assinalar (mesmas regras do StatusBadge/ReceiptMark)
   const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
-  const receiptShown = marks && ev.event_date <= today && (ev.receipt_issued || st === 'paid')
+  const receiptShown = marks && ev.event_date <= today && (ev.receipt_issued || noReceipt)
   const hasTags = badgeShown || receiptShown || hasAtt
   const tags = (
     <>
@@ -90,11 +93,13 @@ export function EventRow({
     </>
   )
   const cls = cx('row', ev.event_date === today && lead === 'date' && 'today', blank && 'blank', flash && 'flash', className)
+  // com ação de linha, o texto visível repete o nome do botão esticado: fica escondido dos leitores de ecrã
+  const withAction = end === 'recebi' || end === 'emitido'
   const content = (
     <>
       <span className="bar" />
-      <Lead kind={lead} ymd={ev.event_date} time={t} today={today} />
-      <span className="main">
+      <Lead kind={lead} ymd={ev.event_date} time={t} today={today} hidden={withAction} />
+      <span className="main" aria-hidden={withAction || undefined}>
         <span className="title">{ev.title}</span>
         <span className="meta">{metaNode}</span>
         {hasTags && <span className="tags">{tags}</span>}
@@ -102,14 +107,14 @@ export function EventRow({
     </>
   )
 
-  if (end === 'recebi' || end === 'emitido') {
+  if (withAction) {
     const recebi = end === 'recebi'
     return (
       <div className={cls} {...pvOf(p?.color)}>
         <button type="button" className="row-open" aria-label={label} onClick={open} />
         {content}
         <span className="end">
-          <span className="money">{money(recebi ? mis : ev.value)}</span>
+          <span className="money" aria-hidden="true">{money(recebi ? mis : ev.value)}</span>
           <Button variant="row" icon="check" iconTone="ok" onClick={act}
             aria-label={recebi ? `Recebi ${money(mis)} de ${ev.title}` : `Recibo de ${ev.title} emitido`}>
             {recebi ? 'Recebi' : 'Emitido'}

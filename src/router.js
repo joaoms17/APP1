@@ -154,7 +154,12 @@ function onKey(e) {
   if (document.querySelector('dialog[open]')) return
   if (e.key === '/') {
     e.preventDefault()
-    navigate('#/agenda/lista?q=')
+    // volta à pesquisa que estava (texto e filtros) ou abre uma nova; depois foca o campo
+    const r = getRoute()
+    if (!(r.tab === 'agenda' && 'q' in r.params)) {
+      navigate('q' in parse(tabHref('agenda')).params ? tabHref('agenda') : '#/agenda/lista?q=')
+    }
+    setTimeout(() => document.querySelector('.sh-tab:not([hidden]) input[type="search"]')?.focus(), 60)
   } else if (e.key === 'n' || e.key === 'N') {
     e.preventDefault()
     openNew()

@@ -137,10 +137,12 @@ export default function Sheet({
     }
 
     // foco: o pedido; senão o título (tabindex=-1, não abre o teclado); senão a própria folha
+    // (nunca o × — o showModal() põe-no no 1.º botão e o anel aparecia no fecho)
     const target = initialFocusRef?.current
       || (labelledBy && document.getElementById(labelledBy))
       || dlg.querySelector('[data-sheet-title]')
-    target?.focus({ preventScroll: true })
+      || dlg
+    target.focus({ preventScroll: true })
     if (!dlg.contains(document.activeElement)) dlg.focus({ preventScroll: true })
 
     return () => {
