@@ -1,0 +1,117 @@
+/* =====================================================================
+   Documentos (spec §10.15) — orçamentos, cronogramas, tabela de preços e
+   folha de impressão. Só com FEATURES.docs. Classes .doc-…; a impressão
+   usa os tokens claros locais de .print-sheet (o PDF sai sempre claro).
+   ===================================================================== */
+
+/* ---- secções em Definições ------------------------------------------------ */
+.doc-card { padding-top: 4px; }
+.doc-card-title { padding: 10px 16px 2px; font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); }
+.doc-card .srow small .badge { margin-left: 4px; vertical-align: 1px; }
+.doc-card .skeleton { padding: 8px 16px; }
+
+/* tabela de preços */
+.doc-prices { display: grid; }
+.doc-price {
+  display: grid; grid-template-columns: minmax(0, 1fr) 112px 44px; align-items: center; gap: 8px;
+  min-height: 60px; padding: 6px 6px 6px 16px; position: relative;
+}
+.doc-price + .doc-price::after { content: ''; position: absolute; top: 0; left: 16px; right: 14px; height: 1px; background: var(--rule); }
+.doc-price b { font-weight: 700; overflow-wrap: anywhere; }
+.doc-price > *, .doc-inline > *, .doc-line > * { min-width: 0; } /* os campos encolhem com a coluna */
+.doc-price-in { min-height: 44px; padding: 0 10px; }
+.doc-price-in input { text-align: right; }
+.doc-inline { display: grid; grid-template-columns: minmax(0, 1fr) 100px auto; align-items: center; gap: 8px; }
+.doc-prices .doc-inline { padding: 10px 12px 12px 16px; border-top: 1px solid var(--rule); }
+.doc-prices .empty { padding-bottom: 4px; }
+
+/* ---- folhas ----------------------------------------------------------------- */
+.doc-sheet .group-head { background: var(--sheet-bg); }
+.doc-sheet .field { grid-template-columns: minmax(0, 1fr); } /* campos lado a lado encolhem com a coluna */
+.doc-sheet-title { font-size: var(--fs-title); font-weight: 800; outline: none; }
+.doc-hint { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); line-height: 1.4; }
+.doc-state { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+
+/* serviços com stepper de 44 px */
+.doc-svcs { display: grid; }
+.doc-svc { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; position: relative; }
+.doc-svc + .doc-svc::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--rule); }
+.doc-svc > span:first-child { min-width: 0; }
+.doc-svc b { display: block; font-weight: 700; }
+.doc-svc small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+.doc-stepper { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.doc-stepper output { min-width: 28px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.doc-stepper .icon-btn[disabled] { opacity: .45; cursor: default; }
+.doc-total { justify-content: space-between; }
+.doc-total .money { font-size: var(--fs-heading); }
+
+/* cronograma: Hora | Quem · Serviço | lixo */
+.doc-ev { display: grid; gap: 2px; }
+.doc-ev b { font-size: var(--fs-title); font-weight: 800; }
+.doc-ev small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+.doc-lines { display: grid; gap: 12px; }
+.doc-line { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; grid-template-areas: "t w x" "s s x"; gap: 8px; align-items: center; }
+.doc-line > .control.time { grid-area: t; padding: 0 10px; }
+.doc-line > .control:nth-child(2) { grid-area: w; }
+.doc-line > .doc-line-svc { grid-area: s; }
+.doc-line > .icon-btn { grid-area: x; align-self: center; }
+.doc-line + .doc-line { padding-top: 12px; border-top: 1px solid var(--rule); }
+.doc-add-line { justify-self: start; margin-left: -8px; }
+
+@media (min-width: 1024px) {
+  .doc-line { grid-template-columns: 112px minmax(0, 1fr) minmax(0, 1fr) 44px; grid-template-areas: "t w s x"; }
+  .doc-line + .doc-line { padding-top: 0; border-top: 0; }
+}
+
+/* ---- folha de impressão (tokens claros locais via .print-sheet) ---------------- */
+.doc-print {
+  position: fixed; inset: 0; z-index: var(--z-print); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--page); color: var(--ink); animation: doc-in var(--dur-2) var(--ease-out);
+}
+@keyframes doc-in { from { opacity: 0; } }
+.doc-actions {
+  position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) var(--gutter) 10px;
+  background: var(--page); border-bottom: 1px solid var(--rule);
+}
+.doc-actions .btn.quiet { margin-left: -8px; }
+.doc-page {
+  max-width: 600px; margin: 24px auto calc(40px + env(safe-area-inset-bottom)); padding: 32px 24px 40px;
+  background: var(--surface); border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 14px; line-height: 1.55;
+}
+.doc-head { text-align: center; margin-bottom: 18px; }
+.doc-logo { display: block; max-width: 140px; max-height: 72px; margin: 0 auto 12px; object-fit: contain; }
+.doc-brand {
+  font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 38px; line-height: 1;
+  font-variation-settings: "opsz" 144; letter-spacing: -0.02em; color: var(--accent-text);
+}
+.doc-hairline { width: 36px; height: 2px; margin: 10px auto 8px; border-radius: 1px; background: var(--gold); }
+.doc-sub { color: var(--muted); font-size: 13px; font-weight: 600; }
+.doc-title { font-family: var(--font-display); font-weight: 600; font-size: 24px; font-variation-settings: "opsz" 72; text-align: center; margin: 18px 0 12px; }
+.doc-meta { text-align: center; font-size: 14px; color: var(--ink-2); margin-bottom: 20px; }
+.doc-meta b { color: var(--ink); font-weight: 800; }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.doc-table th, .doc-table td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--rule); }
+.doc-table th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.doc-table .num { text-align: right; white-space: nowrap; }
+.doc-table .doc-time { font-weight: 800; white-space: nowrap; }
+.doc-table .doc-total td { font-weight: 800; font-size: 16px; border-top: 2px solid var(--line); border-bottom: 0; padding-top: 12px; }
+.doc-notes { margin-top: 16px; font-size: 13.5px; color: var(--ink-2); white-space: pre-line; }
+.doc-foot { margin-top: 28px; text-align: center; font-size: 13px; color: var(--muted); }
+.doc-orn { display: block; width: 120px; height: 12px; margin: 10px auto 0; fill: none; stroke: var(--gold); stroke-width: 1.2; }
+.doc-orn .fill { fill: var(--gold); stroke: none; }
+
+@media (max-width: 480px) {
+  .doc-page { margin: 0; border-radius: 0; box-shadow: none; padding: 24px 18px 40px; }
+}
+
+@media print {
+  body > :not(.doc-print) { display: none !important; }
+  html, body { background: transparent !important; }
+  .doc-print { position: static; overflow: visible; background: none; animation: none; }
+  .doc-actions { display: none; }
+  .doc-page { max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; background: none; }
+  .doc-table tr { break-inside: avoid; }
+  @page { margin: 16mm 14mm; }
+}
