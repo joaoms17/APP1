@@ -56,8 +56,6 @@
 /* ---- formulário ------------------------------------------------------------------ */
 .ev-form { display: grid; gap: var(--sp-4); }
 .ev-sheet .chips.wrap .chip { height: 38px; }
-/* campos lado a lado (.row2): o <input> não pode impor a largura intrínseca à coluna */
-.ev-sheet .field > .control { min-width: 0; }
 .ev-form-help { margin-top: -10px; font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
 .ev-sub { display: grid; gap: 12px; padding: 14px; border-radius: var(--radius-md); background: var(--surface-sunken); }
 .ev-sub-help { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; line-height: 1.4; }

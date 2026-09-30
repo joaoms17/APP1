@@ -152,7 +152,8 @@ export const TextArea = forwardRef(function TextArea({ value, onChange, placehol
   )
 })
 
-// pesquisa: ícone fora do placeholder, rótulo só para leitores de ecrã, botão "Limpar pesquisa"
+// pesquisa: ícone fora do placeholder, rótulo só para leitores de ecrã, botão "Apagar texto"
+// (o "Limpar pesquisa" é a ação dos vazios, que também tira filtros)
 export const SearchInput = forwardRef(function SearchInput({
   value, onChange, onClear, label = 'Pesquisar', placeholder, autoFocus, className = '', ...rest
 }, ref) {
@@ -167,7 +168,7 @@ export const SearchInput = forwardRef(function SearchInput({
         value={value ?? ''} placeholder={placeholder ?? label} autoFocus={autoFocus} {...rest}
         onChange={(e) => onChange?.(e.target.value, e)} />
       {value ? (
-        <IconButton icon="x" size="sm" className="clear" label="Limpar pesquisa"
+        <IconButton icon="x" size="sm" className="clear" label="Apagar texto"
           onClick={(e) => { if (onClear) onClear(e); else onChange?.('', e); own.current?.focus() }} />
       ) : null}
     </div>

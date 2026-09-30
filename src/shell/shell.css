@@ -27,7 +27,7 @@
 /* sidebar (≥ 1024 px): navegação em grelha, Google com aviso, conta sem transbordar */
 .sidebar nav { display: grid; gap: 4px; }
 .sidebar button.sync { width: 100%; text-align: left; border-radius: var(--radius-md); min-height: var(--hit); color: var(--ink-2); }
-.sidebar button.sync:hover { background: var(--surface-sunken); }
+@media (hover: hover) { .sidebar button.sync:hover { background: var(--surface-sunken); } }
 .sidebar .sync.warn i { background: var(--warning-fg); }
 .sidebar .account > div { min-width: 0; }
 .sidebar .account small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -1,7 +1,7 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import {
   Button, EmptyState, Field, Icon, IconButton, Segmented, Sheet, Switch, TextInput,
-  useConfirm, useField, useSheet, useToast,
+  useConfirm, useFieldGroup, useSheet, useToast,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate } from '../../router.js'
@@ -94,8 +94,7 @@ function validate(f) {
 
 // ---------- cor: 9 amostras de 44 px com nome + "Cor livre" (conta-gotas) ------------------------
 function ColorPicker({ value, onChange }) {
-  const f = useField()
-  useLayoutEffect(() => { f?.markGroup(true) }, [f])
+  const f = useFieldGroup()
   const custom = !COLOR_NAME[value]
   return (
     <div className="st-swatches" role="group" aria-labelledby={f?.labelId} aria-describedby={f?.describedBy}>

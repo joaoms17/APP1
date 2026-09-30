@@ -18,11 +18,13 @@ export default function Kpi({ label, value, sub, to, onClick, className = '' }) 
 
 // Variação: verde = bom, vermelho = mau (despesas a descer são verdes: goodWhen="down").
 // value em pontos percentuais; null (sem ano anterior) não mostra nada.
-export function Delta({ value, goodWhen = 'up', suffix, className = '' }) {
+// srLabel: contexto só para leitores de ecrã, lido antes do valor ("Em relação a 2025:").
+export function Delta({ value, goodWhen = 'up', suffix, srLabel, className = '' }) {
   if (value == null || !Number.isFinite(value)) return null
   const good = goodWhen === 'down' ? value <= 0 : value >= 0
   return (
     <span className={['delta', good ? 'up' : 'down', className].filter(Boolean).join(' ')}>
+      {srLabel && <span className="sr-only">{srLabel} </span>}
       {value !== 0 && <Icon name={value > 0 ? 'arrowUp' : 'arrowDown'} />}
       {fmtPct(value)}{suffix ? ` ${suffix}` : ''}
     </span>

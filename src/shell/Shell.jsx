@@ -5,15 +5,15 @@ import { Skeleton, useScrollRestore } from '../ui'
 import Agenda from '../screens/Agenda/Agenda.jsx'
 import Receber from '../screens/Receber/Receber.jsx'
 import Expenses from '../screens/Expenses/Expenses.jsx'
-import Settings from '../screens/Settings/Settings.jsx'
 import Sidebar from './Sidebar.jsx'
 import Tabbar from './Tabbar.jsx'
 import SheetHost from './SheetHost.jsx'
 import { Boundary, ErrorPanel, errorDetail, lazyWithPreload } from './lazy.jsx'
 import './shell.css'
 
-// O Painel (Recharts) só é descarregado quando se abre o separador.
+// O Painel (Recharts) só é descarregado quando se abre o separador; as Definições, quando se abrem.
 const Dashboard = lazyWithPreload(() => import('../screens/Dashboard/Dashboard.jsx'))
+const Settings = lazyWithPreload(() => import('../screens/Settings/Settings.jsx'))
 
 const SCREENS = [
   ['agenda', Agenda],
@@ -121,7 +121,9 @@ export default function Shell({ booting = false }) {
         <TabScreens tab={tab} />
         {tab === 'definicoes' && (
           <Boundary resetKey="definicoes" fallback={(error, retry) => <ScreenError error={error} retry={retry} />}>
-            <Settings />
+            <Suspense fallback={<ScreenSkeleton label={LOADING.definicoes} />}>
+              <Settings />
+            </Suspense>
           </Boundary>
         )}
       </>

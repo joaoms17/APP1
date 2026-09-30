@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, StatusBadge } from '../../ui'
+import { Button, StatusBadge, STATE_PHRASE } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
 import { projectVars } from '../../color.js'
@@ -18,14 +18,6 @@ export function useClock() {
     return () => clearInterval(id)
   }, [])
   return now
-}
-
-const STATE_PHRASE = {
-  paid: () => 'recebido',
-  partial: (m) => `sinal recebido, falta ${m}`,
-  'partial-overdue': (m) => `em atraso, falta ${m}`,
-  overdue: () => 'em atraso',
-  due: () => 'por receber',
 }
 
 // Cartão de um evento de hoje — "bilhete leve" (spec §9.10): canhoto com a hora, faixa e lavagem
@@ -77,7 +69,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
   if (canReceive) {
     return (
       <div className={cls} {...pv}>
-        <button type="button" className="ag-tc-open" aria-label={label} onClick={open} />
+        <button type="button" className="row-open" aria-label={label} onClick={open} />
         {content}
       </div>
     )

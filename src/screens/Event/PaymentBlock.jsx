@@ -44,7 +44,7 @@ function AddPayment({ ev, miss, onDone, onDraft }) {
         cancelLabel: 'Corrigir',
         primary: 'cancel',
       })
-      if (!ok) { setTimeout(() => amountRef.current?.focus(), 0); return }
+      if (!ok) { amountRef.current?.focus(); return }
     }
     setBusy(true)
     const row = await recordPayment(ev, n, date)

@@ -65,11 +65,11 @@ function Kpis({ t }) {
     <div className="db-kpis">
       <Card className="db-kpi">
         <Kpi label="Receita líquida" value={eur(t.net)} sub={`bruto ${eur(t.gross)} · retido ${eur(t.retained)}`} />
-        {t.deltaNet != null && <span className="db-delta"><span className="sr-only">Em relação a {prev}: </span><Delta value={t.deltaNet} /></span>}
+        {t.deltaNet != null && <span className="db-delta"><Delta value={t.deltaNet} srLabel={`Em relação a ${prev}:`} /></span>}
       </Card>
       <Card className="db-kpi">
         <Kpi label="Despesas" value={eur(-t.exp)} sub={t.expPrev > EPS ? `${prev}: ${eur(-t.expPrev)}` : `sem despesas em ${prev}`} />
-        {t.deltaExp != null && <span className="db-delta"><span className="sr-only">Em relação a {prev}: </span><Delta value={t.deltaExp} goodWhen="down" /></span>}
+        {t.deltaExp != null && <span className="db-delta"><Delta value={t.deltaExp} goodWhen="down" srLabel={`Em relação a ${prev}:`} /></span>}
       </Card>
     </div>
   )
@@ -117,7 +117,7 @@ function ChartsError({ retry }) {
 
 export default function Dashboard() {
   const route = useRoute()
-  const { today, projects, yearTotals, receivables, loadingPhases } = useStore()
+  const { today, projects, yearTotals, loadingPhases } = useStore()
   const desktop = useMediaQuery('(min-width: 1024px)')
   const thisYear = Number(today.slice(0, 4))
   const curMonth = Number(today.slice(5, 7)) - 1
@@ -155,7 +155,7 @@ export default function Dashboard() {
       <div className="db-grid">
         <Hero t={t} thisYear={thisYear} desktop={desktop} />
         <Kpis t={t} />
-        <OverdueTile t={t} lateCount={receivables.overdue.filter((e) => e.event_date.startsWith(`${year}-`)).length} />
+        <OverdueTile t={t} lateCount={t.overdueYearCount} />
         <Boundary resetKey={year} fallback={(error, retry) => <ChartsError retry={retry} />}>
           <Suspense fallback={<ChartsFallback />}>
             <DashCharts t={t} projects={projects} month={month} onPick={onPick} thisYear={thisYear} curMonth={curMonth} />

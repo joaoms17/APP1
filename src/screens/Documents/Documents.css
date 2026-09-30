@@ -27,7 +27,6 @@
 
 /* ---- folhas ----------------------------------------------------------------- */
 .doc-sheet .group-head { background: var(--sheet-bg); }
-.doc-sheet .field { grid-template-columns: minmax(0, 1fr); } /* campos lado a lado encolhem com a coluna */
 .doc-sheet-title { font-size: var(--fs-title); font-weight: 800; outline: none; }
 .doc-hint { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); line-height: 1.4; }
 .doc-state { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }

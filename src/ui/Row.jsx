@@ -31,14 +31,15 @@ function Lead({ kind, ymd, time, today, hidden }) {
 }
 
 // "hoje quarta 30 de setembro" · "sábado 3 de outubro" · "12 de julho de 2025"
-function datePhrase(ymd, today) {
+export function datePhrase(ymd, today) {
   const rel = relDay(ymd, today)
   const y = ymd.slice(0, 4) !== today.slice(0, 4)
   const d = fmtDay(ymd, { weekday: 'day', month: 'long', year: y }).replace(',', '')
   return rel && ['Hoje', 'Amanhã', 'Ontem'].includes(rel) ? `${rel.toLowerCase()} ${d}` : d
 }
 
-const STATE_PHRASE = {
+// estado por extenso para os nomes acessíveis (linhas, cartão de hoje)
+export const STATE_PHRASE = {
   paid: () => 'recebido',
   partial: (m) => `sinal recebido, falta ${m}`,
   'partial-overdue': (m) => `em atraso, falta ${m}`,
@@ -50,7 +51,7 @@ const STATE_PHRASE = {
 // lead: 'date' | 'time' | 'month' · end: 'value' | 'missing' | 'recebi' | 'emitido'
 export function EventRow({
   ev, lead = 'date', blank = false, end = 'value', hideProject = false, meta, marks = true,
-  flash = false, onOpen, onAction, className = '',
+  flash = false, onOpen, onAction, className = '', ...rest
 }) {
   const store = useStore()
   const { today, projectById, eventState, missing, needsReceipt, attachmentsFor, receiveRemaining, setReceipt } = store
@@ -110,13 +111,13 @@ export function EventRow({
   if (withAction) {
     const recebi = end === 'recebi'
     return (
-      <div className={cls} {...pvOf(p?.color)}>
+      <div className={cls} {...pvOf(p?.color)} {...rest}>
         <button type="button" className="row-open" aria-label={label} onClick={open} />
         {content}
         <span className="end">
           <span className="money" aria-hidden="true">{money(recebi ? mis : ev.value)}</span>
           <Button variant="row" icon="check" iconTone="ok" onClick={act}
-            aria-label={recebi ? `Recebi ${money(mis)} de ${ev.title}` : `Recibo de ${ev.title} emitido`}>
+            aria-label={recebi ? `Recebi ${money(mis)} de ${ev.title}` : `Marcar recibo de ${ev.title} como emitido`}>
             {recebi ? 'Recebi' : 'Emitido'}
           </Button>
         </span>
@@ -124,7 +125,7 @@ export function EventRow({
     )
   }
   return (
-    <button type="button" className={cls} {...pvOf(p?.color)} aria-label={label} onClick={open}>
+    <button type="button" className={cls} {...pvOf(p?.color)} {...rest} aria-label={label} onClick={open}>
       {content}
       <span className="end"><span className="money">{money(end === 'missing' ? mis : ev.value)}</span></span>
     </button>
@@ -132,14 +133,14 @@ export function EventRow({
 }
 
 // ---------- evento do Google por registar ----------------------------------------------
-export function GoogleRow({ g, lead = 'date', onRegister, className = '' }) {
+export function GoogleRow({ g, lead = 'date', blank = false, onRegister, className = '', ...rest }) {
   const { today, projectById } = useStore()
   const p = projectById(g.project_id)
   const meta = [lead !== 'time' && g.time ? <b key="t">{g.time}</b> : null, p?.name, g.location]
     .filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
   const register = () => (onRegister ? onRegister(g) : openSheet('registar', { key: g.key }))
   return (
-    <div className={cx('row g', className)} {...pvOf(p?.color)}>
+    <div className={cx('row g', blank && 'blank', className)} {...pvOf(p?.color)} {...rest}>
       <span className="bar" />
       <Lead kind={lead} ymd={g.date} time={g.time} today={today} />
       <span className="main">

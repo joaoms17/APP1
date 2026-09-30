@@ -44,7 +44,7 @@ export function ItemRows({ items, lead = 'date', flashId = null, hideProject = f
           flash={it.ev.id === flashId} className={rowClass(it.ev.id)} />
       )
     }
-    return <GoogleRow key={it.g.key} g={it.g} lead={lead} className={blank ? 'blank' : ''} />
+    return <GoogleRow key={it.g.key} g={it.g} lead={lead} blank={blank} />
   })
 }
 

@@ -91,9 +91,9 @@ export default function SearchMode({ params, onExit }) {
           <Chip selected={quando === 'anteriores'} onClick={() => toggle('quando', 'anteriores', quando)}>Anteriores</Chip>
           <Chip selected={quando === 'proximos'} onClick={() => toggle('quando', 'proximos', quando)}>Próximos</Chip>
           <span className="chip-sep" aria-hidden="true" />
-          <Chip selected={estado === 'atraso'} count={receivables.overdue.length} onClick={() => toggle('estado', 'atraso', estado)}>{'Em atraso '}</Chip>
+          <Chip selected={estado === 'atraso'} count={receivables.overdue.length} onClick={() => toggle('estado', 'atraso', estado)}>Em atraso</Chip>
           <Chip selected={estado === 'sinal'} onClick={() => toggle('estado', 'sinal', estado)}>Sinal</Chip>
-          <Chip selected={estado === 'semrecibo'} count={receiptsToIssue.length} onClick={() => toggle('estado', 'semrecibo', estado)}>{'Sem recibo '}</Chip>
+          <Chip selected={estado === 'semrecibo'} count={receiptsToIssue.length} onClick={() => toggle('estado', 'semrecibo', estado)}>Sem recibo</Chip>
           <Chip selected={estado === 'porreceber'} onClick={() => toggle('estado', 'porreceber', estado)}>Por receber</Chip>
           <Chip selected={estado === 'recebidos'} onClick={() => toggle('estado', 'recebidos', estado)}>Recebidos</Chip>
         </ChipRow>

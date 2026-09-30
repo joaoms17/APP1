@@ -106,7 +106,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .btn.lg { --h: 52px; font-size: var(--fs-title); border-radius: 14px; }
 .btn.block { width: 100%; }
 .btn.primary { background: var(--accent); color: var(--on-accent); }
-.btn.primary:hover { background: var(--accent-strong); }
+@media (hover: hover) { .btn.primary:hover { background: var(--accent-strong); } }
 .btn.secondary { background: var(--surface); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--field-border); }
 .btn.tonal { background: var(--accent-soft); color: var(--accent-text); }
 .btn.ghost { color: var(--accent-text); padding: 0 8px; }
@@ -127,7 +127,7 @@ svg.i.lg { width: 24px; height: 24px; }
   width: var(--hit); height: var(--hit); border-radius: 50%; display: inline-grid; place-items: center;
   color: var(--ink-2); flex: none;
 }
-.icon-btn:hover { background: var(--surface-sunken); }
+@media (hover: hover) { .icon-btn:hover { background: var(--surface-sunken); } }
 .icon-btn.outlined { box-shadow: inset 0 0 0 1px var(--line); background: var(--surface); }
 .icon-btn.danger { color: var(--critical-fg); }
 
@@ -193,13 +193,15 @@ svg.i.lg { width: 24px; height: 24px; }
 
 /* ---- linhas (lista assente no papel) ---------------------------------------- */
 .list { display: grid; }
+/* coluna do dia/hora cresce com o Tamanho do texto; --row-inset = onde começa o texto (filetes, notas) */
+:root { --row-lead: calc(40 * var(--u)); --row-inset: calc(15px + var(--row-lead)); }
 .row {
-  display: grid; grid-template-columns: 3px 40px minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
+  display: grid; grid-template-columns: 3px var(--row-lead) minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
   width: 100%; text-align: left; padding: 12px 0; position: relative; color: inherit; text-decoration: none;
   border-radius: var(--radius-sm);
 }
-.row + .row::after { content: ''; position: absolute; top: 0; left: 55px; right: 0; height: 1px; background: var(--rule); }
-.row:hover { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+.row + .row::after { content: ''; position: absolute; top: 0; left: var(--row-inset); right: 0; height: 1px; background: var(--rule); }
+@media (hover: hover) { .row:hover { background: color-mix(in srgb, var(--surface) 55%, transparent); } }
 .row:active { background: var(--surface); }
 .row .bar { align-self: stretch; margin: 3px 0; width: 3px; border-radius: 2px; background: var(--p); }
 .row.g .bar { background: repeating-linear-gradient(to bottom, var(--p) 0 4px, transparent 4px 7px); }
@@ -225,7 +227,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .row .end .money { font-size: var(--fs-body); }
 .row .end .sub { font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
 .row.flash { animation: flash 1.2s var(--ease-out); }
-@keyframes flash { from { background: color-mix(in srgb, var(--p) 22%, transparent); } }
+@keyframes flash { from { background: color-mix(in srgb, var(--p, var(--accent)) 22%, transparent); } }
 
 /* estados (glossário único) */
 .badge {
@@ -254,7 +256,7 @@ svg.i.lg { width: 24px; height: 24px; }
 
 /* cartão do evento de hoje — "bilhete leve": canhoto com a hora + faixa e lavagem subtil da cor do projeto */
 .today-card {
-  position: relative; display: grid; grid-template-columns: 62px minmax(0, 1fr); column-gap: 12px; width: 100%; text-align: left; color: inherit;
+  position: relative; display: grid; grid-template-columns: calc(62 * var(--u)) minmax(0, 1fr); column-gap: 12px; width: 100%; text-align: left; color: inherit;
   padding: 14px 14px 12px 18px; border-radius: 18px;
   background: color-mix(in srgb, var(--p) var(--wash), var(--surface));
   box-shadow: var(--elev-1), inset 0 0 0 1px color-mix(in srgb, var(--p) 22%, var(--line));
@@ -312,7 +314,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .progress.gold > i { background: var(--gold); }
 
 /* ---- campos --------------------------------------------------------------- */
-.field { display: grid; gap: 6px; min-width: 0; }
+.field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .field > label, .field > .label { font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
 .field .help { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
 .field .err { font-size: var(--fs-meta); color: var(--critical-fg); font-weight: 700; display: flex; gap: 6px; align-items: center; }
@@ -480,7 +482,6 @@ table.tbl .x { width: 28px; color: var(--muted); }
   .sidebar .brand small { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); }
   .sidebar .new { margin: 0 0 14px; }
   .nav-item { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-md); color: var(--ink-2); font-weight: 700; text-decoration: none; position: relative; }
-  .nav-item:hover { background: var(--surface-sunken); }
   .nav-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 800; }
   .nav-item .new-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot-new); margin-left: auto; }
   .sidebar .spacer { flex: 1; }
@@ -509,6 +510,7 @@ table.tbl .x { width: 28px; color: var(--muted); }
   .day.sel { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
 }
 
+@media (hover: hover) and (min-width: 1024px) { .nav-item:not([aria-current="page"]):hover { background: var(--surface-sunken); } }
 @media (min-width: 1440px) { .pill-ev b { display: inline; } }
 
 /* print sheet: tokens claros locais — os PDFs saem sempre claros, mesmo no dark */

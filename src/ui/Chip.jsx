@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useLayoutEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { useFieldGroup } from './Field.jsx'
 import { projectVars } from '../color.js'
@@ -16,8 +16,10 @@ export default function Chip({ selected, onClick, icon, count, project, classNam
     : project ? <span className="dot" aria-hidden="true" />
     : icon ? <Icon name={icon} /> : null
   const pv = project ? { 'data-p': '', style: projectVars(project.color) } : {}
+  // com contagem, o nome acessível leva uma vírgula: "Em atraso, 21" (e não "Em atraso21")
+  const name = count != null && typeof children === 'string' ? { 'aria-label': `${children}, ${count}` } : {}
   return (
-    <button type="button" className={`chip ${className}`.trim()} {...pv} {...state} onClick={onClick} {...rest}>
+    <button type="button" className={`chip ${className}`.trim()} {...pv} {...state} {...name} onClick={onClick} {...rest}>
       {lead}{children}{count != null && <span className="n">{count}</span>}
     </button>
   )
@@ -25,7 +27,7 @@ export default function Chip({ selected, onClick, icon, count, project, classNam
 
 // setas ←/→ movem o foco entre os botões do grupo; num grupo de rádio também escolhem
 function arrowFocus(e, select = false) {
-  const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key]
+  const d = { ArrowRight: 1, ArrowLeft: -1, ...(select && { ArrowDown: 1, ArrowUp: -1 }) }[e.key]
   if (!d) return
   const btns = [...e.currentTarget.querySelectorAll('button:not([disabled])')]
   const i = btns.indexOf(document.activeElement)
@@ -46,12 +48,20 @@ export function ChipRow({ label, className = '', children }) {
   )
 }
 
-// formulários: escolha única com quebra de linha (nunca esconde opções)
+// formulários: escolha única com quebra de linha (nunca esconde opções).
+// Um só ponto de Tab no grupo (o escolhido, ou o primeiro): as setas andam entre as opções.
 export function ChipGroup({ label, wrap = true, className = '', children }) {
   const field = useFieldGroup()
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const radios = [...(ref.current?.querySelectorAll('[role="radio"]') || [])]
+    const on = radios.find((b) => b.getAttribute('aria-checked') === 'true') || radios[0]
+    for (const b of radios) b.tabIndex = b === on ? 0 : -1
+  })
   return (
-    <div className={`chips${wrap ? ' wrap' : ''} ${className}`.trim()} role="radiogroup"
+    <div ref={ref} className={`chips${wrap ? ' wrap' : ''} ${className}`.trim()} role="radiogroup"
       aria-label={label || (field ? undefined : 'Opções')} aria-labelledby={!label ? field?.labelId : undefined}
+      aria-invalid={field?.invalid || undefined} aria-describedby={field?.describedBy}
       onKeyDown={(e) => arrowFocus(e, true)}>
       <GroupCtx.Provider value="radio">{children}</GroupCtx.Provider>
     </div>

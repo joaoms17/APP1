@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { confirmDialog } from './ConfirmDialog.jsx'
 import { useToast } from './Toast.jsx'
+import { useSheet } from './Sheet.jsx'
 import { useStore } from '../store.jsx'
 import { openSheet } from '../router.js'
 import './components.css'
@@ -35,8 +36,11 @@ export function useAttachmentUrl(att) {
 function Thumb({ att }) {
   const image = isImageName(att.path) || isImageName(att.name)
   const url = useAttachmentUrl(image ? att : null)
+  // o visualizador substitui a folha onde está: com algo escrito e não gravado, pergunta primeiro
+  const { guard } = useSheet()
   return (
-    <button type="button" className="thumb" aria-label={`Abrir ${att.name || 'anexo'}`} onClick={() => openSheet('anexo', att.id)}>
+    <button type="button" className="thumb" aria-label={`Abrir ${att.name || 'anexo'}`}
+      onClick={() => guard(() => openSheet('anexo', att.id))}>
       <span className="img">{image && url ? <img src={url} alt="" loading="lazy" /> : <Icon name={image ? 'image' : 'file'} size="lg" />}</span>
       <small>{att.name || 'anexo'}</small>
     </button>

@@ -13,16 +13,8 @@
 }
 .ag-prev .i { width: 16px; height: 16px; color: var(--muted); }
 .ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
-/* aviso do Google: o texto usa a largura toda e o "Tentar de novo" passa para baixo (a 390 px
-   o texto ficava espremido numa coluna estreita ao lado do botão) */
-.ag-screen .ag-banner {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; column-gap: 10px;
-  margin: 6px 0 4px; line-height: 1.4;
-}
-.ag-screen .ag-banner > .i { grid-column: 1; grid-row: 1; margin-top: 1px; }
-.ag-screen .ag-banner > span { grid-column: 2; grid-row: 1; }
-.ag-screen .ag-banner > .icon-btn { grid-column: 3; grid-row: 1 / span 2; }
-.ag-screen .ag-banner > .btn { grid-column: 2; grid-row: 2; justify-self: start; margin: -2px 0 -8px -10px; }
+/* aviso do Google (layout interno no .banner base) */
+.ag-screen .ag-banner { margin: 6px 0 4px; }
 
 /* ---- Novidades da v2 (uma vez) ------------------------------------------------ */
 .ag-news { margin: 6px 0 10px; }
@@ -39,27 +31,15 @@
 .ag-tasks-wait { padding: 16px; }
 .ag-more { height: 1px; }
 .ag-end-note {
-  display: flex; align-items: center; gap: 8px; padding: 10px 0 4px 55px;
+  display: flex; align-items: center; gap: 8px; padding: 10px 0 4px var(--row-inset);
   font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
 }
 .ag-end-note .i { width: 16px; height: 16px; flex: none; }
 
-/* cartão de hoje com "Recebi": botão esticado por baixo, ação por cima */
+/* cartão de hoje (variantes compact/flash e ação por cima do botão esticado no CSS base) */
 .ag-screen .today-card { cursor: pointer; }
-.ag-screen .today-card.flash { animation: ag-tc-flash 1.2s var(--ease-out); }
-@keyframes ag-tc-flash {
-  from { box-shadow: var(--elev-1), 0 0 0 4px color-mix(in srgb, var(--p) 45%, transparent), inset 0 0 0 1px var(--p); }
-}
 .ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: 18px; }
-.ag-tc-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
-.ag-tc-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
-.ag-screen .today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
-/* texto grande ou ecrã estreito: o "Recebi" passa para baixo do estado em vez de alargar a página */
-.ag-screen .today-card .foot { flex-wrap: wrap; row-gap: 6px; }
 .ag-tc-state { display: inline-flex; min-width: 0; }
-.ag-screen .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
-.ag-screen .today-card.compact .time { font-size: calc(20 * var(--u)); }
-.ag-screen .today-card.compact .foot { margin-top: 4px; }
 
 /* cartão do mês (só no computador, na coluna lateral) */
 .ag-month-card { margin-top: 8px; }
@@ -135,14 +115,7 @@
   .ag-top { grid-template-columns: 260px minmax(0, 1fr); column-gap: 24px; align-items: center; }
   .ag-top .ag-view-switch { margin: 0; }
   .ag-top .ag-prev { grid-column: 2; grid-row: 1; }
-  .ag-screen .ag-top .ag-banner {
-    grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; max-width: calc(var(--list-max) + 380px);
-    grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center;
-  }
-  /* aqui há largura: o "Tentar de novo" fica na mesma linha do texto */
-  .ag-screen .ag-top .ag-banner > .i { margin-top: 0; }
-  .ag-screen .ag-top .ag-banner > .btn { grid-column: 3; grid-row: 1; margin: -6px 0; }
-  .ag-screen .ag-top .ag-banner > .icon-btn { grid-column: 4; grid-row: 1; }
+  .ag-screen .ag-top .ag-banner { grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; max-width: calc(var(--list-max) + 380px); }
 
   /* Lista: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado do Google */
   .ag-home {

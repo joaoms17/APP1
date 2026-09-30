@@ -32,8 +32,9 @@ const signature = (e) => [e.title, e.event_date, e.start_time, e.location, e.val
 
 // Evento criado ou editado (ou reposto pelo Anular): quando a folha fecha, a Agenda vai até ao dia
 // dele e a linha pisca 1,2 s (spec §3.3, IA-17).
-// Só conta o que muda com a Agenda à vista (editar a partir de Receber não mexe na Agenda).
-function useFlash(events, { visible, sheetOpen, view }) {
+// Só conta o que muda com a Agenda à vista (editar a partir de Receber não mexe na Agenda),
+// ou o que a folha do evento pede com ?flash=<id> (ex.: Novo evento aberto noutro separador).
+function useFlash(events, { visible, sheetOpen, view, asked }) {
   const prev = useRef(null)
   const shown = useRef(visible)
   shown.current = visible
@@ -48,6 +49,14 @@ function useFlash(events, { visible, sheetOpen, view }) {
     const changed = events.filter((e) => old.get(e.id) !== now.get(e.id))
     if (changed.length === 1) setPending({ id: changed[0].id, date: changed[0].event_date })
   }, [events])
+
+  // ?flash=<id>: pisca e sai da rota (não fica no URL nem na última rota guardada)
+  useEffect(() => {
+    if (!asked || !visible || sheetOpen) return
+    const ev = events.find((e) => e.id === asked)
+    setParams({ flash: null })
+    if (ev) setPending({ id: ev.id, date: ev.event_date })
+  }, [asked, visible, sheetOpen])
 
   useEffect(() => {
     if (!pending || !visible || sheetOpen) return
@@ -96,7 +105,9 @@ export default function Agenda() {
     else if (v !== pref) setPref(v)
   }, [visible, route, searching, pref, today])
 
-  const flash = useFlash(events, { visible, sheetOpen: !!route.sheet, view: searching ? 'procurar' : view })
+  const flash = useFlash(events, {
+    visible, sheetOpen: !!route.sheet, view: searching ? 'procurar' : view, asked: visible ? route.params.flash : null,
+  })
 
   // voltar ao Mês reabre o último dia escolhido
   const monthDay = useRef(null)

@@ -180,7 +180,7 @@ export function yearTotals(events, expenses, pbe, year, today) {
   const z = () => Array(12).fill(0)
   const byMonth = { net: z(), netPrev: z(), gross: z(), paid: z(), unpaid: z(), exp: z(), expPrev: z(), saldo: z(), count: z() }
   const byProject = {}
-  let overdueYear = 0, upcomingYear = 0
+  let overdueYear = 0, upcomingYear = 0, overdueYearCount = 0
   for (const e of events) {
     const y = yearOf(e.event_date)
     const m = monthOf(e.event_date)
@@ -195,7 +195,9 @@ export function yearTotals(events, expenses, pbe, year, today) {
     byMonth.unpaid[m] += miss
     byMonth.count[m]++
     ;(byProject[e.project_id] ||= z())[m] += value
-    if (miss > EPS) { if (e.event_date < today) overdueYear += miss; else upcomingYear += miss }
+    if (miss > EPS) {
+      if (e.event_date < today) { overdueYear += miss; overdueYearCount++ } else upcomingYear += miss
+    }
   }
   for (const x of expenses) {
     const y = yearOf(x.expense_date)
@@ -229,7 +231,7 @@ export function yearTotals(events, expenses, pbe, year, today) {
     year, net, gross, retained: cents(gross - net), exp, saldo,
     netPrev, expPrev, saldoPrev,
     deltaNet: pct(net, netPrev), deltaExp: pct(exp, expPrev), deltaSaldo: pct(saldo, saldoPrev),
-    overdueYear: cents(overdueYear), upcomingYear: cents(upcomingYear),
+    overdueYear: cents(overdueYear), overdueYearCount, upcomingYear: cents(upcomingYear),
     closedMonths, avgClosed, avgPrev,
     bestMonth: bestMonth === null ? null : { month: bestMonth, saldo: byMonth.saldo[bestMonth] },
     eventsCount: total(byMonth.count),

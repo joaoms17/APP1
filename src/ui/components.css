@@ -1,17 +1,33 @@
 /* =====================================================================
-   Complementos ao src/styles/ui.css (que é cópia fiel do CSS canónico).
-   Só o que os mockups estáticos não tinham: comportamento (menu, spinner,
-   esqueleto, animação e fallback da folha, datas nativas, barra compacta,
-   visualizador, barra de tempo do toast). Mesmos tokens, sem cores novas.
+   Complementos ao src/styles/ui.css (o CSS canónico, com os :hover só para
+   rato e a coluna do .field a encolher). Só o que os mockups estáticos não
+   tinham: comportamento (menu, spinner, esqueleto, animação e fallback da
+   folha, datas nativas, barra compacta, visualizador, barra de tempo do
+   toast) e variantes pedidas pelos ecrãs. Mesmos tokens, sem cores novas.
    ===================================================================== */
 
 /* ---- linhas: ponto de projeto na meta, linha com ação (botão esticado) ---- */
+/* isolate: a ação da linha (z-index 2) não passa por cima do cabeçalho de grupo sticky (--z-sticky) */
+.row { isolation: isolate; }
 .row .meta .dot { display: inline-block; width: 8px; height: 8px; margin: 0 4px 1px 2px; vertical-align: middle; }
-.row .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.row .row-open, .today-card .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .row .end .btn { position: relative; z-index: 2; }
 .row.x .bar { visibility: hidden; }
 .row.x .lead { padding-top: 0; }
 .dot.sm { width: 6px; height: 6px; }
+
+/* ---- cartão de hoje: ação por cima do botão esticado, compacto, a piscar ---- */
+.today-card { isolation: isolate; }
+.today-card .foot { flex-wrap: wrap; row-gap: 6px; } /* texto grande: o "Recebi" passa para baixo do estado */
+.today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
+.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.today-card.compact { padding-top: 10px; padding-bottom: 8px; }
+.today-card.compact .time { font-size: calc(20 * var(--u)); }
+.today-card.compact .foot { margin-top: 4px; }
+.today-card.flash { animation: tc-flash 1.2s var(--ease-out); }
+@keyframes tc-flash {
+  from { box-shadow: var(--elev-1), 0 0 0 4px color-mix(in srgb, var(--p) 45%, transparent), inset 0 0 0 1px var(--p); }
+}
 
 /* ---- progresso: largura por custom property (--pct) ---------------------- */
 .progress > i { width: var(--pct, 0%); transition: width var(--dur-3) var(--ease-out); }
@@ -53,7 +69,8 @@
   border-radius: 10px; text-align: left; font-weight: 700; color: var(--ink);
 }
 .menu-item .i { color: var(--ink-2); }
-.menu-item:hover, .menu-item:focus-visible { background: var(--surface-sunken); }
+.menu-item:focus-visible { background: var(--surface-sunken); }
+@media (hover: hover) { .menu-item:hover { background: var(--surface-sunken); } }
 .menu-item:focus-visible { outline-offset: -2px; }
 .menu-item.danger, .menu-item.danger .i { color: var(--critical-fg); }
 .menu-sep { height: 1px; margin: 6px 4px; background: var(--rule); }
@@ -125,8 +142,19 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
 .sync-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--st-paid-fg); flex: none; }
 .sync-note.warn i { background: var(--warning-fg); }
-.banner > span { min-width: 0; }
-.banner .icon-btn { color: var(--warning-fg); margin: -6px -8px -6px 0; }
+/* aviso: no telemóvel o texto usa a largura toda e o "Tentar de novo" fica por baixo;
+   no computador fica tudo na mesma linha */
+.banner { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; column-gap: 10px; line-height: 1.4; }
+.banner > .i { grid-column: 1; grid-row: 1; margin-top: 1px; }
+.banner > span { grid-column: 2; grid-row: 1; min-width: 0; }
+.banner > .icon-btn { grid-column: 3; grid-row: 1 / span 2; color: var(--warning-fg); margin: -6px -8px -6px 0; }
+.banner > .btn { grid-column: 2; grid-row: 2; justify-self: start; margin: -2px 0 -8px -10px; }
+@media (min-width: 1024px) {
+  .banner { grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center; }
+  .banner > .i { margin-top: 0; }
+  .banner > .btn { grid-column: 3; grid-row: 1; margin: -6px 0; }
+  .banner > .icon-btn { grid-column: 4; grid-row: 1; }
+}
 
 /* ---- barra de topo: voltar e barra compacta ao fazer scroll ------------------------- */
 .back { margin: calc(env(safe-area-inset-top) + 12px) 0 -8px -10px; }

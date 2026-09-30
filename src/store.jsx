@@ -59,6 +59,8 @@ export function StoreProvider({ children }) {
   const [services, setServices] = useState([])
   const [quotes, setQuotes] = useState([])
   const [quoteItems, setQuoteItems] = useState([])
+  // as linhas acabadas de ler (o acceptQuote logo a seguir ao saveQuote não pode usar o estado do render)
+  const quoteItemsRef = useRef([])
   const [scheduleItems, setScheduleItems] = useState([])
   const [rawGcal, setGcalCalendars] = useState([])
   const [gcalData, setGcalData] = useState({}) // calendar_id → { events, ok, at, lastOkAt, message, detail }
@@ -115,7 +117,8 @@ export function StoreProvider({ children }) {
       ])
       setServices(s.data || [])
       setQuotes(q.data || [])
-      setQuoteItems(qi.data || [])
+      quoteItemsRef.current = qi.data || []
+      setQuoteItems(quoteItemsRef.current)
       setScheduleItems(sc.data || [])
     } catch { /* sem orçamentos */ }
   }, [])
@@ -306,7 +309,8 @@ export function StoreProvider({ children }) {
   const acceptQuote = async (q) => {
     const proj = projects.find((p) => p.id === q.project_id)
       || projects.find((p) => p.kind === 'hair') || projects[0]
-    const total = quoteTotal(q)
+    const items = quoteItemsRef.current.filter((i) => i.quote_id === q.id)
+    const total = items.reduce((a, i) => a + Number(i.unit_price) * i.qty, 0) - Number(q.discount || 0)
     const { data: ev, error } = await db.from('events').insert({
       project_id: proj.id,
       title: `Casamento ${q.client_name}`,

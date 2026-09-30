@@ -4,7 +4,7 @@ import {
   Segmented, Sheet, Skeleton, Switch, TextArea, TextInput, TimeInput, confirmDialog, moneyInputValue, parseMoney,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
-import { getRoute, navigate, openSheet, tabHref, useRoute } from '../../router.js'
+import { getRoute, navigate, openSheet, tabHref } from '../../router.js'
 import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
 
@@ -216,8 +216,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
           cancelLabel: 'Corrigir',
           primary: 'cancel',
         })
-        // o diálogo devolve o foco ao botão ao desmontar; depois disso, foco no valor
-        if (!ok) { setTimeout(() => refs.gross.current?.focus(), 0); return }
+        if (!ok) { refs.gross.current?.focus(); return }
       }
       setBusy(true)
       try {
@@ -392,8 +391,7 @@ function PaymentNote({ ev, got, value, legacy, payments }) {
 // Escolhe o que mostrar enquanto os dados chegam (evento apagado, Google ainda a carregar…)
 export default function EventForm({ mode, id, preset, onClose }) {
   const { eventById, findGoogle, deleteEvent, loadingPhases, gcalStatus } = useStore()
-  const route = useRoute()
-  const focus = route.sheet?.params?.foco
+  const focus = mode === 'edit' ? preset?.foco : undefined
 
   // ao apagar, a folha fecha com o último estado visto (o evento sai logo da lista)
   const closing = useRef(false)

@@ -1,7 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Button, Field, ProjectChips, Sheet, TextInput, useToast } from '../../ui'
 import { useStore } from '../../store.jsx'
-import { useRoute } from '../../router.js'
 import { humanError } from '../../errors.js'
 import { ErrorPanel } from '../../shell/lazy.jsx'
 import './Settings.css'
@@ -16,17 +15,16 @@ const DUP = 'Esse calendário já está ligado.'
 const normUrl = (s) => String(s || '').trim().replace(/^webcal:\/\//i, 'https://')
 const sameUrl = (a, b) => normUrl(a).toLowerCase() === normUrl(b).toLowerCase()
 
-export default function GcalSheet({ onClose }) {
+export default function GcalSheet({ preset, onClose }) {
   const { projects, projectOptions, gcalCalendars, addGcalCalendar, notify } = useStore()
   const { dismiss } = useToast()
-  const { sheet } = useRoute()
   const formId = useId()
   const urlRef = useRef(null)
   const errRef = useRef(null)
   const options = useMemo(() => projectOptions(null), [projectOptions])
   // projeto por omissão: o pedido; senão o primeiro ativo ainda sem calendário
   const [projectId, setProjectId] = useState(() => {
-    const asked = sheet?.params?.projeto
+    const asked = preset?.projeto
     if (asked && projects.some((p) => p.id === asked)) return asked
     const free = options.find((p) => !gcalCalendars.some((c) => c.project_id === p.id))
     return (free || options[0] || projects[0])?.id || null

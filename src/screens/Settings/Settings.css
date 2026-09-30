@@ -107,9 +107,6 @@ details.st-ical b { font-weight: 800; color: var(--ink); }
 .st-sheet .linkish { justify-self: start; }
 .st-sheet .linkish .money { font-weight: 800; }
 
-/* campos lado a lado (Ativo desde | até) encolhem com a coluna */
-.st-sheet .field { grid-template-columns: minmax(0, 1fr); }
-
 /* folha Ligar calendário */
 .st-sheet .sh-error { padding: 0; }
 

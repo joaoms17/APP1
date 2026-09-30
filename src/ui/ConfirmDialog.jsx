@@ -77,6 +77,8 @@ export default function ConfirmDialog({
 
 // await confirmDialog({ title, text, confirmLabel, cancelLabel, danger, primary }) → true | false
 // Funciona sem provider (monta a sua própria raiz); fica por cima de qualquer folha aberta.
+// Só responde depois de desmontar: o foco já voltou ao botão de origem e quem chamou pode
+// levá-lo para outro sítio (ex.: "Corrigir" → campo do valor).
 export function confirmDialog(opts = {}) {
   return new Promise((resolve) => {
     const host = document.createElement('div')
@@ -86,8 +88,7 @@ export function confirmDialog(opts = {}) {
     const finish = (v) => {
       if (done) return
       done = true
-      resolve(v)
-      setTimeout(() => { root.unmount(); host.remove() }, 0)
+      setTimeout(() => { root.unmount(); host.remove(); resolve(v) }, 0)
     }
     root.render(<ConfirmDialog {...opts} open onConfirm={() => finish(true)} onCancel={() => finish(false)} />)
   })

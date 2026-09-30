@@ -25,16 +25,15 @@
 
 /* listas: cada linha num invólucro (para colapsar ao sair); filete entre linhas */
 .rc-list { display: grid; }
-/* isolate: o botão da linha (z-index 2) não passa por cima do cabeçalho de grupo sticky (--z-sticky: 2) */
-.rc-item { position: relative; isolation: isolate; }
+.rc-item { position: relative; }
 .rc-item + .rc-item > .row::after {
-  content: ''; position: absolute; top: 0; left: 55px; right: 0; height: 1px; background: var(--rule);
+  content: ''; position: absolute; top: 0; left: var(--row-inset); right: 0; height: 1px; background: var(--rule);
 }
 .rc-item.leaving { overflow: hidden; pointer-events: none; }
 .rc-screen .row .meta .age { color: var(--ink-2); font-weight: 800; }
 
 /* mês por cima de um pendente do Google quando a lista atravessa meses */
-.rc-month { padding: 12px 0 0 55px; font-size: var(--fs-caption); font-weight: 800; color: var(--muted); letter-spacing: .02em; }
+.rc-month { padding: 12px 0 0 var(--row-inset); font-size: var(--fs-caption); font-weight: 800; color: var(--muted); letter-spacing: .02em; }
 
 /* "↻ Google atualizado às 09:12" (toque = atualizar) */
 .rc-sync {

@@ -22,13 +22,8 @@
 .ex-screen > .empty { padding-top: 36px; }
 .ex-empty-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
 
-/* despesa "Geral" (sem cor de projeto): o piscar usa o acento */
-.ex-screen .row.x.flash:not([data-p]) { --p: var(--accent); }
-
 /* ---- folha Nova/Editar despesa ---------------------------------------------- */
 .ex-form { display: grid; gap: var(--sp-4); }
-/* Valor | Data lado a lado (.row2): o <input> não pode impor a largura intrínseca à coluna */
-.ex-form .field > .control { min-width: 0; }
 /* "Outra categoria": as sugestões (datalist) aparecem ao escrever; sem o triângulo do sistema */
 .ex-form input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 .ex-shot {
