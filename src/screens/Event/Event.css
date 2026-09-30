@@ -1,0 +1,64 @@
+/* =====================================================================
+   Folha do evento (pacote E2): Detalhe · Editar · Novo · Registar do Google.
+   Só classes .ev-… ou compostas dentro de .ev-sheet (plano §1 · 2).
+   ===================================================================== */
+
+/* ---- identidade ------------------------------------------------------------ */
+.ev-ident { display: grid; gap: 8px; padding-top: 4px; }
+.ev-pchip { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); }
+.ev-title {
+  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-display);
+  font-variation-settings: "opsz" 72; letter-spacing: -0.015em; line-height: 1.1;
+  overflow-wrap: anywhere; outline: none;
+}
+.ev-facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin-top: 2px; }
+.ev-facts > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ev-facts svg.i { color: var(--muted); width: 18px; height: 18px; }
+.ev-facts b { color: var(--accent-text); font-weight: 800; }
+
+/* ---- secções do detalhe ------------------------------------------------------ */
+.ev-sec { display: grid; gap: 10px; }
+.ev-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ev-sec-head h3 { font-size: var(--fs-title); font-weight: 800; }
+.ev-sec-head .n { font-size: var(--fs-meta); color: var(--muted); font-weight: 700; }
+.ev-card-s { padding: 4px 16px; }
+.ev-notes { font-size: var(--fs-body); color: var(--ink-2); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ev-note-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
+
+/* ---- pagamento ------------------------------------------------------------------ */
+.ev-pay { overflow: hidden; }
+.ev-pay:focus { outline: none; }
+.ev-pay-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 16px 16px 0; }
+.ev-pay-top .k { font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); margin-bottom: 6px; }
+.ev-pay-top .hero-num { font-size: calc(40 * var(--u)); }
+.ev-pay-top .of { text-align: right; font-size: var(--fs-meta); color: var(--muted); font-weight: 600; line-height: 1.5; }
+.ev-pay-top .of b { color: var(--ink); font-size: var(--fs-body); font-weight: 800; }
+.ev-pay-bar { display: grid; gap: 8px; padding: 14px 16px; }
+.ev-pay-bar .lbl { display: flex; justify-content: space-between; gap: 12px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+.ev-pay-bar .lbl b { color: var(--st-paid-fg); font-weight: 800; }
+.ev-pay-row {
+  display: grid; grid-template-columns: 24px 1fr auto 44px; align-items: center; gap: 10px;
+  min-height: 60px; padding: 6px 6px 6px 16px; border-top: 1px solid var(--rule);
+}
+.ev-pay-row > svg.i { color: var(--st-paid-fg); }
+.ev-pay-row b { display: block; font-weight: 800; }
+.ev-pay-row small { display: block; font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
+.ev-pay-row .money { font-size: var(--fs-body); }
+.ev-pay-row.pending { opacity: .6; }
+.ev-pay-add { border-top: 1px solid var(--rule); padding: 4px 8px; }
+.ev-pay-legacy { display: grid; justify-items: start; gap: 4px; padding: 12px 16px 8px; border-top: 1px solid var(--rule); }
+.ev-pay-legacy p { font-size: var(--fs-meta); color: var(--ink-2); font-weight: 600; line-height: 1.4; }
+.ev-pay-legacy .btn { margin-left: -8px; }
+.ev-pay-form { display: grid; gap: 12px; padding: 14px 16px 12px; border-top: 1px solid var(--rule); }
+.ev-pay-form .acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---- formulário ------------------------------------------------------------------ */
+.ev-form { display: grid; gap: var(--sp-4); }
+.ev-sheet .chips.wrap .chip { height: 38px; }
+/* campos lado a lado (.row2): o <input> não pode impor a largura intrínseca à coluna */
+.ev-sheet .field > .control { min-width: 0; }
+.ev-form-help { margin-top: -10px; font-size: var(--fs-meta); color: var(--muted); font-weight: 600; }
+.ev-sub { display: grid; gap: 12px; padding: 14px; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.ev-sub-help { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; line-height: 1.4; }
+.ev-sub-help b { color: var(--ink); font-weight: 800; }
+.ev-start { justify-self: start; margin-left: -8px; }
