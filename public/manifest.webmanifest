@@ -1,8 +1,10 @@
 {
   "name": "Joana — Agenda & Finanças",
   "short_name": "Joana",
+  "lang": "pt-PT",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#faf3ef",
   "theme_color": "#faf3ef",
   "icons": [
