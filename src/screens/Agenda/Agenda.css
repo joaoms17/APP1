@@ -1,0 +1,163 @@
+/* =====================================================================
+   Agenda (pacote E1): Lista com Hoje e A tratar · Procurar · Mês · Ir para mês.
+   Só classes .ag-… ou seletores dentro de .ag-screen; tokens e componentes
+   base (row, today-card, tasks, cal, day, chips…) vêm de src/styles/ui.css.
+   ===================================================================== */
+
+/* ---- topo: Lista | Mês + "↑ Anteriores" ---------------------------------- */
+.ag-top { display: grid; justify-items: stretch; }
+.ag-view-switch { margin-bottom: 6px; }
+.ag-prev {
+  justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit);
+  font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); border-radius: var(--radius-sm);
+}
+.ag-prev .i { width: 16px; height: 16px; color: var(--muted); }
+.ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
+.ag-prev:hover { color: var(--ink); }
+/* aviso do Google: o texto usa a largura toda e o "Tentar de novo" passa para baixo (a 390 px
+   o texto ficava espremido numa coluna estreita ao lado do botão) */
+.ag-screen .ag-banner {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; column-gap: 10px;
+  margin: 6px 0 4px; line-height: 1.4;
+}
+.ag-screen .ag-banner > .i { grid-column: 1; grid-row: 1; margin-top: 1px; }
+.ag-screen .ag-banner > span { grid-column: 2; grid-row: 1; }
+.ag-screen .ag-banner > .icon-btn { grid-column: 3; grid-row: 1 / span 2; }
+.ag-screen .ag-banner > .btn { grid-column: 2; grid-row: 2; justify-self: start; margin: -2px 0 -8px -10px; }
+
+/* ---- Novidades da v2 (uma vez) ------------------------------------------------ */
+.ag-news { margin: 6px 0 10px; }
+.ag-news .ag-news-act { display: flex; justify-content: flex-end; margin: 2px -8px -6px 0; }
+
+/* ---- Lista: Hoje · A tratar · resto ---------------------------------------------- */
+.ag-home { display: grid; }
+.ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin: -2px 0 12px; }
+.ag-lede b { color: var(--ink); font-weight: 800; }
+.ag-today-list { display: grid; gap: 10px; }
+.ag-today-g { margin-top: 6px; }
+.ag-today-empty { padding-top: 8px; }
+.ag-side .ag-month-card, .ag-side .ag-sync { display: none; }
+.ag-tasks-wait { padding: 16px; }
+.ag-more { height: 1px; }
+.ag-end-note {
+  display: flex; align-items: center; gap: 8px; padding: 10px 0 4px 55px;
+  font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+}
+.ag-end-note .i { width: 16px; height: 16px; flex: none; }
+
+/* cartão de hoje com "Recebi": botão esticado por baixo, ação por cima */
+.ag-screen .today-card { cursor: pointer; }
+.ag-screen .today-card:hover { box-shadow: var(--elev-2), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+.ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.ag-tc-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.ag-tc-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.ag-screen .today-card .foot .btn { position: relative; z-index: 2; }
+.ag-tc-state { display: inline-flex; min-width: 0; }
+.ag-screen .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
+.ag-screen .today-card.compact .time { font-size: calc(20 * var(--u)); }
+.ag-screen .today-card.compact .foot { margin-top: 4px; }
+
+/* cartão do mês (só no computador, na coluna lateral) */
+.ag-month-card { margin-top: 8px; }
+.ag-mc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 12px; }
+
+/* ---- Procurar ------------------------------------------------------------------ */
+.ag-search-bar { display: flex; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top) + 16px) 0 10px; }
+.ag-search-bar .control { flex: 1; min-width: 0; }
+.ag-search-bar .control .clear { color: var(--muted); }
+.ag-filters { display: grid; gap: 6px; padding-bottom: 6px; }
+.ag-result { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin: 8px 0 4px; }
+.ag-result .t { flex: 1; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); line-height: 1.35; }
+.ag-result .t b { color: var(--ink); font-weight: 800; }
+.ag-result .t .late { color: var(--st-overdue-fg); font-weight: 800; }
+.ag-search .empty { padding-top: 40px; }
+
+/* ---- Mês --------------------------------------------------------------------------- */
+.ag-month-layout { display: grid; gap: 4px; margin-top: 12px; }
+.ag-cal { touch-action: pan-y; }
+.ag-cal-row { display: contents; }
+.ag-cal .cal-title { border-radius: var(--radius-md); }
+.ag-cal .cal-title:hover { background: var(--surface-sunken); }
+.ag-cal .day { border-radius: var(--radius-sm); }
+.ag-cal .day:hover .num { background: var(--surface-sunken); }
+.ag-cal .day.sel:hover .num { background: var(--accent); }
+.ag-cal .day:focus-visible { outline-offset: -2px; }
+.ag-cal-today {
+  position: relative; height: 32px; padding: 0 12px; border-radius: 16px;
+  font-size: var(--fs-meta); font-weight: 800; color: var(--accent-text);
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+}
+.ag-cal-today::before { content: ''; position: absolute; inset: -6px -2px; }
+.ag-cal-today:not(.on) { visibility: hidden; }
+.ag-day-col .ag-end-note { padding-top: 12px; }
+.ag-day-col .empty { padding-bottom: 20px; }
+
+/* ---- Ir para mês ---------------------------------------------------------------------- */
+.ag-mp-year { display: flex; align-items: center; justify-content: center; gap: 20px; }
+.ag-mp-year b {
+  min-width: 4ch; text-align: center; font-family: var(--font-display); font-weight: 600;
+  font-size: var(--fs-heading); font-variation-settings: "opsz" 36;
+}
+.ag-mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ag-mp-grid button {
+  min-height: 48px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-body); font-weight: 700;
+}
+.ag-mp-grid button:hover { background: var(--surface-sunken); }
+.ag-mp-grid button:active { transform: scale(.98); }
+.ag-mp-grid button.sel { color: var(--ink); font-weight: 800; box-shadow: inset 0 0 0 2px var(--accent-text); }
+.ag-mp-grid button.cur { background: var(--accent); color: var(--on-accent); font-weight: 800; box-shadow: none; }
+.ag-mp-grid button.cur.sel { box-shadow: 0 0 0 2px var(--sheet-bg), 0 0 0 4px var(--accent-text); }
+
+/* telemóvel deitado (altura ≤ 500 px): células de 36 px e o dia ao lado do calendário (MA-24) */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1023.98px) {
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .ag-cal .day { height: 36px; padding-top: 2px; gap: 1px; }
+  .ag-cal .day .num { height: 24px; width: 28px; }
+  .ag-cal .day .dots { height: 6px; }
+}
+
+/* =====================================================================
+   Computador (≥ 1024 px)
+   ===================================================================== */
+@media (min-width: 1024px) {
+  .ag-top { display: flex; align-items: center; gap: 16px; }
+  .ag-top .ag-view-switch { width: 260px; margin: 0; }
+  .ag-top .ag-prev { margin-left: 8px; }
+  .ag-banner { max-width: calc(var(--list-max) + 380px); }
+
+  /* Lista: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado do Google */
+  .ag-home {
+    grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "today side" "rest side";
+    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px); margin-top: 12px;
+  }
+  .ag-home > .ag-today { grid-area: today; }
+  .ag-home > .ag-rest { grid-area: rest; }
+  .ag-home > .ag-side { grid-area: side; position: sticky; top: 24px; }
+  .ag-side .ag-month-card { display: block; }
+  .ag-side .ag-sync { display: flex; }
+  .ag-side .group-head.ag-side-first { position: static; border-top: 0; margin-top: 0; padding-top: 8px; }
+
+  .ag-search { max-width: var(--list-max); }
+  .ag-search-bar { padding-top: 32px; }
+  .ag-filters .chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 2px 0; } /* há espaço: todas as opções à vista */
+
+  /* Mês: calendário fluido (células de 104 px com pills) | coluna de 340 px com o dia */
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 18px; }
+  .ag-day-col { position: sticky; top: 24px; }
+  .ag-day-col .group-head { position: static; }
+  .ag-day-col .group-head.first { padding-top: 0; }
+  .ag-cal { padding: 8px 12px 12px; }
+  .ag-cal .wd { text-align: left; padding-left: 8px; }
+  .ag-cal .day { border-radius: 0; }
+  .ag-cal .day:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
+  .ag-cal .day:hover .num { background: none; }
+  .ag-cal .day.sel:hover .num { background: var(--accent); }
+
+  /* Ir para mês: diálogo centrado (não painel lateral) */
+  dialog.sheet.ag-mp {
+    inset: 0; margin: auto; width: min(460px, calc(100% - 48px)); height: fit-content;
+    max-height: calc(100dvh - 48px); border-radius: 22px;
+  }
+  dialog.sheet.ag-mp[open] { animation-name: ui-fade; }
+}
