@@ -13,7 +13,14 @@ import './Agenda.css'
 //   #/agenda/lista?q=…&quando=…&estado=…&p=…         → Procurar
 //   #/agenda/mes/<ymd>                                → Mês com o dia selecionado
 
-const YMD = /^\d{4}-\d{2}-\d{2}$/
+const YMD = /^(\d{4})-(\d{2})-(\d{2})$/
+// só datas que existem ("2026-02-31" ou "2026-13-45" na rota caem para hoje)
+const isDay = (s) => {
+  const m = YMD.exec(s || '')
+  if (!m) return false
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+  return +m[1] >= 1900 && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3]
+}
 const FILTERS = ['quando', 'estado', 'p'] // um filtro na rota (mesmo sem q=) também é o Procurar
 const VIEWS = [
   { value: 'lista', label: 'Lista', icon: 'list' },
@@ -72,18 +79,21 @@ export default function Agenda() {
   const r = last.current
   const searching = 'q' in r.params || FILTERS.some((k) => k in r.params)
   const view = r.path[1] === 'mes' || r.path[1] === 'lista' ? r.path[1] : pref === 'mes' ? 'mes' : 'lista'
-  const day = YMD.test(r.path[2] || '') ? r.path[2] : today
+  const day = isDay(r.path[2]) ? r.path[2] : today
 
   // de onde se veio para o Procurar: o "Cancelar" volta lá
   const lastView = useRef('#/agenda/lista')
   if (visible && !searching) lastView.current = view === 'mes' ? `#/agenda/mes/${day}` : '#/agenda/lista'
 
-  // #/agenda sem vista → a última usada; a vista escolhida fica memorizada
+  // #/agenda sem vista (ou com uma vista/dia que não existe) → a última vista usada;
+  // a vista escolhida fica memorizada
   useEffect(() => {
     if (visible && searching && !('q' in route.params)) { setParams({ q: '' }); return }
     if (!visible || route.sheet || searching) return
-    if (!route.path[1]) navigate(pref === 'mes' ? `#/agenda/mes/${today}` : '#/agenda/lista', { replace: true })
-    else if (route.path[1] !== pref && (route.path[1] === 'mes' || route.path[1] === 'lista')) setPref(route.path[1])
+    const v = route.path[1]
+    if (v !== 'mes' && v !== 'lista') navigate(pref === 'mes' ? `#/agenda/mes/${today}` : '#/agenda/lista', { replace: true })
+    else if (v === 'mes' && !isDay(route.path[2])) navigate(`#/agenda/mes/${today}`, { replace: true })
+    else if (v !== pref) setPref(v)
   }, [visible, route, searching, pref, today])
 
   const flash = useFlash(events, { visible, sheetOpen: !!route.sheet, view: searching ? 'procurar' : view })
@@ -117,11 +127,13 @@ export default function Agenda() {
     <div className="ag-screen">
       <TopBar kicker={fmtKicker(today)} title="Agenda"
         actions={<IconButton icon="search" label="Procurar e filtrar eventos" onClick={openSearch} />} />
+      {/* telemóvel: Lista|Mês · aviso do Google · "↑ Anteriores" (spec §10.3);
+          computador: Lista|Mês e "↑ Anteriores" na mesma linha, aviso por baixo */}
       <div className="ag-top">
         <Segmented label="Vista da agenda" className="ag-view-switch" value={view} onChange={setView} options={VIEWS} />
+        <SyncBanner className="ag-banner" />
         {view === 'lista' && <PrevLink />}
       </div>
-      <SyncBanner className="ag-banner" />
       {view === 'mes'
         ? <MonthView day={day} active={visible && !route.sheet} flashId={flash?.id} />
         : <AgendaList flash={flash} news={news} />}

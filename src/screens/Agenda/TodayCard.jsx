@@ -31,7 +31,7 @@ const STATE_PHRASE = {
 // Cartão de um evento de hoje — "bilhete leve" (spec §9.10): canhoto com a hora, faixa e lavagem
 // da cor do projeto, estado sempre visível e "Recebi X €" só depois de o evento começar.
 // Com ação, o cartão é um <div> com um botão esticado por baixo (nunca botões dentro de botões).
-export default function TodayCard({ ev, compact = false, now }) {
+export default function TodayCard({ ev, compact = false, now, flash = false, className = '' }) {
   const { today, projectById, eventState, missing, receiveRemaining, notifyError } = useStore()
   const p = projectById(ev.project_id)
   const t = hm(ev.start_time)
@@ -49,7 +49,7 @@ export default function TodayCard({ ev, compact = false, now }) {
     try { await receiveRemaining(ev) } catch (ex) { notifyError(ex) }
   }
   const pv = { 'data-p': '', style: projectVars(p?.color || '#929292') }
-  const cls = ['today-card', compact && 'compact'].filter(Boolean).join(' ')
+  const cls = ['today-card', compact && 'compact', flash && 'flash', className].filter(Boolean).join(' ')
   const hide = canReceive ? { 'aria-hidden': true } : {}
 
   const content = (

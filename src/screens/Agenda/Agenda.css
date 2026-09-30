@@ -13,7 +13,6 @@
 }
 .ag-prev .i { width: 16px; height: 16px; color: var(--muted); }
 .ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
-.ag-prev:hover { color: var(--ink); }
 /* aviso do Google: o texto usa a largura toda e o "Tentar de novo" passa para baixo (a 390 px
    o texto ficava espremido numa coluna estreita ao lado do botão) */
 .ag-screen .ag-banner {
@@ -33,7 +32,7 @@
 .ag-home { display: grid; }
 .ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin: -2px 0 12px; }
 .ag-lede b { color: var(--ink); font-weight: 800; }
-.ag-today-list { display: grid; gap: 10px; }
+.ag-today-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .ag-today-g { margin-top: 6px; }
 .ag-today-empty { padding-top: 8px; }
 .ag-side .ag-month-card, .ag-side .ag-sync { display: none; }
@@ -47,11 +46,16 @@
 
 /* cartão de hoje com "Recebi": botão esticado por baixo, ação por cima */
 .ag-screen .today-card { cursor: pointer; }
-.ag-screen .today-card:hover { box-shadow: var(--elev-2), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+.ag-screen .today-card.flash { animation: ag-tc-flash 1.2s var(--ease-out); }
+@keyframes ag-tc-flash {
+  from { box-shadow: var(--elev-1), 0 0 0 4px color-mix(in srgb, var(--p) 45%, transparent), inset 0 0 0 1px var(--p); }
+}
 .ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: 18px; }
 .ag-tc-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .ag-tc-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
-.ag-screen .today-card .foot .btn { position: relative; z-index: 2; }
+.ag-screen .today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
+/* texto grande ou ecrã estreito: o "Recebi" passa para baixo do estado em vez de alargar a página */
+.ag-screen .today-card .foot { flex-wrap: wrap; row-gap: 6px; }
 .ag-tc-state { display: inline-flex; min-width: 0; }
 .ag-screen .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
 .ag-screen .today-card.compact .time { font-size: calc(20 * var(--u)); }
@@ -73,14 +77,21 @@
 .ag-search .empty { padding-top: 40px; }
 
 /* ---- Mês --------------------------------------------------------------------------- */
-.ag-month-layout { display: grid; gap: 4px; margin-top: 12px; }
+.ag-month-layout { display: grid; gap: 4px; margin-top: 6px; }
 .ag-cal { touch-action: pan-y; }
 .ag-cal-row { display: contents; }
-.ag-cal .cal-title { border-radius: var(--radius-md); }
-.ag-cal .cal-title:hover { background: var(--surface-sunken); }
+.ag-cal .cal-title { border-radius: var(--radius-md); min-width: 0; }
+/* "Novembro 2026 ⌄" numa só linha ao lado de ‹ [Hoje] ›: o tamanho acompanha a largura do cabeçalho
+   (a 390 px fica nos 20 px do mockup; a 360/375 px, deitado ou com texto grande, encolhe um pouco).
+   Sem container queries (iOS < 16) mantém-se o tamanho normal e o título pode partir. */
+.ag-cal .cal-head { container-type: inline-size; }
+@container (min-width: 300px) {
+  .ag-cal .cal-title {
+    white-space: nowrap; padding: 0 4px;
+    font-size: min(var(--fs-heading), calc((100cqi - 130px - 53 * var(--u)) / 7.5));
+  }
+}
 .ag-cal .day { border-radius: var(--radius-sm); }
-.ag-cal .day:hover .num { background: var(--surface-sunken); }
-.ag-cal .day.sel:hover .num { background: var(--accent); }
 .ag-cal .day:focus-visible { outline-offset: -2px; }
 .ag-cal-today {
   position: relative; height: 32px; padding: 0 12px; border-radius: 16px;
@@ -103,7 +114,6 @@
   min-height: 48px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink-2);
   box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-body); font-weight: 700;
 }
-.ag-mp-grid button:hover { background: var(--surface-sunken); }
 .ag-mp-grid button:active { transform: scale(.98); }
 .ag-mp-grid button.sel { color: var(--ink); font-weight: 800; box-shadow: inset 0 0 0 2px var(--accent-text); }
 .ag-mp-grid button.cur { background: var(--accent); color: var(--on-accent); font-weight: 800; box-shadow: none; }
@@ -121,15 +131,23 @@
    Computador (≥ 1024 px)
    ===================================================================== */
 @media (min-width: 1024px) {
-  .ag-top { display: flex; align-items: center; gap: 16px; }
-  .ag-top .ag-view-switch { width: 260px; margin: 0; }
-  .ag-top .ag-prev { margin-left: 8px; }
-  .ag-banner { max-width: calc(var(--list-max) + 380px); }
+  /* Lista|Mês e "↑ Anteriores" na mesma linha; o aviso do Google por baixo, a toda a largura */
+  .ag-top { grid-template-columns: 260px minmax(0, 1fr); column-gap: 24px; align-items: center; }
+  .ag-top .ag-view-switch { margin: 0; }
+  .ag-top .ag-prev { grid-column: 2; grid-row: 1; }
+  .ag-screen .ag-top .ag-banner {
+    grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; max-width: calc(var(--list-max) + 380px);
+    grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center;
+  }
+  /* aqui há largura: o "Tentar de novo" fica na mesma linha do texto */
+  .ag-screen .ag-top .ag-banner > .i { margin-top: 0; }
+  .ag-screen .ag-top .ag-banner > .btn { grid-column: 3; grid-row: 1; margin: -6px 0; }
+  .ag-screen .ag-top .ag-banner > .icon-btn { grid-column: 4; grid-row: 1; }
 
   /* Lista: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado do Google */
   .ag-home {
     grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "today side" "rest side";
-    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px); margin-top: 12px;
+    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px);
   }
   .ag-home > .ag-today { grid-area: today; }
   .ag-home > .ag-rest { grid-area: rest; }
@@ -150,9 +168,6 @@
   .ag-cal { padding: 8px 12px 12px; }
   .ag-cal .wd { text-align: left; padding-left: 8px; }
   .ag-cal .day { border-radius: 0; }
-  .ag-cal .day:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
-  .ag-cal .day:hover .num { background: none; }
-  .ag-cal .day.sel:hover .num { background: var(--accent); }
 
   /* Ir para mês: diálogo centrado (não painel lateral) */
   dialog.sheet.ag-mp {
@@ -160,4 +175,22 @@
     max-height: calc(100dvh - 48px); border-radius: 22px;
   }
   dialog.sheet.ag-mp[open] { animation-name: ui-fade; }
+}
+
+/* =====================================================================
+   Hover só com rato: no iPhone o :hover fica "preso" no último toque
+   (um dia do calendário parecia escolhido, um cartão ficava com sombra)
+   ===================================================================== */
+@media (hover: hover) {
+  .ag-prev:hover { color: var(--ink); }
+  .ag-screen .today-card:hover { box-shadow: var(--elev-2), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+  .ag-cal .cal-title:hover { background: var(--surface-sunken); }
+  .ag-cal .day:hover .num { background: var(--surface-sunken); }
+  .ag-cal .day.sel:hover .num { background: var(--accent); }
+  .ag-mp-grid button:hover { background: var(--surface-sunken); }
+}
+@media (hover: hover) and (min-width: 1024px) {
+  .ag-cal .day:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
+  .ag-cal .day:hover .num { background: none; }
+  .ag-cal .day.sel:hover .num { background: var(--accent); }
 }

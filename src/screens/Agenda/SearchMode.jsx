@@ -71,17 +71,18 @@ export default function SearchMode({ params, onExit }) {
 
   const toggle = (key, value, cur) => setParams({ [key]: cur === value ? null : value })
   const clearAll = () => setParams({ q: '', quando: null, estado: null, p: null })
+  // Esc: no campo com texto limpa o texto; de resto (campo vazio, chips, resultados) sai do Procurar
   const onKeyDown = (e) => {
-    if (e.key !== 'Escape') return
+    if (e.key !== 'Escape' || e.defaultPrevented) return
     e.preventDefault()
-    if (q) setParams({ q: '' }); else onExit()
+    if (q && e.target.type === 'search') setParams({ q: '' }); else onExit()
   }
 
   return (
-    <div className="ag-search">
+    <div className="ag-search" onKeyDown={onKeyDown}>
       <h1 className="sr-only">Procurar eventos</h1>
       <div className="ag-search-bar">
-        <SearchInput value={q} onChange={(v) => setParams({ q: v })} label="Pesquisar eventos" autoFocus onKeyDown={onKeyDown} />
+        <SearchInput value={q} onChange={(v) => setParams({ q: v })} label="Pesquisar eventos" autoFocus />
         <Button variant="quiet" onClick={onExit}>Cancelar</Button>
       </div>
 

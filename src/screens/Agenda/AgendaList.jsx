@@ -183,9 +183,17 @@ export default function AgendaList({ flash = null, news = null }) {
                 : 'tudo recebido.'}
             </p>
             <div className="ag-today-list">
-              {todayEvs.map((ev) => <TodayCard key={ev.id} ev={ev} now={now} compact={todayEvs.length >= 3} />)}
+              {todayEvs.map((ev) => (
+                <TodayCard key={ev.id} ev={ev} now={now} compact={todayEvs.length >= 3} flash={ev.id === flash?.id}
+                  className={rowClass(ev.id)} />
+              ))}
             </div>
           </>
+        ) : todayGoogle.length > 0 ? (
+          // nada registado, mas o Google tem algo para hoje: não dizer "Nada marcado" por cima dele
+          <p className="ag-lede">
+            {nEvents(todayGoogle.length)} do Google por registar.
+          </p>
         ) : (
           <EmptyState compact icon="calendar" title="Nada marcado para hoje" className="ag-today-empty"
             action={<Button variant="secondary" size="sm" icon="plus" iconTone="add"
