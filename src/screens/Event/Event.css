@@ -27,7 +27,7 @@
 
 /* ---- pagamento ------------------------------------------------------------------ */
 .ev-pay { overflow: hidden; }
-.ev-pay:focus { outline: none; }
+.ev-pay:focus:not(:focus-visible) { outline: none; }
 .ev-pay-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 16px 16px 0; }
 .ev-pay-top .k { font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); margin-bottom: 6px; }
 .ev-pay-top .hero-num { font-size: calc(40 * var(--u)); }
@@ -36,6 +36,7 @@
 .ev-pay-bar { display: grid; gap: 8px; padding: 14px 16px; }
 .ev-pay-bar .lbl { display: flex; justify-content: space-between; gap: 12px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
 .ev-pay-bar .lbl b { color: var(--st-paid-fg); font-weight: 800; }
+.ev-pay-bar .lbl b.zero { color: var(--ink); } /* 0 € não é sinal de nada: sem verde */
 .ev-pay-row {
   display: grid; grid-template-columns: 24px 1fr auto 44px; align-items: center; gap: 10px;
   min-height: 60px; padding: 6px 6px 6px 16px; border-top: 1px solid var(--rule);

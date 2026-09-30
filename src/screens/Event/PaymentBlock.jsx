@@ -15,7 +15,7 @@ const byDate = (a, b) => (a.pending ? 1 : 0) - (b.pending ? 1 : 0)
   || String(a.created_at || '').localeCompare(String(b.created_at || ''))
 
 // "Registar outro valor": Valor + Data + [Registar]. Acima do que falta pede confirmação (IA-02).
-function AddPayment({ ev, miss, onDone }) {
+function AddPayment({ ev, miss, onDone, onDraft }) {
   const { recordPayment, today } = useStore()
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(today)
@@ -57,7 +57,7 @@ function AddPayment({ ev, miss, onDone }) {
       <div className="row2">
         <Field label="Valor" error={err}>
           <MoneyInput ref={amountRef} value={amount} enterKeyHint="done"
-            onChange={(v) => { setAmount(v); setErr(null) }} />
+            onChange={(v) => { setAmount(v); setErr(null); onDraft?.(v) }} />
         </Field>
         <Field label="Data">
           <DateInput value={date} format={payDayFormat(today)} onChange={(v) => setDate(v || today)} />
@@ -72,8 +72,9 @@ function AddPayment({ ev, miss, onDone }) {
 }
 
 // Bloco "Pagamento" do Detalhe (spec §10.6): lê sempre o evento vivo; cada ação grava logo, com Anular.
-// adding/onAdding: formulário "Registar outro valor" aberto (o "…" › "Registar pagamento extra" também o abre).
-export default function PaymentBlock({ ev, adding, onAdding }) {
+// adding/onAdding: formulário "Registar outro valor" aberto (o "…" › "Registar pagamento extra" também o abre);
+// onDraft(texto): o valor escrito e ainda não registado (a folha pergunta antes de o perder).
+export default function PaymentBlock({ ev, adding, onAdding, onDraft }) {
   const { paymentsByEvent, paidAmount, missing, removePaymentDeferred, markUnpaid } = useStore()
   const cardRef = useRef(null)
   const addRef = useRef(null)
@@ -83,6 +84,18 @@ export default function PaymentBlock({ ev, adding, onAdding }) {
     if (wasAdding.current && !adding) (addRef.current || cardRef.current)?.focus({ preventScroll: true })
     wasAdding.current = adding
   }, [adding])
+  // apagar um pagamento ou "Marcar como não recebido" tiram do ecrã o botão com o foco:
+  // quando isso acontece (nos 3 s seguintes), o foco volta ao bloco em vez de cair no <body>
+  const rescueUntil = useRef(0)
+  const keepFocus = () => { rescueUntil.current = Date.now() + 3000 }
+  useEffect(() => {
+    if (!rescueUntil.current) return
+    if (Date.now() > rescueUntil.current) { rescueUntil.current = 0; return }
+    const a = document.activeElement
+    if (a && a !== document.body && a.isConnected) return
+    rescueUntil.current = 0
+    ;(addRef.current || cardRef.current)?.focus({ preventScroll: true })
+  })
   const ps = (paymentsByEvent.get(ev.id) || []).slice().sort(byDate)
   const total = Number(ev.value) || 0
   const gross = ev.gross_value ?? ev.value
@@ -106,7 +119,7 @@ export default function PaymentBlock({ ev, adding, onAdding }) {
       </div>
       <div className="ev-pay-bar">
         <Progress value={total > 0 ? got : 1} max={total > 0 ? total : 1} label={`Recebido ${money(got)} de ${money(total)}`} />
-        <div className="lbl"><span>Recebido <b>{money(got)}</b></span><span>{pct}{' '}%</span></div>
+        <div className="lbl"><span>Recebido <b className={got > EPS ? '' : 'zero'}>{money(got)}</b></span><span>{pct}{' '}%</span></div>
       </div>
 
       {ps.map((p, i) => (
@@ -116,7 +129,7 @@ export default function PaymentBlock({ ev, adding, onAdding }) {
           <span className="money">{money(p.amount)}</span>
           {p.pending ? <span /> : (
             <IconButton icon="trash" label={`Apagar pagamento de ${money(p.amount)} (${fmtDMY(p.paid_at)})`}
-              onClick={() => removePaymentDeferred(p, ev)} />
+              onClick={() => { keepFocus(); removePaymentDeferred(p, ev) }} />
           )}
         </div>
       ))}
@@ -124,12 +137,12 @@ export default function PaymentBlock({ ev, adding, onAdding }) {
       {legacy && (
         <div className="ev-pay-legacy">
           <p>Marcado como recebido{ev.paid_at ? ` a ${fmtDMY(ev.paid_at)}` : ''}, sem pagamentos registados.</p>
-          <Button variant="danger" onClick={() => markUnpaid(ev)}>Marcar como não recebido</Button>
+          <Button variant="danger" onClick={() => { keepFocus(); markUnpaid(ev) }}>Marcar como não recebido</Button>
         </div>
       )}
 
       {adding ? (
-        <AddPayment ev={ev} miss={miss} onDone={() => onAdding(false)} />
+        <AddPayment ev={ev} miss={miss} onDone={() => onAdding(false)} onDraft={onDraft} />
       ) : !paidAll && (
         <div className="ev-pay-add">
           <Button ref={addRef} variant="ghost" icon="plus" onClick={() => onAdding(true)}>Registar outro valor</Button>

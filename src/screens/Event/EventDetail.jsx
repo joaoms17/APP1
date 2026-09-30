@@ -1,9 +1,11 @@
 import { useId, useRef, useState } from 'react'
-import { Attachments, Button, Card, Dot, EmptyState, Icon, Sheet, Skeleton, StatusBadge, Switch } from '../../ui'
+import {
+  Attachments, Button, Card, Dot, EmptyState, Icon, Sheet, Skeleton, StatusBadge, Switch, confirmDialog, discardText, parseMoney,
+} from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet, replaceSheet } from '../../router.js'
 import { FEATURES } from '../../features.js'
-import { fmtDay, fmtTime, relDay } from '../../format.js'
+import { fmtDay, fmtDayLong, fmtTime, relDay } from '../../format.js'
 import PaymentBlock, { money } from './PaymentBlock.jsx'
 
 const EPS = 0.005
@@ -20,7 +22,13 @@ export default function EventDetail({ id, onClose }) {
   const recId = useId()
   const attId = useId()
   const notesId = useId()
-  const [adding, setAdding] = useState(false)
+  const [adding, setAddingState] = useState(false)
+  const [draft, setDraft] = useState('') // valor escrito em "Registar outro valor" e ainda não registado
+  const editRef = useRef(null)
+  const setAdding = (on) => {
+    setAddingState(on)
+    if (!on) setDraft('')
+  }
 
   // ao apagar, a folha fecha com o último estado visto (o evento sai logo da lista)
   const closing = useRef(false)
@@ -44,24 +52,46 @@ export default function EventDetail({ id, onClose }) {
   const hasPayments = (paymentsByEvent.get(ev.id) || []).length > 0
   const legacy = !!ev.paid && !hasPayments && Number(ev.value) > 0
   const atts = attachmentsFor('event', ev.id)
+  // "Hoje · quarta, 30 de setembro" · "Sábado · 3 de outubro" (sem repetir o dia) · "Sábado, 17 de outubro"
   const rel = relDay(ev.event_date, today)
-  const day = fmtDay(ev.event_date, { weekday: 'day', month: 'long', year: ev.event_date.slice(0, 4) !== today.slice(0, 4) })
+  const otherYear = ev.event_date.slice(0, 4) !== today.slice(0, 4)
+  const relIsWeekday = rel && !['Hoje', 'Amanhã', 'Ontem'].includes(rel)
+  const day = rel
+    ? fmtDay(ev.event_date, { weekday: relIsWeekday ? null : 'day', month: 'long', year: otherYear })
+    : fmtDayLong(ev.event_date, { year: otherYear })
   const time = fmtTime(ev.start_time)
 
-  const edit = () => replaceSheet('evento-editar', ev.id)
+  // um valor escrito e não registado não se perde em silêncio: fechar ou sair para outra folha pergunta
+  const typed = adding && draft.trim()
+  const n = typed ? parseMoney(draft) : null
+  const dirty = typed
+    ? `Escreveste ${Number.isFinite(n) && n > 0 ? money(n) : `“${draft.trim()}”`} em “Registar outro valor” e ainda não o registaste.`
+    : false
+  const leave = (fn) => async () => {
+    if (dirty) {
+      const ok = await confirmDialog({
+        title: 'Descartar alterações?', text: discardText(dirty),
+        confirmLabel: 'Descartar alterações', cancelLabel: 'Continuar a editar', danger: true, primary: 'cancel',
+      })
+      if (!ok) return
+    }
+    fn()
+  }
+
+  const edit = leave(() => replaceSheet('evento-editar', ev.id))
   const remove = () => {
     closing.current = true
     onClose()
     deleteEvent(ev)
   }
   // cópia sem id nem pagamentos (a data fica, para mudar no formulário)
-  const duplicate = () => openSheet('novo', {
+  const duplicate = leave(() => openSheet('novo', {
     kind: 'evento',
     preset: {
       project_id: ev.project_id, title: ev.title, data: ev.event_date, start_time: ev.start_time,
       location: ev.location, gross_value: ev.gross_value, value: ev.value, notes: ev.notes,
     },
-  })
+  }))
   // Documentos (escondidos com FEATURES.docs = false): cronograma do dia e orçamento ligado
   const openQuote = () => {
     const q = quotes.find((x) => x.event_id === ev.id)
@@ -77,17 +107,21 @@ export default function EventDetail({ id, onClose }) {
     { label: 'Apagar evento', icon: 'trash', danger: true, onSelect: remove },
   ]
 
-  const footer = paidAll ? (
-    <Button size="lg" block icon="pencil" onClick={edit}>Editar</Button>
-  ) : (
+  // "Recebi" desaparece quando fica tudo recebido: o foco passa para o "Editar" (que se mantém montado)
+  const receive = () => {
+    receiveRemaining(ev)
+    editRef.current?.focus({ preventScroll: true })
+  }
+  const footer = (
     <>
-      <Button size="lg" icon="pencil" onClick={edit}>Editar</Button>
-      <Button variant="primary" size="lg" icon="check" onClick={() => receiveRemaining(ev)}>Recebi {money(miss)}</Button>
+      <Button ref={editRef} size="lg" block={paidAll} icon="pencil" onClick={edit}>Editar</Button>
+      {!paidAll && <Button variant="primary" size="lg" icon="check" onClick={receive}>Recebi {money(miss)}</Button>}
     </>
   )
 
   return (
-    <Sheet variant="detail" title={ev.title} labelledBy={titleId} menu={menu} footer={footer} onClose={onClose} className="ev-sheet">
+    <Sheet variant="detail" title={ev.title} labelledBy={titleId} menu={menu} footer={footer} dirty={dirty}
+      onClose={onClose} className="ev-sheet">
       <div className="ev-ident">
         {p && <span className="ev-pchip"><Dot project={p} size="lg" />{p.name}</span>}
         <h2 className="ev-title" id={titleId} tabIndex={-1}>{ev.title}</h2>
@@ -100,7 +134,7 @@ export default function EventDetail({ id, onClose }) {
 
       <section className="ev-sec" aria-labelledby={payId}>
         <div className="ev-sec-head"><h3 id={payId}>Pagamento</h3><StatusBadge ev={ev} always /></div>
-        <PaymentBlock ev={ev} adding={adding} onAdding={setAdding} />
+        <PaymentBlock ev={ev} adding={adding} onAdding={setAdding} onDraft={setDraft} />
       </section>
 
       <section className="ev-sec" aria-labelledby={recId}>
@@ -124,7 +158,7 @@ export default function EventDetail({ id, onClose }) {
         {ev.notes ? <p className="ev-notes">{ev.notes}</p> : (
           <div className="ev-note-empty">
             Sem notas.
-            <Button variant="ghost" size="sm" icon="pencil" onClick={() => replaceSheet('evento-editar', { id: ev.id, foco: 'notas' })}>
+            <Button variant="ghost" size="sm" icon="pencil" onClick={leave(() => replaceSheet('evento-editar', { id: ev.id, foco: 'notas' }))}>
               Adicionar nota
             </Button>
           </div>

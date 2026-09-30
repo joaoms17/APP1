@@ -16,6 +16,7 @@ const PAY_OPTIONS = [
   { value: 'full', label: 'Tudo recebido' },
 ]
 const BAD_MONEY = 'Escreve um valor válido, por exemplo 269,50.'
+const NEG_MONEY = 'O valor não pode ser negativo.'
 
 // valores do formulário: dinheiro em texto ('269,50'); líquido vazio = igual ao bruto
 const numOf = (v) => (v == null || v === '' ? null : Number(v))
@@ -155,9 +156,13 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
     if (!f.title.trim()) e.title = 'Escreve o título.'
     if (!f.event_date) e.event_date = 'Escolhe a data.'
     if (Number.isNaN(gross)) e.gross = BAD_MONEY
+    else if (gross < 0) e.gross = NEG_MONEY
     if (Number.isNaN(net)) e.net = BAD_MONEY
+    else if (net < 0) e.net = NEG_MONEY
     if (mode !== 'edit' && f.pay === 'deposit') {
-      if (deposit == null || !(deposit > 0)) e.payAmount = Number.isNaN(deposit) ? BAD_MONEY : 'Escreve o valor do sinal.'
+      if (deposit == null || !(deposit > 0)) {
+        e.payAmount = Number.isNaN(deposit) ? BAD_MONEY : deposit < 0 ? NEG_MONEY : 'Escreve o valor do sinal.'
+      }
       else if (value > 0 && deposit > value + EPS) e.payAmount = `O sinal é maior do que o valor do evento (${money(value)}).`
     }
     if (mode !== 'edit' && f.pay !== 'none' && !(value > 0) && !e.gross && !e.net) {
@@ -244,9 +249,10 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   }
   submitRef.current = submit
 
-  // "seguinte" no teclado passa ao campo seguinte em vez de gravar a meio
+  // Enter ("seguinte") passa ao campo seguinte em vez de gravar a meio — também na Data e na Hora,
+  // onde o browser submeteria o formulário; só grava no botão Guardar
   const onKeyDown = (e) => {
-    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.getAttribute('enterkeyhint') !== 'next') return
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.getAttribute('enterkeyhint') === 'done') return
     e.preventDefault()
     const els = [...e.currentTarget.querySelectorAll('input:not([type=file]):not([disabled]), textarea')]
     els[els.indexOf(e.target) + 1]?.focus()
@@ -371,6 +377,7 @@ function PaymentNote({ ev, got, value, legacy, payments }) {
   let head
   if (legacy) head = 'Pagamento: marcado como recebido, sem pagamentos registados.'
   else if (got <= EPS) head = `Pagamento: nada recebido · falta ${money(miss)}.`
+  else if (value < got - EPS) head = `Pagamento: já recebeste ${money(got)}, mais do que o valor novo (${money(value)}).`
   else if (miss <= EPS) head = `Pagamento: tudo recebido (${money(got)}).`
   else head = `Pagamento: ${payments === 1 ? `sinal de ${money(got)} recebido` : `${money(got)} recebidos`} · falta ${money(miss)}.`
   const lower = !legacy && got > EPS ? ` Se baixares o valor para menos de ${money(got)}, pedimos confirmação.` : ''
