@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react'
+import { Fragment, useId, useMemo } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, ReferenceLine, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
@@ -75,6 +75,20 @@ function axes(month, ticks, colors, line = false) {
   ]
 }
 
+// faixa de leitura: cada valor fica inteiro numa linha (só se parte entre valores)
+function Readout({ month, items }) {
+  return (
+    <div className="readout" aria-live="polite">
+      <b>{MONTHS[month]}</b>
+      <span>
+        {items.map((s, i) => (
+          <Fragment key={i}><span className="db-ro">{s}{i < items.length - 1 && ' ·'}</span>{' '}</Fragment>
+        ))}
+      </span>
+    </div>
+  )
+}
+
 // um toque (ou clique) em qualquer ponto da coluna fixa o mês
 const pickFrom = (onPick) => (state) => {
   const i = state?.activeTooltipIndex
@@ -133,7 +147,7 @@ function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, ani
         {hasPrev && <span><i className="db-c2" />{prevYear}</span>}
         {avg != null && <span><i className="dash db-cavg" />média {year}</span>}
       </div>
-      <div className="readout" aria-live="polite"><b>{MONTHS[month]}</b><span>{ro.join(' · ')}</span></div>
+      <Readout month={month} items={ro} />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} onClick={pickFrom(onPick)}>
@@ -192,7 +206,7 @@ function ProjectsCard({ t, projects, month, onPick, colors, height, animate }) {
       <div className="legend">
         {order.map((p) => <span key={p.id} data-p style={projectVars(p.color)}><i className="sq db-cp" />{p.name}</span>)}
       </div>
-      <div className="readout" aria-live="polite"><b>{MONTHS[month]}</b><span>{ro.length ? ro.join(' · ') : 'sem receita'}</span></div>
+      <Readout month={month} items={ro.length ? ro : ['sem receita']} />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} barCategoryGap={4} onClick={pickFrom(onPick)}>
@@ -222,10 +236,8 @@ function BalanceCard({ t, month, onPick, colors, height, animate }) {
         <span><i className="sq db-c1" />Receita líquida</span>
         <span><i className="sq db-c2" />Despesa</span>
       </div>
-      <div className="readout" aria-live="polite">
-        <b>{MONTHS[month]}</b>
-        <span>receita {eur(M.net[month])} · despesa {eur(-M.exp[month])} · saldo {eur(M.saldo[month])}</span>
-      </div>
+      <Readout month={month}
+        items={[`receita ${eur(M.net[month])}`, `despesa ${eur(-M.exp[month])}`, `saldo ${eur(M.saldo[month])}`]} />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} barGap={1} onClick={pickFrom(onPick)}>

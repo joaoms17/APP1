@@ -9,6 +9,12 @@
   font-family: var(--font-display); font-weight: 600; font-size: var(--fs-heading);
   min-width: 56px; text-align: center; font-variation-settings: "opsz" 36;
 }
+/* ecrãs estreitos (320 px com texto muito grande): as setas encostam ao ano, sem perder os 44 px de toque */
+@media (max-width: 359px) {
+  .db-yearsel .icon-btn:first-child { margin-right: -8px; }
+  .db-yearsel .icon-btn:last-child { margin-left: -8px; }
+  .db-yearsel b { pointer-events: none; } /* o toque na sobreposição vai para a seta */
+}
 
 .db-grid { display: grid; gap: 14px; }
 .db-wait { padding: 16px 14px; }
@@ -17,7 +23,7 @@
 .db-hero { background: linear-gradient(160deg, color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), var(--surface) 60%); }
 .db-hero .label {
   font-family: var(--font-display); font-style: italic; font-size: var(--fs-title); font-weight: 600;
-  color: var(--ink); font-variation-settings: "opsz" 36;
+  color: var(--ink);
 }
 .db-hero .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .db-hero .sub { line-height: 1.4; }
@@ -52,6 +58,7 @@
 .db-chart { padding: 16px 14px 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .db-chart h2, .db-tbl h2 { font-size: var(--fs-title); font-weight: 800; }
 .db-chart .note { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); line-height: 1.45; }
+.db-chart .readout .db-ro { white-space: nowrap; }
 .db-plot { min-width: 0; margin: 0 -4px; }
 .db-plot .recharts-wrapper, .db-plot .recharts-surface { cursor: pointer; }
 .db-plot svg { overflow: visible; }
@@ -106,7 +113,8 @@
   .db-link { grid-column: span 2; padding: 16px 18px; }
   .db-chart { padding: 18px 18px 16px; }
   .db-chart.wide, .db-tbl { grid-column: span 4; }
-  .db-chart.half { grid-column: span 2; }
+  .db-chart.half { grid-column: span 2; grid-template-rows: auto auto auto 1fr; }
+  .db-chart.half .db-plot { align-self: end; }
   .db-chart .readout { flex-wrap: nowrap; }
   .db-chart.half .readout { flex-wrap: wrap; }
   .db-tbl { padding: 14px 18px 8px; }

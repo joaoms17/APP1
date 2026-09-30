@@ -1,7 +1,7 @@
 import { lazy, Suspense, useId, useMemo, useRef, useState } from 'react'
 import { Button, Card, Delta, EmptyState, HeroNumber, Icon, IconButton, Kpi, Skeleton, TopBar, useMediaQuery } from '../../ui'
 import { useStore } from '../../store.jsx'
-import { navigate, routeHref, useRoute } from '../../router.js'
+import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
 import { MONTHS_LONG, fmtMoney } from '../../format.js'
 import { Boundary } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
@@ -142,9 +142,13 @@ export default function Dashboard() {
   if (!t) {
     body = <Card className="db-wait"><Skeleton lines={4} label="A carregar o painel" /></Card>
   } else if (!t.hasData) {
+    // outro ano → voltar ao ano atual; o ano atual vazio → registar o primeiro evento
+    const action = year !== thisYear
+      ? <Button variant="secondary" onClick={() => goYear(thisYear)}>Ver {thisYear}</Button>
+      : <Button variant="secondary" icon="plus" onClick={() => openSheet('novo', { kind: 'evento' })}>Novo evento</Button>
     body = (
       <EmptyState icon="chart" title={`Sem movimentos em ${year}`} text="Não há eventos nem despesas registados neste ano."
-        action={year !== thisYear && <Button variant="secondary" onClick={() => goYear(thisYear)}>Ver {thisYear}</Button>} />
+        action={action} />
     )
   } else {
     body = (
