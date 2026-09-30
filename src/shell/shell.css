@@ -1,0 +1,33 @@
+/* =====================================================================
+   Shell (src/shell/*): só o que o ui.css não tem — esqueleto de arranque,
+   painel de erro, navegação da sidebar e estado do Google. Mesmos tokens.
+   ===================================================================== */
+
+/* esqueleto de ecrã (arranque e ecrãs carregados a pedido) */
+.sh-sk { display: block; border-radius: 7px; background: var(--surface-sunken); animation: sk-pulse 1.4s ease-in-out infinite; }
+.sh-sk.kicker { width: 190px; height: 12px; margin-top: 4px; }
+.sh-sk.title { width: 150px; height: 32px; margin-top: 12px; border-radius: 9px; }
+@media (prefers-reduced-motion: reduce) { .sh-sk { animation: none; } }
+
+/* erro (ecrã, folha, fatal): Callout + Tentar de novo + Detalhes para o João */
+.sh-error { display: grid; justify-items: start; gap: var(--sp-4); padding: var(--sp-2) 0 var(--sp-5); max-width: 560px; }
+.sh-error .callout { justify-self: stretch; }
+.sh-details { font-size: var(--fs-meta); color: var(--muted); }
+.sh-details summary { cursor: pointer; font-weight: 700; min-height: var(--hit); display: flex; align-items: center; gap: 6px; list-style: none; }
+.sh-details summary::-webkit-details-marker { display: none; }
+.sh-details summary svg.i { transition: transform var(--dur-2) var(--ease-out); }
+.sh-details[open] summary svg.i { transform: rotate(180deg); }
+.sh-details code {
+  display: block; margin-top: 4px; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--surface-sunken); color: var(--ink-2); font-family: ui-monospace, Menlo, monospace;
+  font-size: var(--fs-caption); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.sheet .sh-error { padding-top: 0; }
+
+/* sidebar (≥ 1024 px): navegação em grelha, Google com aviso, conta sem transbordar */
+.sidebar nav { display: grid; gap: 4px; }
+.sidebar button.sync { width: 100%; text-align: left; border-radius: var(--radius-md); min-height: var(--hit); color: var(--ink-2); }
+.sidebar button.sync:hover { background: var(--surface-sunken); }
+.sidebar .sync.warn i { background: var(--warning-fg); }
+.sidebar .account > div { min-width: 0; }
+.sidebar .account small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

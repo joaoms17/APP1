@@ -7,6 +7,7 @@
 import { useSyncExternalStore } from 'react'
 
 export const TABS = ['agenda', 'receber', 'despesas', 'painel', 'definicoes']
+export const TAB_LABELS = { agenda: 'Agenda', receber: 'Receber', despesas: 'Despesas', painel: 'Painel', definicoes: 'Definições' }
 export const SHEET_TYPES = ['evento', 'evento-editar', 'novo', 'registar', 'despesa', 'projeto', 'projeto-novo',
   'calendario-novo', 'mes', 'anexo', 'orcamento', 'cronograma', 'precos', 'texto']
 
@@ -23,6 +24,8 @@ let bypassGuard = false // o próprio closeSheet() vai voltar atrás: não pergu
 let pendingBack = false // history.back() pedido e ainda sem popstate
 let queued = []         // navegações pedidas enquanto o back não chega
 let started = false
+const lastByTab = new Map() // separador → último URL (sem folha): a tabbar volta onde se estava
+let lastTab = null          // último separador que não é Definições (para o "‹ Voltar")
 
 // ---------- URL ⇄ rota -----------------------------------------------------
 const readLS = () => { try { return localStorage.getItem(STORE_KEY) } catch { return null } }
@@ -88,11 +91,18 @@ function build(path, params = {}, sheet = null) {
 
 const withoutSheet = (r) => build(r.path, r.params)
 
+function remember(r) {
+  const h = withoutSheet(r)
+  lastByTab.set(r.tab, h)
+  if (r.tab !== 'definicoes') lastTab = r.tab
+  writeLS(h)
+}
+
 function emit(hash) {
   if (hash === currentHash) return
   currentHash = hash
   current = parse(hash)
-  writeLS(withoutSheet(current))
+  remember(current)
   for (const fn of listeners) fn()
 }
 
@@ -131,7 +141,7 @@ function start() {
   history.replaceState(null, '', hash)
   currentHash = hash
   current = parse(hash)
-  writeLS(hash)
+  remember(current)
   window.addEventListener('popstate', onPop)
   window.addEventListener('hashchange', onPop)
   window.addEventListener('keydown', onKey)
@@ -147,9 +157,7 @@ function onKey(e) {
     navigate('#/agenda/lista?q=')
   } else if (e.key === 'n' || e.key === 'N') {
     e.preventDefault()
-    const r = getRoute()
-    const data = r.tab === 'agenda' && r.path[1] === 'mes' && r.path[2] ? r.path[2] : undefined
-    openSheet('novo', { kind: r.tab === 'despesas' ? 'despesa' : 'evento', data })
+    openNew()
   }
 }
 
@@ -247,6 +255,23 @@ export function closeSheet() {
     history.replaceState(null, '', hash)
     emit(hash)
   }
+}
+
+// "Novo" (tabbar, sidebar, tecla N): Despesa no separador Despesas, Evento nos outros;
+// na Agenda › Mês usa o dia selecionado como data
+export function openNew() {
+  const r = getRoute()
+  const data = r.tab === 'agenda' && r.path[1] === 'mes' && r.path[2] ? r.path[2] : undefined
+  openSheet('novo', { kind: r.tab === 'despesas' ? 'despesa' : 'evento', data })
+}
+
+// último URL visitado de um separador (vista, filtros e pesquisa sobrevivem à troca)
+export const tabHref = (tab) => lastByTab.get(tab) || `#/${tab}`
+
+// destino do "‹ Voltar" das Definições: o separador de onde se veio
+export function backRoute() {
+  const tab = lastTab || 'agenda'
+  return { tab, href: tabHref(tab), label: TAB_LABELS[tab] }
 }
 
 // A folha com alterações regista-se aqui: o "voltar" do browser pergunta antes de fechar.

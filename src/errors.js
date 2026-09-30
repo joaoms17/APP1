@@ -3,6 +3,9 @@
 
 // tabela em falta → ficheiro SQL que a cria (pasta supabase/)
 const SQL_OF = {
+  projects: 'schema.sql',
+  events: 'schema.sql',
+  expenses: 'schema.sql',
   payments: 'payments.sql',
   attachments: 'attachments.sql',
   gcal_calendars: 'gcal_calendars.sql',
