@@ -25,7 +25,8 @@
 
 /* listas: cada linha num invólucro (para colapsar ao sair); filete entre linhas */
 .rc-list { display: grid; }
-.rc-item { position: relative; }
+/* isolate: o botão da linha (z-index 2) não passa por cima do cabeçalho de grupo sticky (--z-sticky: 2) */
+.rc-item { position: relative; isolation: isolate; }
 .rc-item + .rc-item > .row::after {
   content: ''; position: absolute; top: 0; left: 55px; right: 0; height: 1px; background: var(--rule);
 }

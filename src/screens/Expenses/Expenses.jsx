@@ -17,17 +17,17 @@ const neg = (n, cents = 'always') => fmtMoney(-Math.abs(Number(n) || 0), { cents
 const sum = (xs) => Math.round(xs.reduce((a, x) => a + (Number(x.amount) || 0), 0) * 100) / 100
 const byDateDesc = (a, b) => (a.expense_date < b.expense_date ? 1 : a.expense_date > b.expense_date ? -1 : 0)
 
-// linhas novas (ou repostas pelo Anular) piscam 1,2 s
-function useFlashNew(rows, ready) {
-  const seen = useRef(null)
+// linhas novas, editadas ou repostas pelo Anular piscam 1,2 s (spec §12)
+const signature = (x) => [x.description, x.amount, x.expense_date, x.project_id, x.category].join('|')
+function useFlashChanged(rows, ready) {
+  const seen = useRef(null) // id → assinatura da última lista vista
   const [flash, setFlash] = useState(() => new Set())
   useEffect(() => {
     if (!ready) return
-    const ids = rows.map((x) => x.id)
     const prev = seen.current
-    seen.current = new Set(ids)
+    seen.current = new Map(rows.map((x) => [x.id, signature(x)]))
     if (!prev) return
-    const fresh = ids.filter((id) => !prev.has(id))
+    const fresh = rows.filter((x) => prev.get(x.id) !== signature(x)).map((x) => x.id)
     if (!fresh.length) return
     setFlash((s) => new Set([...s, ...fresh]))
     setTimeout(() => setFlash((s) => {
@@ -51,7 +51,7 @@ export default function Expenses() {
   const q = params.q || ''
   const cat = params.cat || null
   const loading = loadingPhases.phase2
-  const flash = useFlashNew(expenses, !loading)
+  const flash = useFlashChanged(expenses, !loading)
 
   const year = Number(today.slice(0, 4))
   const term = foldText(q).trim()
@@ -82,9 +82,13 @@ export default function Expenses() {
 
   const filtered = !!(catKey || term)
   const inYear = (y) => rows.filter((x) => Number(x.expense_date.slice(0, 4)) === y)
-  const total = sum(inYear(year))
-  const prev = sum(inYear(year - 1))
-  const months = Number(today.slice(5, 7)) // meses do ano até hoje (o atual conta: as despesas dele estão no total)
+  // com filtro, a lista mostra todas as datas: se nada é deste ano, a capa mostra o ano mais recente encontrado
+  const latest = rows.length ? Number(rows[0].expense_date.slice(0, 4)) : year
+  const shown = filtered && latest < year ? latest : year
+  const total = sum(inYear(shown))
+  const prev = sum(inYear(shown - 1))
+  // meses do ano até hoje (o atual conta: as despesas dele estão no total); anos anteriores: 12
+  const months = shown === year ? Number(today.slice(5, 7)) : 12
   const noneThisYear = !filtered && !expenses.some((x) => Number(x.expense_date.slice(0, 4)) === year)
 
   const takePhoto = () => cam.current?.click()
@@ -98,7 +102,7 @@ export default function Expenses() {
   const clearAll = () => setParams({ q: searching ? '' : null, cat: null })
 
   const label = filtered
-    ? `${[cat, term ? `“${q.trim()}”` : null].filter(Boolean).join(' · ')} em ${year}`
+    ? `${[cat, term ? `“${q.trim()}”` : null].filter(Boolean).join(' · ')} em ${shown}`
     : `Total de ${year}`
 
   const head = searching ? (
@@ -142,7 +146,7 @@ export default function Expenses() {
               {(total > 0 || prev > 0) && (
                 <div className="side">
                   {total > 0 && <span>média <b>{neg(total / months, 'never')}</b>/mês</span>}
-                  {prev > 0 && <span>{year - 1}: {neg(prev, 'never')}</span>}
+                  {prev > 0 && <span>{shown - 1}: {neg(prev, 'never')}</span>}
                 </div>
               )}
             </Card>

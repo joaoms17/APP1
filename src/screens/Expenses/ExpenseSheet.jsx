@@ -5,7 +5,7 @@ import {
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
-import { fmtDM, fmtDMY, fmtDayShort, fmtMoney, foldText } from '../../format.js'
+import { addDays, fmtDM, fmtDMY, fmtDayShort, fmtMoney, foldText } from '../../format.js'
 import { DEFAULT_CATEGORIES } from './Expenses.jsx'
 import './Expenses.css'
 
@@ -21,6 +21,7 @@ const sameText = (a, b) => foldText(a).trim() === foldText(b).trim()
 // "hoje, 30 set" · "ontem, 29 set" · "sáb, 12 set" · "sáb, 17 out 2025"
 const dayFormat = (today) => (v) => {
   if (v === today) return `hoje, ${fmtDM(v)}`
+  if (v === addDays(today, -1)) return `ontem, ${fmtDM(v)}`
   return fmtDayShort(v, { year: true }).replace(` ${today.slice(0, 4)}`, '')
 }
 
