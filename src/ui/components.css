@@ -1,0 +1,142 @@
+/* =====================================================================
+   Complementos ao src/styles/ui.css (que é cópia fiel do CSS canónico).
+   Só o que os mockups estáticos não tinham: comportamento (menu, spinner,
+   esqueleto, animação e fallback da folha, datas nativas, barra compacta,
+   visualizador, barra de tempo do toast). Mesmos tokens, sem cores novas.
+   ===================================================================== */
+
+/* ---- linhas: ponto de projeto na meta, linha com ação (botão esticado) ---- */
+.row .meta .dot { display: inline-block; width: 8px; height: 8px; margin: 0 4px 1px 2px; vertical-align: middle; }
+.row .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.row .end .btn { position: relative; z-index: 2; }
+.row.x .bar { visibility: hidden; }
+.row.x .lead { padding-top: 0; }
+.dot.sm { width: 6px; height: 6px; }
+
+/* ---- progresso: largura por custom property (--pct) ---------------------- */
+.progress > i { width: var(--pct, 0%); transition: width var(--dur-3) var(--ease-out); }
+
+/* ---- botão a gravar ------------------------------------------------------- */
+.spin {
+  width: 16px; height: 16px; flex: none; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: ui-spin .7s linear infinite;
+}
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+.btn.is-loading { cursor: progress; }
+
+/* ---- campos: data/hora nativas por baixo do valor legível ----------------- */
+.control.date, .control.time { position: relative; }
+.control.date > input, .control.time > input {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+  appearance: none; -webkit-appearance: none; min-width: 0;
+}
+.control .clear { position: relative; z-index: 1; margin-right: -10px; width: 40px; height: 40px; }
+.control select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+.control.select > svg.i { pointer-events: none; }
+.control input[type="search"]::-webkit-search-cancel-button { display: none; }
+.control input[type="search"] { -webkit-appearance: none; appearance: none; }
+.control.search { min-height: 44px; }
+.control.area textarea { resize: vertical; min-height: 64px; line-height: 1.4; }
+.switch-row .txt label { cursor: pointer; }
+.switch[disabled] { opacity: .45; cursor: default; }
+
+/* ---- menu "…" (popover) ---------------------------------------------------- */
+.menu { display: inline-flex; }
+.menu-pop {
+  position: fixed; z-index: calc(var(--z-sheet) + 1); min-width: 220px; max-width: min(320px, calc(100vw - 24px));
+  display: grid; padding: 6px; border-radius: 14px; background: var(--surface);
+  box-shadow: var(--elev-3), inset 0 0 0 1px var(--line);
+  animation: ui-fade var(--dur-2) var(--ease-out);
+}
+.menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px;
+  border-radius: 10px; text-align: left; font-weight: 700; color: var(--ink);
+}
+.menu-item .i { color: var(--ink-2); }
+.menu-item:hover, .menu-item:focus-visible { background: var(--surface-sunken); }
+.menu-item:focus-visible { outline-offset: -2px; }
+.menu-item.danger, .menu-item.danger .i { color: var(--critical-fg); }
+.menu-sep { height: 1px; margin: 6px 4px; background: var(--rule); }
+
+/* ---- folha: entrada, arrasto, ecrã inteiro, fallback sem <dialog> ------------ */
+dialog.sheet { transition: transform var(--dur-2) var(--ease-out); }
+dialog.sheet[open] { animation: sheet-up var(--dur-3) var(--ease-out); }
+dialog.sheet[open]::backdrop, dialog.confirm[open]::backdrop { animation: ui-fade var(--dur-2) ease-out; }
+dialog.confirm[open] { animation: ui-fade var(--dur-2) var(--ease-out); }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-in-right { from { transform: translateX(100%); } }
+@keyframes ui-fade { from { opacity: 0; } }
+.sheet .grabber { position: relative; touch-action: none; cursor: grab; }
+.sheet .grabber::before { content: ''; position: absolute; inset: -14px -80px; }
+.sheet-head h2 { min-width: 0; outline: none; }
+.sheet-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) - 1); background: var(--scrim); }
+.confirm-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 1); background: var(--scrim); }
+dialog.sheet.full {
+  inset: 0; width: 100%; max-width: 100%; height: 100dvh; height: var(--vvh, 100dvh); max-height: none; border-radius: 0;
+}
+dialog.sheet.full[open] { animation-name: ui-fade; }
+.sheet.full .sheet-head h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 1024px) {
+  dialog.sheet[open] { animation-name: sheet-in-right; }
+  dialog.sheet.full { inset: 0; width: 100%; height: 100dvh; border-radius: 0; }
+  dialog.sheet.full[open] { animation-name: ui-fade; }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.sheet[open] { animation-name: ui-fade; }
+  .spin { animation: none; border-right-color: currentColor; opacity: .6; }
+}
+
+/* ---- visualizador de anexo ------------------------------------------------------ */
+.viewer .sheet-body { padding: 0; gap: 0; align-content: stretch; }
+.viewer-stage { display: grid; place-items: center; min-height: 100%; padding: 16px; }
+.viewer-stage.img { background: rgba(0, 0, 0, .92); }
+.viewer-stage img { display: block; max-width: 100%; max-height: calc(var(--vvh, 100dvh) - 170px); object-fit: contain; border-radius: var(--radius-xs); }
+.viewer-file { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; color: var(--ink-2); text-align: center; }
+.viewer-file svg.i { width: 64px; height: 64px; stroke-width: 1.4; color: var(--muted); }
+.viewer-file b { font-size: var(--fs-title); font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+.viewer-file small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+
+/* ---- anexos ------------------------------------------------------------------ */
+.thumb .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb.pending { opacity: .7; }
+
+/* ---- toast: entrada e barra de tempo ------------------------------------------- */
+.toast { animation: toast-in var(--dur-2) var(--ease-out); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+.toast .timer { width: 100%; animation: toast-timer var(--toast-dur, 10s) linear var(--toast-delay, 0s) forwards; }
+.toast.paused .timer { animation-play-state: paused; }
+@keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
+
+/* ---- vazio compacto, esqueleto, linha de sincronização ---------------------------- */
+.empty.compact { padding: 16px 12px; }
+.empty.compact .ic { width: 40px; height: 40px; }
+.skeleton { display: grid; gap: 12px; padding: 12px 0; }
+.skeleton .sk { height: 14px; border-radius: 7px; background: var(--surface-sunken); animation: sk-pulse 1.4s ease-in-out infinite; }
+.skeleton .sk:nth-child(3n + 2) { width: 82%; }
+.skeleton .sk:nth-child(3n + 3) { width: 64%; }
+@keyframes sk-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .skeleton .sk { animation: none; } }
+.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
+.sync-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--st-paid-fg); flex: none; }
+.sync-note.warn i { background: var(--warning-fg); }
+.banner > span { min-width: 0; }
+.banner .icon-btn { color: var(--warning-fg); margin: -6px -8px -6px 0; }
+
+/* ---- barra de topo: voltar e barra compacta ao fazer scroll ------------------------- */
+.back { margin: calc(env(safe-area-inset-top) + 12px) 0 -8px -10px; }
+.topbar-compact {
+  position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
+  display: flex; align-items: center; justify-content: center;
+  height: calc(48px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) var(--gutter) 0;
+  background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;
+  opacity: 0; transform: translateY(-100%); pointer-events: none;
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.topbar-compact.on { opacity: 1; transform: none; }
+/* com a barra compacta visível, os cabeçalhos de grupo colam por baixo dela */
+:root:has(.topbar-compact.on) .group-head { top: calc(48px + env(safe-area-inset-top)); }
+@media (min-width: 1024px) {
+  .back { display: none; }
+  .topbar-compact { left: var(--sidebar-w); }
+}

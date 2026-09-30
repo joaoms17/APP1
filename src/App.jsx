@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { db } from './supabase'
 import { StoreProvider, useStore } from './store'
+import { ToastProvider } from './ui/Toast.jsx'
 import Auth from './Auth'
 import Calendar from './screens/Calendar'
 import Events from './screens/Events'
@@ -62,7 +63,7 @@ const TABS = [
 ]
 
 function Shell() {
-  const { loading, error, pendingUndo, undoDelete } = useStore()
+  const { loading, error } = useStore()
   const [tab, setTab] = useState('calendar')
 
   if (loading) return <div className="empty">A carregar…</div>
@@ -84,12 +85,6 @@ function Shell() {
       {tab === 'dashboard' && <Dashboard />}
       {tab === 'projects' && <Projects />}
       {tab === 'doc' && <Quotes />}
-      {pendingUndo && (
-        <div className="undo-toast">
-          <span>{pendingUndo.kind === 'event' ? 'Evento apagado.' : 'Despesa apagada.'}</span>
-          <button onClick={undoDelete}>Anular</button>
-        </div>
-      )}
       <nav className="tabbar">
         {TABS.map((t) => (
           <button key={t.id} className={`${tab === t.id ? 'active' : ''}${t.subtle ? ' subtle' : ''}`} onClick={() => setTab(t.id)}>
@@ -113,9 +108,12 @@ export default function App() {
 
   if (session === undefined) return null
   if (!session) return <Auth />
+  // o "Anular" (apagar, pagamentos, recibos…) vive no ToastProvider; o store usa-o
   return (
-    <StoreProvider>
-      <Shell />
-    </StoreProvider>
+    <ToastProvider>
+      <StoreProvider>
+        <Shell />
+      </StoreProvider>
+    </ToastProvider>
   )
 }
