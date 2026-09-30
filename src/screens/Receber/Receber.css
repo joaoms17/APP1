@@ -1,0 +1,53 @@
+/* =====================================================================
+   Receber (pacote E3) — só layout do ecrã; tudo o resto vem do ui.css.
+   ===================================================================== */
+
+.rc-banner { margin-bottom: 12px; }
+
+/* capa: número em atraso + A receber | Sinais recebidos */
+.rc-hero .hero-num { display: block; margin-top: 8px; }
+.rc-hero .split .kpi .v { font-size: var(--fs-title); }
+.rc-hero a.kpi { border-radius: var(--radius-sm); }
+.rc-hero a.kpi .k { display: flex; align-items: center; gap: 2px; }
+.rc-hero a.kpi:hover .k { color: var(--ink-2); }
+
+.rc-tabs { margin: 16px 0 4px; }
+
+/* linha "Por antiguidade · Mais antigos primeiro ⌄" */
+.rc-sort {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px;
+  font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+}
+.rc-sort .btn .i { width: 16px; height: 16px; }
+
+.rc-panel > .callout { margin-top: 12px; }
+.rc-panel > .empty { padding-top: 40px; }
+
+/* listas: cada linha num invólucro (para colapsar ao sair); filete entre linhas */
+.rc-list { display: grid; }
+.rc-item { position: relative; }
+.rc-item + .rc-item > .row::after {
+  content: ''; position: absolute; top: 0; left: 55px; right: 0; height: 1px; background: var(--rule);
+}
+.rc-item.leaving { overflow: hidden; pointer-events: none; }
+.rc-screen .row .meta .age { color: var(--ink-2); font-weight: 800; }
+
+/* mês por cima de um pendente do Google quando a lista atravessa meses */
+.rc-month { padding: 12px 0 0 55px; font-size: var(--fs-caption); font-weight: 800; color: var(--muted); letter-spacing: .02em; }
+
+/* "↻ Google atualizado às 09:12" (toque = atualizar) */
+.rc-sync {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; padding: 0 4px;
+  border-radius: var(--radius-sm); font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+}
+.rc-sync:hover:not([disabled]) { color: var(--ink-2); }
+.rc-sync[disabled] { cursor: progress; }
+.rc-sync.warn { color: var(--warning-fg); }
+
+@media (min-width: 1024px) {
+  .rc-screen { max-width: 760px; }
+  .rc-hero { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; align-items: end; }
+  .rc-hero .split { margin-top: 0; padding-top: 0; border-top: 0; border-left: 1px solid var(--rule); padding-left: 24px; }
+  /* ação de linha ao lado do valor */
+  .rc-screen .row .end { grid-auto-flow: column; align-items: center; gap: 16px; }
+}
