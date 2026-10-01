@@ -1,0 +1,241 @@
+// Seletores puros da v2 (spec §9.1, §14.2–14.3; plano §F.4). Sem React: o store usa-os
+// com useMemo e scripts/check-selectors.mjs confirma os números das fixtures em Node.
+// Convenções: today = 'yyyy-mm-dd'; pbe = Map event_id → pagamentos (paymentsByEvent do store).
+import { addDays, daysBetween, foldText } from './format.js'
+import { matchGoogle } from './gcalMatch.js'
+
+export { matchGoogle }
+
+const EPS = 0.005
+const num = (v) => Number(v) || 0
+const cents = (n) => Math.round(n * 100) / 100 // totais sem ruído de vírgula flutuante
+const sumBy = (xs, f) => cents(xs.reduce((a, x) => a + f(x), 0))
+const timeKey = (e) => (e.start_time ? String(e.start_time).slice(0, 5) : '99:99') // sem hora → fim do dia
+const yearOf = (ymd) => Number(String(ymd).slice(0, 4))
+const monthOf = (ymd) => Number(String(ymd).slice(5, 7)) - 1
+
+// payments → Map event_id → [pagamentos] (o store já o tem; útil fora do React)
+export function paymentsByEventOf(payments) {
+  const m = new Map()
+  for (const p of payments || []) {
+    if (!m.has(p.event_id)) m.set(p.event_id, [])
+    m.get(p.event_id).push(p)
+  }
+  return m
+}
+
+// ---------- pagamento e estado (spec §9.1) --------------------------------
+// recebido até agora: soma dos pagamentos; eventos antigos sem pagamentos
+// registados contam pelo flag paid (mesma regra da v1)
+export const paidAmountOf = (ev, pbe) => {
+  const ps = pbe?.get(ev.id)
+  if (ps && ps.length) return ps.reduce((a, p) => a + num(p.amount), 0)
+  return ev.paid ? num(ev.value) : 0
+}
+
+export const missingOf = (ev, pbe) => Math.max(0, num(ev.value) - paidAmountOf(ev, pbe))
+
+// 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
+// Recebido = não falta nada (spec §9.1). O flag paid só conta sem pagamentos (legado, via
+// paidAmountOf): com pagamentos manda a soma, mesmo que o flag tenha ficado desatualizado.
+// Um evento de 0 € não tem nada a receber (nunca fica "Em atraso").
+export const eventStateOf = (ev, pbe, today) => {
+  const got = paidAmountOf(ev, pbe)
+  const total = num(ev.value)
+  if (got >= total - EPS) return 'paid'
+  const past = ev.event_date < today
+  if (got > EPS) return past ? 'partial-overdue' : 'partial'
+  return past ? 'overdue' : 'due'
+}
+
+// data em que ficou recebido: último pagamento, senão paid_at (legado), senão o dia do evento
+export const receivedOnOf = (ev, pbe) => {
+  const ps = pbe?.get(ev.id)
+  const last = ps && ps.length ? ps.map((p) => p.paid_at).filter(Boolean).sort().pop() : null
+  return last || ev.paid_at || ev.event_date
+}
+
+// ---------- ordem -----------------------------------------------------------
+// data + hora em todas as listas (sem hora → fim do dia)
+export const compareAsc = (a, b) =>
+  a.event_date < b.event_date ? -1 : a.event_date > b.event_date ? 1 : timeKey(a).localeCompare(timeKey(b))
+export const sortAsc = (events) => events.slice().sort(compareAsc)
+export const sortDesc = (events) => events.slice().sort((a, b) => compareAsc(b, a))
+
+// ---------- dinheiro (spec §14.2) ------------------------------------------
+// Em atraso = já realizado com valor em falta; A receber = hoje ou futuro com valor em falta;
+// Sinais = recebido em eventos ainda por fechar.
+export function receivablesOf(events, pbe, today) {
+  const overdue = []
+  const upcoming = []
+  let overdueTotal = 0, upcomingTotal = 0, depositsTotal = 0, depositsCount = 0
+  for (const e of events) {
+    const miss = missingOf(e, pbe)
+    if (miss <= EPS) continue
+    if (e.event_date < today) { overdue.push(e); overdueTotal += miss } else { upcoming.push(e); upcomingTotal += miss }
+    const got = paidAmountOf(e, pbe)
+    if (got > EPS) { depositsTotal += got; depositsCount++ }
+  }
+  overdue.sort(compareAsc)
+  upcoming.sort(compareAsc)
+  return {
+    overdue, upcoming,
+    overdueTotal: cents(overdueTotal), upcomingTotal: cents(upcomingTotal),
+    depositsTotal: cents(depositsTotal), depositsCount,
+    oldestDate: overdue.length ? overdue[0].event_date : null,
+  }
+}
+
+// antiguidade do Em atraso (Receber): só devolve os grupos com eventos, do mais antigo para o mais recente
+const AGING = [
+  { key: 'gt90', label: 'Há mais de 3 meses', test: (d) => d > 90 },
+  { key: 'd31to90', label: 'Entre 1 e 3 meses', test: (d) => d > 30 && d <= 90 },
+  { key: 'le30', label: 'Últimos 30 dias', test: (d) => d <= 30 },
+]
+export function agingGroups(overdue, today, pbe) {
+  return AGING
+    .map(({ key, label, test }) => {
+      const events = overdue.filter((e) => test(daysBetween(e.event_date, today)))
+      return { key, label, events, total: sumBy(events, (e) => missingOf(e, pbe)) }
+    })
+    .filter((g) => g.events.length)
+}
+
+// recibo em falta: recebido, já realizado (≤ hoje), sem recibo e com valor (0 € não leva recibo)
+export const needsReceipt = (ev, pbe, today) =>
+  ev.event_date <= today && !ev.receipt_issued && num(ev.value) > 0 && eventStateOf(ev, pbe, today) === 'paid'
+
+// recibos por emitir, do mais recente
+export const receiptsToIssueOf = (events, pbe, today) => sortDesc(events.filter((e) => needsReceipt(e, pbe, today)))
+
+// resumo de uma lista de eventos (cabeçalhos de grupo, cartão do mês, pesquisa)
+// total = faturado; got = recebido (limitado ao valor de cada evento); missing = o que falta
+export function summaryOf(events, pbe) {
+  return {
+    count: events.length,
+    total: sumBy(events, (e) => num(e.value)),
+    got: sumBy(events, (e) => Math.min(num(e.value), paidAmountOf(e, pbe))),
+    missing: sumBy(events, (e) => missingOf(e, pbe)),
+  }
+}
+
+// ---------- Google (spec §14.3) --------------------------------------------
+export const googlePendingOf = (pending, today) => ({
+  past: pending.filter((g) => g.date < today),
+  upcoming: pending.filter((g) => g.date >= today),
+})
+
+// ---------- pesquisa (spec §10.4): sem acentos, em título, local e notas ----
+// cada palavra da pesquisa tem de aparecer em algum dos campos ("figuras faro", "noiva almancil")
+const matchesAll = (fields, q) => {
+  const words = foldText(q).split(/\s+/).filter(Boolean)
+  if (!words.length) return true
+  const text = fields.map((s) => foldText(s)).join(' \n ')
+  return words.every((w) => text.includes(w))
+}
+export const eventMatches = (ev, q) => matchesAll([ev.title, ev.location, ev.notes], q)
+export const googleMatches = (g, q) => matchesAll([g.title, g.location], q)
+
+// ---------- projetos e categorias ------------------------------------------
+// projeto escolhível num ano: ativo e dentro do período (mesma regra da v1)
+export const isProjectActive = (p, year) =>
+  p.active !== false
+  && (p.active_from == null || p.active_from <= year)
+  && (p.active_to == null || p.active_to >= year)
+
+// chips do formulário: ativos (+ o atual), o último usado primeiro, depois os mais usados
+// nos últimos 180 dias, depois a ordem do projeto
+export function projectsByUsage(projects, events, today, lastId, currentId) {
+  const year = yearOf(today)
+  const from = addDays(today, -180)
+  const uses = new Map()
+  for (const e of events) {
+    if (e.event_date >= from && e.event_date <= today) uses.set(e.project_id, (uses.get(e.project_id) || 0) + 1)
+  }
+  return projects
+    .filter((p) => isProjectActive(p, year) || p.id === currentId)
+    .sort((a, b) =>
+      (b.id === lastId) - (a.id === lastId)
+      || (uses.get(b.id) || 0) - (uses.get(a.id) || 0)
+      || (a.sort_order ?? 0) - (b.sort_order ?? 0))
+}
+
+// categorias de despesa já usadas, das mais frequentes para as menos
+export function expenseCategoriesOf(expenses) {
+  const n = new Map()
+  for (const x of expenses) {
+    const c = String(x.category || '').trim()
+    if (c) n.set(c, (n.get(c) || 0) + 1)
+  }
+  return [...n.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt'))
+    .map(([c]) => c)
+}
+
+// ---------- Painel (spec §10.13) -------------------------------------------
+// receita = valor líquido dos eventos do ano (regra da v1); retido = bruto − líquido;
+// a média conta só os meses fechados; Em atraso/futuros respeitam o ano escolhido (D19)
+export function yearTotals(events, expenses, pbe, year, today) {
+  const z = () => Array(12).fill(0)
+  const byMonth = { net: z(), netPrev: z(), gross: z(), paid: z(), unpaid: z(), exp: z(), expPrev: z(), saldo: z(), count: z() }
+  const byProject = {}
+  let overdueYear = 0, upcomingYear = 0, overdueYearCount = 0
+  for (const e of events) {
+    const y = yearOf(e.event_date)
+    const m = monthOf(e.event_date)
+    const value = num(e.value)
+    if (y === year - 1) byMonth.netPrev[m] += value
+    if (y !== year) continue
+    const got = paidAmountOf(e, pbe)
+    const miss = Math.max(0, value - got)
+    byMonth.net[m] += value
+    byMonth.gross[m] += num(e.gross_value ?? e.value)
+    byMonth.paid[m] += Math.min(value, got)
+    byMonth.unpaid[m] += miss
+    byMonth.count[m]++
+    ;(byProject[e.project_id] ||= z())[m] += value
+    if (miss > EPS) {
+      if (e.event_date < today) { overdueYear += miss; overdueYearCount++ } else upcomingYear += miss
+    }
+  }
+  for (const x of expenses) {
+    const y = yearOf(x.expense_date)
+    const m = monthOf(x.expense_date)
+    if (y === year) byMonth.exp[m] += num(x.amount)
+    else if (y === year - 1) byMonth.expPrev[m] += num(x.amount)
+  }
+  for (const k of Object.keys(byMonth)) byMonth[k] = byMonth[k].map(cents)
+  for (const k of Object.keys(byProject)) byProject[k] = byProject[k].map(cents)
+  byMonth.saldo = byMonth.net.map((v, i) => cents(v - byMonth.exp[i]))
+
+  const total = (a) => cents(a.reduce((s, v) => s + v, 0))
+  const net = total(byMonth.net), netPrev = total(byMonth.netPrev)
+  const gross = total(byMonth.gross)
+  const exp = total(byMonth.exp), expPrev = total(byMonth.expPrev)
+  const saldo = cents(net - exp), saldoPrev = cents(netPrev - expPrev)
+  const pct = (a, b) => (b ? Math.round(((a - b) / Math.abs(b)) * 100) : null)
+
+  const ty = yearOf(today)
+  const closedMonths = year < ty ? 12 : year === ty ? monthOf(today) : 0
+  const avgClosed = closedMonths ? cents(total(byMonth.net.slice(0, closedMonths)) / closedMonths) : null
+  const avgPrev = netPrev > 0 ? cents(netPrev / 12) : null
+
+  // melhor mês: maior saldo positivo (um ano só com despesas, ou só com meses em prejuízo,
+  // não tem "melhor mês" — R1-64)
+  let bestMonth = null
+  byMonth.saldo.forEach((v, i) => {
+    if (v > 0 && (bestMonth === null || v > byMonth.saldo[bestMonth])) bestMonth = i
+  })
+
+  return {
+    year, net, gross, retained: cents(gross - net), exp, saldo,
+    netPrev, expPrev, saldoPrev,
+    deltaNet: pct(net, netPrev), deltaExp: pct(exp, expPrev), deltaSaldo: pct(saldo, saldoPrev),
+    overdueYear: cents(overdueYear), overdueYearCount, upcomingYear: cents(upcomingYear),
+    closedMonths, avgClosed, avgPrev,
+    bestMonth: bestMonth === null ? null : { month: bestMonth, saldo: byMonth.saldo[bestMonth] },
+    eventsCount: total(byMonth.count),
+    hasData: net > 0 || exp > 0 || byMonth.count.some(Boolean),
+    byMonth, byProject,
+  }
+}

@@ -1,0 +1,212 @@
+/* =====================================================================
+   Complementos ao src/styles/ui.css (o CSS canónico, com os :hover só para
+   rato e a coluna do .field a encolher). Só o que os mockups estáticos não
+   tinham: comportamento (menu, spinner, esqueleto, animação e fallback da
+   folha, datas nativas, barra compacta, visualizador, barra de tempo do
+   toast) e variantes pedidas pelos ecrãs. Mesmos tokens, sem cores novas.
+   ===================================================================== */
+
+/* ---- linhas: ponto de projeto na meta, linha com ação (botão esticado) ---- */
+/* isolate: a ação da linha (z-index 2) não passa por cima do cabeçalho de grupo sticky (--z-sticky) */
+.row { isolation: isolate; }
+/* linha com ação ("Recebi", "Emitido", "Registar"): com pouca largura útil (ecrã estreito ou texto
+   grande — o limite em em cresce com o Tamanho do texto), a ação desce para baixo da meta e o título
+   e a meta ficam com a largura toda; em .end fica só o valor */
+.row.act { container-type: inline-size; }
+@container (max-width: 23.5em) {
+  .row.act > .bar { grid-row: 1 / span 2; }
+  .row.act > .end { display: contents; }
+  .row.act > .end > .money { grid-column: 4; grid-row: 1; justify-self: end; padding-top: 1px; }
+  .row.act > .end > .btn { grid-column: 3 / span 2; grid-row: 2; justify-self: start; margin-top: 2px; }
+  .row.act > .main .meta { white-space: normal; }
+}
+/* ReceivableRow/ReceiptRow: a meta é o dado da vista ("há 1 ano e 3 meses", "recebido a 24 ago ·
+   Banda do Algarve") — parte em 2 linhas em vez de cortar */
+.row.act:not(.g) > .main .meta { white-space: normal; }
+.row .meta .dot { display: inline-block; width: 8px; height: 8px; margin: 0 4px 1px 2px; vertical-align: middle; }
+.row .row-open, .today-card .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.row .end .btn { position: relative; z-index: 2; }
+.row.x .bar { visibility: hidden; }
+.row.x .lead { padding-top: 0; }
+.dot.sm { width: 6px; height: 6px; }
+
+/* ---- cartão de hoje: ação por cima do botão esticado, compacto, a piscar ---- */
+.today-card { isolation: isolate; }
+.today-card .foot { flex-wrap: wrap; row-gap: 6px; } /* texto grande: o "Recebi" passa para baixo do estado */
+.today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
+.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.today-card.compact { padding-top: 10px; padding-bottom: 8px; }
+.today-card.compact .time:not(.none) { font-size: calc(20 * var(--u)); }
+.today-card.compact .foot { margin-top: 4px; }
+.today-card.flash { animation: tc-flash 1.2s var(--ease-out); }
+@keyframes tc-flash {
+  from { box-shadow: var(--elev-1), 0 0 0 4px color-mix(in srgb, var(--p) 45%, transparent), inset 0 0 0 1px var(--p); }
+}
+
+/* ---- progresso: largura por custom property (--pct) ---------------------- */
+.progress > i { width: var(--pct, 0%); transition: width var(--dur-3) var(--ease-out); }
+
+/* ---- botão a gravar ------------------------------------------------------- */
+.spin {
+  width: 16px; height: 16px; flex: none; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent; animation: ui-spin .7s linear infinite;
+}
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+.btn.is-loading { cursor: progress; }
+
+/* ---- campos: data/hora nativas por baixo do valor legível ----------------- */
+.control.date, .control.time { position: relative; }
+.control.date > input, .control.time > input {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+  appearance: none; -webkit-appearance: none; min-width: 0;
+}
+.control .clear { position: relative; z-index: 1; margin-right: -12px; width: var(--hit); height: var(--hit); flex: none; }
+.control select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+.control.select > svg.i { pointer-events: none; }
+.control input[type="search"]::-webkit-search-cancel-button { display: none; }
+.control input[type="search"] { -webkit-appearance: none; appearance: none; }
+.control.search { min-height: 44px; }
+.control.area textarea { resize: vertical; min-height: 64px; line-height: 1.4; }
+.switch-row .txt label { cursor: pointer; }
+.switch[disabled] { opacity: .45; cursor: default; }
+
+/* ---- menu "…" (popover) ---------------------------------------------------- */
+.menu { display: inline-flex; }
+.menu-pop {
+  position: fixed; z-index: calc(var(--z-sheet) + 1); min-width: 220px; max-width: min(320px, calc(100vw - 24px));
+  display: grid; padding: 6px; border-radius: 14px; background: var(--surface);
+  box-shadow: var(--elev-3), inset 0 0 0 1px var(--line);
+  animation: ui-fade var(--dur-2) var(--ease-out);
+}
+.menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px;
+  border-radius: 10px; text-align: left; font-weight: 700; color: var(--ink);
+}
+.menu-item .i { color: var(--ink-2); }
+.menu-item:focus-visible { background: var(--surface-sunken); }
+@media (hover: hover) { .menu-item:hover { background: var(--surface-sunken); } }
+.menu-item:focus-visible { outline-offset: -2px; }
+.menu-item.danger, .menu-item.danger .i { color: var(--critical-fg); }
+.menu-sep { height: 1px; margin: 6px 4px; background: var(--rule); }
+
+/* ---- folha: entrada, arrasto, ecrã inteiro, fallback sem <dialog> ------------ */
+dialog.sheet { transition: transform var(--dur-2) var(--ease-out); }
+dialog.sheet[open] { animation: sheet-up var(--dur-3) var(--ease-out); }
+dialog.sheet[open]::backdrop, dialog.confirm[open]::backdrop { animation: ui-fade var(--dur-2) ease-out; }
+dialog.confirm[open] { animation: ui-fade var(--dur-2) var(--ease-out); }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-in-right { from { transform: translateX(100%); } }
+@keyframes ui-fade { from { opacity: 0; } }
+.sheet .grabber { position: relative; touch-action: none; cursor: grab; }
+.sheet .grabber::before { content: ''; position: absolute; inset: -14px -80px; }
+.sheet-head h2 { min-width: 0; outline: none; }
+.sheet-head.form h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* campos lado a lado só com largura útil (o limite em em cresce com o Tamanho do texto) */
+.sheet-body { container-type: inline-size; }
+@container (max-width: 22.5em) {
+  .row-dt, .row2 { grid-template-columns: minmax(0, 1fr); }
+}
+dialog.sheet:focus, dialog.sheet:focus-visible { outline: none; } /* foco inicial na folha (sem título a focar) */
+.sheet-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) - 1); background: var(--scrim); }
+.confirm-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 1); background: var(--scrim); }
+dialog.sheet.full {
+  inset: 0; width: 100%; max-width: 100%; height: 100dvh; height: var(--vvh, 100dvh); max-height: none; border-radius: 0;
+}
+dialog.sheet.full[open] { animation-name: ui-fade; }
+.sheet.full .sheet-head h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 1024px) {
+  dialog.sheet[open] { animation-name: sheet-in-right; }
+  dialog.sheet.full { inset: 0; width: 100%; height: 100dvh; border-radius: 0; }
+  dialog.sheet.full[open] { animation-name: ui-fade; }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.sheet[open] { animation-name: ui-fade; }
+  .spin { animation: none; border-right-color: currentColor; opacity: .6; }
+}
+
+/* ---- visualizador de anexo ------------------------------------------------------ */
+.viewer .sheet-body { padding: 0; gap: 0; align-content: stretch; }
+.viewer .sheet-foot { flex-wrap: wrap; }
+@media (min-width: 1024px) {
+  .viewer .sheet-foot { justify-content: center; }
+  .viewer .sheet-foot > * { flex: 0 0 auto; min-width: 200px; }
+}
+.viewer-stage { display: grid; place-items: center; min-height: 100%; padding: 16px; }
+.viewer-stage.img { background: rgba(0, 0, 0, .92); touch-action: none; overflow: hidden; }
+.viewer-stage.img img { will-change: transform; user-select: none; -webkit-user-drag: none; }
+.viewer-stage img { display: block; max-width: 100%; max-height: calc(var(--vvh, 100dvh) - 170px); object-fit: contain; border-radius: var(--radius-xs); }
+.viewer-file { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; color: var(--ink-2); text-align: center; }
+.viewer-file svg.i { width: 64px; height: 64px; stroke-width: 1.4; color: var(--muted); }
+.viewer-file b { font-size: var(--fs-title); font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+.viewer-file small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+
+/* ---- anexos ------------------------------------------------------------------ */
+.thumb .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb.pending { opacity: .7; }
+
+/* ---- toast: entrada e barra de tempo ------------------------------------------- */
+.toast { animation: toast-in var(--dur-2) var(--ease-out); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+.toast .timer { width: 100%; animation: toast-timer var(--toast-dur, 10s) linear var(--toast-delay, 0s) forwards; }
+.toast.paused .timer { animation-play-state: paused; }
+@keyframes toast-timer { from { width: 100%; } to { width: 0%; } }
+/* dentro de uma folha (telemóvel): por cima da barra de ações e do teclado, não colado a ela */
+@media (max-width: 1023.98px) {
+  dialog.sheet .toast { bottom: calc(var(--kb, 0px) + 89px + env(safe-area-inset-bottom)); }
+}
+/* computador com uma folha aberta: o toast fica no canto do conteúdo só se couber ao lado do painel
+   (sidebar + 40 + 440 + 24 + painel = 1232 px); senão vai para dentro do painel, por cima da barra de
+   ações — nunca tapa o "Editar"/"Recebi" */
+@media (min-width: 1024px) and (max-width: 1231.98px) {
+  dialog.sheet .toast { left: auto; right: var(--gutter); width: calc(var(--panel-w) - 2 * var(--gutter)); bottom: 89px; }
+}
+
+/* ---- vazio compacto, esqueleto, linha de sincronização ---------------------------- */
+.empty.compact { padding: 16px 12px; }
+.empty.compact .ic { width: 40px; height: 40px; }
+.skeleton { display: grid; gap: 12px; padding: 12px 0; }
+.skeleton .sk { height: 14px; border-radius: 7px; background: var(--surface-sunken); animation: sk-pulse 1.4s ease-in-out infinite; }
+.skeleton .sk:nth-child(3n + 2) { width: 82%; }
+.skeleton .sk:nth-child(3n + 3) { width: 64%; }
+@keyframes sk-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .skeleton .sk { animation: none; } }
+.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
+.sync-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--st-paid-fg); flex: none; }
+.sync-note.warn i { background: var(--warning-fg); }
+/* aviso: no telemóvel o texto usa a largura toda e o "Tentar de novo" fica por baixo;
+   no computador fica tudo na mesma linha */
+.banner { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; column-gap: 10px; line-height: 1.4; }
+.banner > .i { grid-column: 1; grid-row: 1; margin-top: 1px; }
+.banner > span { grid-column: 2; grid-row: 1; min-width: 0; }
+.banner > .icon-btn { grid-column: 3; grid-row: 1 / span 2; color: var(--warning-fg); margin: -6px -8px -6px 0; }
+.banner > .btn { grid-column: 2; grid-row: 2; justify-self: start; margin: -2px 0 -8px -10px; }
+@media (min-width: 1024px) {
+  .banner { grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center; }
+  .banner > .i { margin-top: 0; }
+  .banner > .btn { grid-column: 3; grid-row: 1; margin: -6px 0; }
+  .banner > .icon-btn { grid-column: 4; grid-row: 1; }
+}
+
+/* ---- barra de topo: voltar e barra compacta ao fazer scroll ------------------------- */
+.back { margin: calc(env(safe-area-inset-top) + 12px) 0 -8px -10px; }
+/* título ao centro e as mesmas ações do ecrã à direita (câmara, lupa, ano, J) */
+.topbar-compact {
+  position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 8px;
+  height: var(--compact-h); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
+  background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;
+  opacity: 0; transform: translateY(-100%); pointer-events: none;
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.topbar-compact .t { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-compact .actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 2px; }
+.topbar-compact .avatar-btn .avatar { width: 32px; height: 32px; }
+.topbar-compact.on { opacity: 1; transform: none; pointer-events: auto; }
+/* com a barra compacta visível, os cabeçalhos de grupo colam por baixo dela */
+:root:has(.topbar-compact.on) .group-head { top: var(--compact-h); }
+@media (min-width: 1024px) {
+  .back { display: none; }
+  .topbar-compact { left: var(--sidebar-w); }
+  .topbar-compact .avatar-btn { display: none; }
+}

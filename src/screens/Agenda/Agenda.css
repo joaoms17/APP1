@@ -1,0 +1,210 @@
+/* =====================================================================
+   Agenda (pacote E1): Lista com Hoje e A tratar · Procurar · Mês · Ir para mês.
+   Só classes .ag-… ou seletores dentro de .ag-screen; tokens e componentes
+   base (row, today-card, tasks, cal, day, chips…) vêm de src/styles/ui.css.
+   ===================================================================== */
+
+/* ---- topo: Lista | Mês + "↑ Anteriores" ---------------------------------- */
+.ag-top { display: grid; justify-items: stretch; }
+.ag-view-switch { margin-bottom: 6px; }
+.ag-prev {
+  justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit);
+  font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); border-radius: var(--radius-sm);
+}
+.ag-prev .i { width: 16px; height: 16px; flex: none; color: var(--muted); }
+/* o texto é um só item: com texto grande parte como texto corrido ("Anteriores ·" nunca se separa) */
+.ag-prev-t { min-width: 0; }
+.ag-prev-t .nw { white-space: nowrap; }
+.ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
+/* aviso do Google (layout interno no .banner base) */
+.ag-screen .ag-banner { margin: 6px 0 4px; }
+
+/* ---- Novidades da v2 (uma vez) ------------------------------------------------ */
+.ag-news { margin: 6px 0 10px; }
+.ag-news .ag-news-act { display: flex; justify-content: flex-end; margin: 2px -8px -6px 0; }
+
+/* ---- Lista: Hoje · A tratar · resto ---------------------------------------------- */
+.ag-home { display: grid; grid-template-columns: minmax(0, 1fr); }
+.ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin: -2px 0 12px; }
+.ag-lede b { color: var(--ink); font-weight: 800; }
+.ag-today-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.ag-today-g { margin-top: 6px; }
+.ag-today-empty { padding-top: 8px; }
+.ag-side .ag-month-card, .ag-side .ag-sync { display: none; }
+.ag-tasks-wait { padding: 16px; }
+.ag-more { height: 1px; }
+.ag-end-note {
+  display: flex; align-items: center; gap: 8px; padding: 10px 0 4px var(--row-inset);
+  font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+}
+.ag-end-note .i { width: 16px; height: 16px; flex: none; }
+
+/* cartão de hoje (variantes compact/flash e ação por cima do botão esticado no CSS base) */
+.ag-screen .today-card { cursor: pointer; }
+.ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.ag-tc-state { display: inline-flex; min-width: 0; }
+
+/* cartão do mês (só no computador, na coluna lateral) */
+.ag-month-card { margin-top: 8px; }
+.ag-mc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 12px; }
+
+/* ---- Procurar ------------------------------------------------------------------ */
+.ag-search-bar { display: flex; align-items: center; gap: 8px; padding: calc(env(safe-area-inset-top) + 16px) 0 10px; }
+.ag-search-bar .control { flex: 1; min-width: 0; }
+.ag-search-bar .control .clear { color: var(--muted); }
+.ag-filters { display: grid; gap: 6px; padding-bottom: 6px; }
+.ag-result { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin: 8px 0 4px; }
+.ag-result .t { flex: 1; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); line-height: 1.35; }
+.ag-result .t b { color: var(--ink); font-weight: 800; }
+.ag-result .t .late { color: var(--st-overdue-fg); font-weight: 800; }
+.ag-search .empty { padding-top: 40px; }
+
+/* ---- Mês --------------------------------------------------------------------------- */
+.ag-month-layout { display: grid; gap: 4px; margin-top: 6px; }
+.ag-cal { touch-action: pan-y; }
+.ag-cal-row { display: contents; }
+.ag-cal .cal-title { border-radius: var(--radius-md); min-width: 0; }
+/* "Novembro 2026 ⌄" numa só linha ao lado de ‹ [Hoje] ›: o tamanho acompanha a largura do cabeçalho
+   (a 390 px fica nos 20 px do mockup; a 360/375 px, deitado ou com texto grande, encolhe um pouco).
+   Sem container queries (iOS < 16) mantém-se o tamanho normal e o título pode partir. */
+.ag-cal .cal-head { container-type: inline-size; }
+@container (min-width: 300px) {
+  .ag-cal .cal-title {
+    white-space: nowrap; padding: 0 4px;
+    font-size: min(var(--fs-heading), calc((100cqi - 130px - 53 * var(--u)) / 7.5));
+  }
+}
+.ag-cal .day { border-radius: var(--radius-sm); }
+.ag-cal .day:focus-visible { outline-offset: -2px; }
+.ag-cal-today {
+  position: relative; height: 32px; padding: 0 12px; border-radius: 16px;
+  font-size: var(--fs-meta); font-weight: 800; color: var(--accent-text);
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+}
+.ag-cal-today::before { content: ''; position: absolute; inset: -6px -2px; }
+.ag-cal-today:not(.on) { visibility: hidden; }
+.ag-day-col .ag-end-note { padding-top: 12px; }
+.ag-day-col .empty { padding-bottom: 20px; }
+
+/* ---- Ir para mês ---------------------------------------------------------------------- */
+.ag-mp-year { display: flex; align-items: center; justify-content: center; gap: 20px; }
+.ag-mp-year b {
+  min-width: 4ch; text-align: center; font-family: var(--font-display); font-weight: 600;
+  font-size: var(--fs-heading); font-variation-settings: "opsz" 36;
+}
+.ag-mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ag-mp-grid button {
+  min-height: 48px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-body); font-weight: 700;
+}
+.ag-mp-grid button:active { transform: scale(.98); }
+.ag-mp-grid button.sel { color: var(--ink); font-weight: 800; box-shadow: inset 0 0 0 2px var(--accent-text); }
+.ag-mp-grid button.cur { background: var(--accent); color: var(--on-accent); font-weight: 800; box-shadow: none; }
+.ag-mp-grid button.cur.sel { box-shadow: 0 0 0 2px var(--sheet-bg), 0 0 0 4px var(--accent-text); }
+
+/* telemóvel deitado (altura ≤ 500 px): células de 36 px e o dia ao lado do calendário (MA-24) */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1023.98px) {
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .ag-cal .day { height: 36px; padding-top: 2px; gap: 1px; }
+  .ag-cal .day .num { height: 24px; width: 28px; }
+  .ag-cal .day .dots { height: 6px; }
+}
+
+/* =====================================================================
+   Computador (≥ 1024 px)
+   ===================================================================== */
+@media (min-width: 1024px) {
+  /* Lista|Mês e "↑ Anteriores" na mesma linha; o aviso do Google por baixo, a toda a largura */
+  .ag-top { grid-template-columns: 260px minmax(0, 1fr); column-gap: 24px; align-items: center; }
+  .ag-top .ag-view-switch { margin: 0; }
+  .ag-top .ag-prev { grid-column: 2; grid-row: 1; }
+  .ag-screen .ag-top .ag-banner { grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; max-width: calc(var(--list-max) + 380px); }
+
+  /* Lista: A tratar, cartão do mês e estado do Google (ao lado da lista a partir de 1200 px, em baixo) */
+  .ag-side .ag-month-card { display: block; }
+  .ag-side .ag-sync { display: flex; }
+
+  .ag-search { max-width: var(--list-max); }
+  .ag-search-bar { padding-top: 32px; }
+  .ag-filters .chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 2px 0; } /* há espaço: todas as opções à vista */
+
+  /* Mês: calendário fluido (células de 104 px com pills) | coluna de 340 px com o dia, sticky por baixo da
+     barra compacta do topo (com o cabeçalho do dia inteiro) */
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 18px; }
+  .ag-day-col { position: sticky; top: calc(var(--compact-h) + 16px); }
+  .ag-day-col .group-head { position: static; }
+  .ag-day-col .group-head.first { padding-top: 0; }
+  .ag-cal { padding: 8px 12px 12px; container: ag-cal / inline-size; }
+  .ag-cal .wd { text-align: left; padding-left: 8px; }
+  .ag-cal .day { border-radius: 0; }
+
+  /* Ir para mês: diálogo centrado (não painel lateral) */
+  dialog.sheet.ag-mp {
+    inset: 0; margin: auto; width: min(460px, calc(100% - 48px)); height: fit-content;
+    max-height: calc(100dvh - 48px); border-radius: 22px;
+  }
+  dialog.sheet.ag-mp[open] { animation-name: ui-fade; }
+}
+
+/* Lista a partir de 1200 px: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado
+   do Google, colada por baixo da barra compacta do topo (com o título "A tratar" inteiro) */
+@media (min-width: 1200px) {
+  .ag-home {
+    grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "today side" "rest side";
+    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px);
+  }
+  .ag-home > .ag-today { grid-area: today; }
+  .ag-home > .ag-rest { grid-area: rest; }
+  .ag-home > .ag-side { grid-area: side; position: sticky; top: calc(var(--compact-h) + 16px); }
+  .ag-side .group-head.ag-side-first { position: static; border-top: 0; margin-top: 0; padding-top: 8px; }
+}
+
+/* Computador estreito (1024–1199 px): ao lado de 340 px, a lista ficava com 316 px (pior do que no telemóvel)
+   e o calendário com pills de uma letra. A Lista fica numa coluna de ≤ 680 px como no telemóvel (Hoje ·
+   A tratar e cartão do mês · resto); o Mês divide o espaço a meias, como o telemóvel deitado, e o calendário
+   passa às células do telemóvel (container query em baixo) */
+@media (min-width: 1024px) and (max-width: 1199.98px) {
+  .ag-home { max-width: var(--list-max); }
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* =====================================================================
+   Hover só com rato: no iPhone o :hover fica "preso" no último toque
+   (um dia do calendário parecia escolhido, um cartão ficava com sombra)
+   ===================================================================== */
+@media (hover: hover) {
+  .ag-prev:hover { color: var(--ink); }
+  .ag-screen .today-card:hover { box-shadow: var(--elev-hover), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+  .ag-cal .cal-title:hover { background: var(--surface-sunken); }
+  .ag-cal .day:hover .num { background: var(--surface-sunken); }
+  .ag-cal .day.sel:hover .num { background: var(--accent); }
+  .ag-mp-grid button:hover { background: var(--surface-sunken); }
+}
+@media (hover: hover) and (min-width: 1024px) {
+  .ag-cal .day:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
+  .ag-cal .day:hover .num { background: none; }
+  .ag-cal .day.sel:hover .num { background: var(--accent); }
+}
+
+/* =====================================================================
+   Computador com o calendário estreito (menos de ~66 px por célula: 1024–1199 px, ou uma janela com
+   barra de scroll larga): as pills só mostravam uma letra ("P…", "B…") e o calendário não cabia em
+   768 px de altura — ficam as células do telemóvel (número + até 3 pontos, 50 px), com o dia ao lado
+   ===================================================================== */
+@media (min-width: 1024px) {
+  @container ag-cal (max-width: 459.98px) {
+    .ag-cal .wd { text-align: center; padding-left: 0; }
+    .ag-cal .day { height: 50px; justify-items: center; padding: 5px 0 0; border-top: 0; border-radius: var(--radius-sm); }
+    .ag-cal .day .num { width: 32px; height: 30px; font-size: var(--fs-body); justify-self: auto; }
+    .ag-cal .day .dots { display: flex; }
+    .ag-cal .day .pills { display: none; }
+    .ag-cal .day.sel { background: none; }
+  }
+}
+@media (hover: hover) and (min-width: 1024px) {
+  @container ag-cal (max-width: 459.98px) {
+    .ag-cal .day:hover { background: none; }
+    .ag-cal .day:hover .num { background: var(--surface-sunken); }
+    .ag-cal .day.sel:hover .num { background: var(--accent); }
+  }
+}

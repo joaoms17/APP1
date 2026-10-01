@@ -1,0 +1,166 @@
+/* =====================================================================
+   Joana v2.0 — tokens (FONTE CANÓNICA → copiar tal e qual para src/styles/tokens.css)
+   Claro por omissão; escuro por prefers-color-scheme.
+   Contraste verificado por src/contrast.mjs (0 falhas) — ver v2-spec.md §4.
+   ===================================================================== */
+:root {
+  color-scheme: light dark;
+
+  /* ---- tipografia ---------------------------------------------------- */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;  /* só display: h1, grupos, hero */
+  --font-sans: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-scale: 1;                          /* Definições › Tamanho do texto: 1 · 1.125 · 1.25 */
+  --u: calc(1rem / 16 * var(--text-scale)); /* 1 "px lógico" que escala */
+  --fs-caption: calc(12 * var(--u));   /* badges, contadores, eixos, "qua" */
+  --fs-meta:    calc(13 * var(--u));   /* metadados, ajudas, rótulos, chips */
+  --fs-body:    calc(15 * var(--u));   /* corpo, títulos de linha, valores de linha */
+  --fs-input:   max(16px, calc(16 * var(--u)));  /* campos: nunca < 16 px (zoom do iOS) */
+  --fs-title:   calc(17 * var(--u));   /* título de cartão/folha (sans 800), nome do evento de hoje */
+  --fs-group:   calc(22 * var(--u));   /* cabeçalho de grupo — Fraunces itálico */
+  --fs-heading: calc(20 * var(--u));   /* KPI secundário, dia no bloco de data */
+  --fs-h1:      calc(30 * var(--u));   /* título do ecrã — Fraunces */
+  --fs-display: calc(28 * var(--u));   /* título do evento no detalhe — Fraunces */
+  --fs-hero:    calc(44 * var(--u));   /* número de capa — Fraunces, cêntimos a 60 % */
+  --lh-tight: 1.12; --lh-snug: 1.3; --lh-body: 1.45;
+
+  /* ---- espaço (grelha de 4 pt) --------------------------------------- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --gutter: 16px;
+  --hit: 44px;          /* área mínima de toque */
+  --control-h: 48px;    /* campos, botões lg */
+  --tabbar-h: 64px;
+  --sidebar-w: 248px;
+  --content-max: 1120px;
+  --list-max: 680px;    /* coluna de leitura das listas no desktop */
+  --panel-w: 480px;     /* painel lateral (detalhe/formulários) no desktop */
+  --compact-h: calc(48px + env(safe-area-inset-top)); /* barra compacta do topo (aparece ao fazer scroll) */
+
+  /* ---- raios ---------------------------------------------------------- */
+  --radius-xs: 6px; --radius-sm: 8px; --radius-md: 12px;
+  --radius-lg: 20px; --radius-xl: 28px; --radius-full: 999px;
+
+  /* ---- movimento ------------------------------------------------------ */
+  --dur-1: 120ms;  /* pressão */
+  --dur-2: 200ms;  /* fade, toast, switch, segmented */
+  --dur-3: 320ms;  /* folhas, painel */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+
+  /* ---- camadas -------------------------------------------------------- */
+  --z-sticky: 2; --z-nav: 20; --z-sheet: 30; --z-toast: 40; --z-print: 50;
+
+  /* ---- cor · claro ----------------------------------------------------- */
+  --page: #faf3ef;
+  --surface: #fffdfb;
+  --surface-sunken: #f3e8e3;   /* trilhos (segmented, progresso), fundos de ícone */
+  --seg-on: #fffdfb;           /* opção ativa do segmented */
+  --sheet-bg: #faf3ef;
+  --field-bg: #fffdfb;
+  --ink: #40292b;
+  --ink-2: #664b4e;
+  --muted: #7a5f60;            /* 5,27:1 sobre page (v1 4,35) */
+  --rule: #e6d5cf;             /* separadores de lista e filetes (decorativo) */
+  --line: #e3d0ca;             /* contorno de cartões e chips (decorativo) */
+  --field-border: #9c8380;     /* 3,47:1 sobre surface — WCAG 1.4.11 */
+
+  --accent: #b45368;           /* PREENCHIMENTO: primário, seleção, "+" */
+  --accent-strong: #9e4358;    /* hover/pressed do primário */
+  --accent-text: #9e4358;      /* TEXTO/ÍCONE rosa: ghost, links, tab ativa, chip ativo */
+  --accent-soft: #f7dee3;      /* pill ativa, chip selecionado */
+  --on-accent: #ffffff;        /* 4,80:1 sobre accent */
+  --gold: #b98a44;             /* filetes (decorativo) */
+  --gold-text: #80591a;        /* kicker da data, "Sinal" */
+  --focus: #9e4358;
+
+  /* estados de pagamento — independentes do accent */
+  --st-paid-fg: #2c6843;    --st-paid-bg: #e3efe5;
+  --st-partial-fg: #7d5314; --st-partial-bg: #f7e8cf;
+  --st-due-fg: #664b4e;     --st-due-border: #b8a09c;
+  --st-overdue-fg: #a1323a; --st-overdue-bg: #fbe2e0;
+  --warn-fg: #8c4a12;                                  /* "Sem recibo" */
+  --info-fg: #3f4c7a;       --info-bg: #ecedf6;
+  --warning-fg: #7a4f12;    --warning-bg: #f9ecd9;
+  --critical-fg: #a1323a;   --critical-bg: #fbe2e0;
+  --dot-new: #a1323a;                                  /* ponto "novidades" no separador */
+
+  --scrim: rgba(43, 26, 28, .46);
+  --toast-bg: #3a2a2c; --toast-fg: #fbf1ee; --toast-action: #f4b9c6;
+
+  /* cor de projeto — chega sempre por style={{'--p-l': cor, '--p-d': darkMark(cor)}} */
+  --wash: 9%;                                           /* lavagem do cartão de hoje */
+  --ring: color-mix(in srgb, var(--ink) 55%, var(--surface)); /* anel de 1 px dos pontos: ≥ 3:1 com qualquer cor */
+
+  --elev-1: 0 1px 2px rgba(64, 41, 43, .05), 0 4px 16px rgba(64, 41, 43, .06);
+  --elev-2: 0 -10px 40px rgba(64, 41, 43, .16);
+  --elev-3: 0 24px 64px rgba(64, 41, 43, .22);
+  /* cartão em hover (rato): sobe com uma sombra para baixo — a --elev-2 é das folhas que sobem de baixo
+     e sujava o texto por cima do cartão */
+  --elev-hover: 0 2px 4px rgba(64, 41, 43, .06), 0 12px 28px -8px rgba(64, 41, 43, .2);
+  --elev-accent: 0 6px 16px rgba(180, 83, 104, .28);
+  --tabbar-bg: color-mix(in srgb, var(--surface) 96%, transparent);
+
+  --chart-1: #b45368; --chart-2: #6d8ed6; --chart-grid: #efe2dc; --chart-avg: #8f7475;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #1a1213;
+    --surface: #322729;          /* 1,28:1 sobre page (v1 1,11) */
+    --surface-sunken: #261c1e;   /* trilho: ENTRE page e surface (nunca "buraco" mais escuro que a página) */
+    --seg-on: #45373a;
+    --sheet-bg: #2a2022;         /* folha ≠ página */
+    --field-bg: #1f1718;
+    --ink: #f6ebe8;
+    --ink-2: #d8c3bf;
+    --muted: #b29894;
+    --rule: #3d2f31;
+    --line: #4b3b3d;
+    --field-border: #8a716e;
+
+    --accent: #d16d84;
+    --accent-strong: #e0849a;
+    --accent-text: #eb9aad;
+    --accent-soft: #4c3038;
+    --on-accent: #1a1213;
+    --gold: #cfa96a;
+    --gold-text: #e2bd7c;
+    --focus: #eb9aad;
+
+    --st-paid-fg: #94cfa7;    --st-paid-bg: #1f3628;
+    --st-partial-fg: #e8bf78; --st-partial-bg: #3c2e1b;
+    --st-due-fg: #d8c3bf;     --st-due-border: #7d6663;
+    --st-overdue-fg: #f3a09a; --st-overdue-bg: #462225;
+    --warn-fg: #eaa86c;
+    --info-fg: #b9c3ec;       --info-bg: #262a3d;
+    --warning-fg: #eec48a;    --warning-bg: #3a2d1d;
+    --critical-fg: #f3a09a;   --critical-bg: #462225;
+    --dot-new: #f3a09a;
+
+    --scrim: rgba(0, 0, 0, .62);
+    --toast-bg: #f6ebe8; --toast-fg: #2a1d1f; --toast-action: #8f3a4e;
+
+    --wash: 13%;
+
+    --elev-1: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .26);
+    --elev-2: 0 -10px 40px rgba(0, 0, 0, .5);
+    --elev-3: 0 24px 64px rgba(0, 0, 0, .6);
+    --elev-hover: 0 2px 4px rgba(0, 0, 0, .34), 0 12px 28px -8px rgba(0, 0, 0, .6);
+    --elev-accent: 0 6px 16px rgba(0, 0, 0, .45);
+
+    --chart-1: #d16d84; --chart-2: #6f90d9; --chart-grid: #3a2d2f; --chart-avg: #a78d8a;
+  }
+}
+
+/* cor de projeto: claro usa a cor escolhida; escuro usa darkMark (L OKLCH ≤ 0,66) */
+[data-p] { --p: var(--p-l); }
+@media (prefers-color-scheme: dark) { [data-p] { --p: var(--p-d, var(--p-l)); } }
+
+/* iOS: herdar o Tamanho do Texto do sistema (Dynamic Type). -apple-system-body = 17 px por omissão. */
+@supports (font: -apple-system-body) {
+  html { font: -apple-system-body; }
+  :root { --u: calc(1rem / 17 * var(--text-scale)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; }
+}
