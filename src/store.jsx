@@ -412,15 +412,23 @@ export function StoreProvider({ children }) {
     await reloadAfterWrite(loadQuotes)
   }
 
-  // aceitar: cria o evento no projeto do orçamento e liga-o
+  // aceitar: cria o evento no projeto do orçamento e liga-o. O orçamento aberto a partir de um evento
+  // (v2) já nasce ligado a ele: aí só fica aceite — um 2.º evento duplicava a receita e o "por receber"
   const acceptQuote = async (q) => {
+    const linkedId = q.event_id ?? quotes.find((x) => x.id === q.id)?.event_id
+    if (linkedId && live.current.events.some((e) => e.id === linkedId)) {
+      const { error } = await db.from('quotes').update({ status: 'accepted', event_id: linkedId, updated_at: nowIso() }).eq('id', q.id)
+      if (error) throw error
+      await reloadAfterWrite(loadQuotes)
+      return linkedId
+    }
     const proj = projects.find((p) => p.id === q.project_id)
       || projects.find((p) => p.kind === 'hair') || projects[0]
     const items = quoteItemsRef.current.filter((i) => i.quote_id === q.id)
     const total = items.reduce((a, i) => a + Number(i.unit_price) * i.qty, 0) - Number(q.discount || 0)
     const { data: ev, error } = await db.from('events').insert({
       project_id: proj.id,
-      title: `Casamento ${q.client_name}`,
+      title: proj.kind === 'hair' ? `Casamento ${q.client_name}` : q.client_name, // "Casamento" só nos Cabelos
       event_date: q.event_date || todayYMD(),
       location: q.location || null,
       gross_value: total,

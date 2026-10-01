@@ -13,7 +13,7 @@ import './Documents.css'
 
 // Folha Orçamento (spec §10.15): Cliente · Projeto (chips) · Data · Local · Serviços (stepper 44 px) ·
 // Outro serviço · Desconto · total · Notas · barra [Ver PDF] [Guardar] · "…": Marcar como enviado ·
-// Aceite — criar evento · Apagar (Anular). Só com FEATURES.docs.
+// Aceite — criar evento (ou "Marcar como aceite", se já está ligado a um evento) · Apagar (Anular). Só com FEATURES.docs.
 //   openSheet('orcamento', id) · openSheet('orcamento', { preset: { project_id, event_date, location, event_id } })
 
 export const QUOTE_STATUS = {
@@ -78,7 +78,9 @@ function Services({ services, items, setItems }) {
           <div key={s.id} className="doc-svc">
             <span><b>{s.name}</b><small>{money(Number(s.price))}</small></span>
             <span className="doc-stepper">
-              <IconButton icon="minus" variant="outlined" label={`Tirar um: ${s.name}`} disabled={!n} onClick={() => bump(s, -1)} />
+              {/* aria-disabled (não disabled): ao chegar a 0 o foco fica no botão em vez de cair no <body> */}
+              <IconButton icon="minus" variant="outlined" label={`Tirar um: ${s.name}`} aria-disabled={!n || undefined}
+                onClick={() => { if (n) bump(s, -1) }} />
               <output aria-live="polite" aria-label={`${s.name}: ${n}`}>{n}</output>
               <IconButton icon="plus" variant="outlined" label={`Juntar um: ${s.name}`} onClick={() => bump(s, 1)} />
             </span>
@@ -151,7 +153,7 @@ function QuotePrint({ quote, items, project, today, onClose }) {
 
 function QuoteForm({ quote, preset, onClose }) {
   const store = useStore()
-  const { projects, projectById, projectOptions, services, itemsForQuote, saveQuote, notify, undoable, today } = store
+  const { projects, projectById, projectOptions, services, itemsForQuote, saveQuote, notify, undoable, today, events } = store
   const latest = useRef(store)
   latest.current = store
   const formId = useId()
@@ -178,6 +180,10 @@ function QuoteForm({ quote, preset, onClose }) {
   const subtotal = items.reduce((a, i) => a + Number(i.unit_price) * i.qty, 0)
   const discount = num(f.discount)
   const total = subtotal - discount
+
+  // orçamento aberto a partir de um evento: já está ligado a ele (o Aceite não cria outro)
+  const linkedId = quote?.event_id || preset?.event_id || null
+  const linkedEvent = linkedId ? events.find((e) => e.id === linkedId) || null : null
 
   const changed = JSON.stringify(f) !== JSON.stringify(base.f) || itemsKey(items) !== itemsKey(base.items)
   const dirty = !busy && changed && (quoteId ? 'Mudaste este orçamento.' : 'Começaste um orçamento novo.')
@@ -247,15 +253,20 @@ function QuoteForm({ quote, preset, onClose }) {
     }
   }
 
-  // Aceite: grava e cria o evento no projeto do orçamento (acceptQuote) — o total vem das linhas gravadas
+  // Aceite: grava e cria o evento no projeto do orçamento (acceptQuote) — o total vem das linhas gravadas.
+  // Já ligado a um evento: só fica aceite, ligado ao mesmo evento (nunca um 2.º com a mesma receita)
   const accept = async () => {
     const saved = await save()
     if (!saved) return
     setBusy(true)
     try {
-      const evId = await latest.current.acceptQuote(saved.row)
-      notify({ text: <>Orçamento aceite · evento de <b>{saved.row.client_name}</b> criado</>, icon: 'checkCircle',
-        action: { label: 'Ver', run: () => openSheet('evento', evId) } })
+      const evId = await latest.current.acceptQuote(linkedEvent ? { ...saved.row, event_id: linkedEvent.id } : saved.row)
+      notify({
+        text: linkedEvent
+          ? <>Orçamento aceite · ligado a <b>{linkedEvent.title}</b></>
+          : <>Orçamento aceite · evento de <b>{saved.row.client_name}</b> criado</>,
+        icon: 'checkCircle', action: { label: 'Ver', run: () => openSheet('evento', evId) },
+      })
       onClose()
     } catch (ex) {
       setBusy(false)
@@ -285,7 +296,7 @@ function QuoteForm({ quote, preset, onClose }) {
 
   const menu = quoteId ? [
     { label: 'Marcar como enviado', icon: 'share', hidden: f.status !== 'draft', onSelect: markSent },
-    { label: 'Aceite — criar evento', icon: 'check', hidden: f.status === 'accepted', onSelect: accept },
+    { label: linkedEvent ? 'Marcar como aceite' : 'Aceite — criar evento', icon: 'check', hidden: f.status === 'accepted', onSelect: accept },
     { label: 'Apagar orçamento', icon: 'trash', danger: true, onSelect: remove },
   ] : null
 
