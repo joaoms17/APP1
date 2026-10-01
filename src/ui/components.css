@@ -193,7 +193,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .topbar-compact {
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 8px;
-  height: calc(48px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
+  height: var(--compact-h); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
   background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;
   opacity: 0; transform: translateY(-100%); pointer-events: none;
@@ -204,7 +204,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .topbar-compact .avatar-btn .avatar { width: 32px; height: 32px; }
 .topbar-compact.on { opacity: 1; transform: none; pointer-events: auto; }
 /* com a barra compacta visível, os cabeçalhos de grupo colam por baixo dela */
-:root:has(.topbar-compact.on) .group-head { top: calc(48px + env(safe-area-inset-top)); }
+:root:has(.topbar-compact.on) .group-head { top: var(--compact-h); }
 @media (min-width: 1024px) {
   .back { display: none; }
   .topbar-compact { left: var(--sidebar-w); }

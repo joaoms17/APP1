@@ -77,8 +77,12 @@ export function PrevLink() {
   return (
     <a className="ag-prev" href={routeHref(to)} onClick={(e) => { e.preventDefault(); navigate(to) }}>
       <Icon name="up" />
-      Anteriores
-      {late > 0 && <>{' · '}<span className="late">{late} em atraso em {MONTHS_LONG[Number(ym.slice(5, 7)) - 1]}</span></>}
+      {/* um só item de texto (parte como texto corrido com texto grande, sem "·" sozinho numa linha) */}
+      <span className="ag-prev-t">
+        {late > 0
+          ? <><span className="nw">Anteriores ·</span> <span className="late">{late} em atraso em {MONTHS_LONG[Number(ym.slice(5, 7)) - 1]}</span></>
+          : 'Anteriores'}
+      </span>
     </a>
   )
 }

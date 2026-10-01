@@ -11,7 +11,10 @@
   justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit);
   font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); border-radius: var(--radius-sm);
 }
-.ag-prev .i { width: 16px; height: 16px; color: var(--muted); }
+.ag-prev .i { width: 16px; height: 16px; flex: none; color: var(--muted); }
+/* o texto é um só item: com texto grande parte como texto corrido ("Anteriores ·" nunca se separa) */
+.ag-prev-t { min-width: 0; }
+.ag-prev-t .nw { white-space: nowrap; }
 .ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
 /* aviso do Google (layout interno no .banner base) */
 .ag-screen .ag-banner { margin: 6px 0 4px; }
@@ -21,7 +24,7 @@
 .ag-news .ag-news-act { display: flex; justify-content: flex-end; margin: 2px -8px -6px 0; }
 
 /* ---- Lista: Hoje · A tratar · resto ---------------------------------------------- */
-.ag-home { display: grid; }
+.ag-home { display: grid; grid-template-columns: minmax(0, 1fr); }
 .ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin: -2px 0 12px; }
 .ag-lede b { color: var(--ink); font-weight: 800; }
 .ag-today-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
@@ -117,28 +120,21 @@
   .ag-top .ag-prev { grid-column: 2; grid-row: 1; }
   .ag-screen .ag-top .ag-banner { grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; max-width: calc(var(--list-max) + 380px); }
 
-  /* Lista: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado do Google */
-  .ag-home {
-    grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "today side" "rest side";
-    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px);
-  }
-  .ag-home > .ag-today { grid-area: today; }
-  .ag-home > .ag-rest { grid-area: rest; }
-  .ag-home > .ag-side { grid-area: side; position: sticky; top: 24px; }
+  /* Lista: A tratar, cartão do mês e estado do Google (ao lado da lista a partir de 1200 px, em baixo) */
   .ag-side .ag-month-card { display: block; }
   .ag-side .ag-sync { display: flex; }
-  .ag-side .group-head.ag-side-first { position: static; border-top: 0; margin-top: 0; padding-top: 8px; }
 
   .ag-search { max-width: var(--list-max); }
   .ag-search-bar { padding-top: 32px; }
   .ag-filters .chips { flex-wrap: wrap; overflow: visible; margin: 0; padding: 2px 0; } /* há espaço: todas as opções à vista */
 
-  /* Mês: calendário fluido (células de 104 px com pills) | coluna de 340 px com o dia */
+  /* Mês: calendário fluido (células de 104 px com pills) | coluna de 340 px com o dia, sticky por baixo da
+     barra compacta do topo (com o cabeçalho do dia inteiro) */
   .ag-month-layout { grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 18px; }
-  .ag-day-col { position: sticky; top: 24px; }
+  .ag-day-col { position: sticky; top: calc(var(--compact-h) + 16px); }
   .ag-day-col .group-head { position: static; }
   .ag-day-col .group-head.first { padding-top: 0; }
-  .ag-cal { padding: 8px 12px 12px; }
+  .ag-cal { padding: 8px 12px 12px; container: ag-cal / inline-size; }
   .ag-cal .wd { text-align: left; padding-left: 8px; }
   .ag-cal .day { border-radius: 0; }
 
@@ -150,13 +146,35 @@
   dialog.sheet.ag-mp[open] { animation-name: ui-fade; }
 }
 
+/* Lista a partir de 1200 px: lista (≤ 680) | coluna de 340 px sticky com A tratar, cartão do mês e estado
+   do Google, colada por baixo da barra compacta do topo (com o título "A tratar" inteiro) */
+@media (min-width: 1200px) {
+  .ag-home {
+    grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "today side" "rest side";
+    column-gap: 40px; align-items: start; max-width: calc(var(--list-max) + 380px);
+  }
+  .ag-home > .ag-today { grid-area: today; }
+  .ag-home > .ag-rest { grid-area: rest; }
+  .ag-home > .ag-side { grid-area: side; position: sticky; top: calc(var(--compact-h) + 16px); }
+  .ag-side .group-head.ag-side-first { position: static; border-top: 0; margin-top: 0; padding-top: 8px; }
+}
+
+/* Computador estreito (1024–1199 px): ao lado de 340 px, a lista ficava com 316 px (pior do que no telemóvel)
+   e o calendário com pills de uma letra. A Lista fica numa coluna de ≤ 680 px como no telemóvel (Hoje ·
+   A tratar e cartão do mês · resto); o Mês divide o espaço a meias, como o telemóvel deitado, e o calendário
+   passa às células do telemóvel (container query em baixo) */
+@media (min-width: 1024px) and (max-width: 1199.98px) {
+  .ag-home { max-width: var(--list-max); }
+  .ag-month-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
 /* =====================================================================
    Hover só com rato: no iPhone o :hover fica "preso" no último toque
    (um dia do calendário parecia escolhido, um cartão ficava com sombra)
    ===================================================================== */
 @media (hover: hover) {
   .ag-prev:hover { color: var(--ink); }
-  .ag-screen .today-card:hover { box-shadow: var(--elev-2), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+  .ag-screen .today-card:hover { box-shadow: var(--elev-hover), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
   .ag-cal .cal-title:hover { background: var(--surface-sunken); }
   .ag-cal .day:hover .num { background: var(--surface-sunken); }
   .ag-cal .day.sel:hover .num { background: var(--accent); }
@@ -166,4 +184,27 @@
   .ag-cal .day:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
   .ag-cal .day:hover .num { background: none; }
   .ag-cal .day.sel:hover .num { background: var(--accent); }
+}
+
+/* =====================================================================
+   Computador com o calendário estreito (menos de ~66 px por célula: 1024–1199 px, ou uma janela com
+   barra de scroll larga): as pills só mostravam uma letra ("P…", "B…") e o calendário não cabia em
+   768 px de altura — ficam as células do telemóvel (número + até 3 pontos, 50 px), com o dia ao lado
+   ===================================================================== */
+@media (min-width: 1024px) {
+  @container ag-cal (max-width: 459.98px) {
+    .ag-cal .wd { text-align: center; padding-left: 0; }
+    .ag-cal .day { height: 50px; justify-items: center; padding: 5px 0 0; border-top: 0; border-radius: var(--radius-sm); }
+    .ag-cal .day .num { width: 32px; height: 30px; font-size: var(--fs-body); justify-self: auto; }
+    .ag-cal .day .dots { display: flex; }
+    .ag-cal .day .pills { display: none; }
+    .ag-cal .day.sel { background: none; }
+  }
+}
+@media (hover: hover) and (min-width: 1024px) {
+  @container ag-cal (max-width: 459.98px) {
+    .ag-cal .day:hover { background: none; }
+    .ag-cal .day:hover .num { background: var(--surface-sunken); }
+    .ag-cal .day.sel:hover .num { background: var(--accent); }
+  }
 }

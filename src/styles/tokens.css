@@ -34,6 +34,7 @@
   --content-max: 1120px;
   --list-max: 680px;    /* coluna de leitura das listas no desktop */
   --panel-w: 480px;     /* painel lateral (detalhe/formulários) no desktop */
+  --compact-h: calc(48px + env(safe-area-inset-top)); /* barra compacta do topo (aparece ao fazer scroll) */
 
   /* ---- raios ---------------------------------------------------------- */
   --radius-xs: 6px; --radius-sm: 8px; --radius-md: 12px;
@@ -93,6 +94,9 @@
   --elev-1: 0 1px 2px rgba(64, 41, 43, .05), 0 4px 16px rgba(64, 41, 43, .06);
   --elev-2: 0 -10px 40px rgba(64, 41, 43, .16);
   --elev-3: 0 24px 64px rgba(64, 41, 43, .22);
+  /* cartão em hover (rato): sobe com uma sombra para baixo — a --elev-2 é das folhas que sobem de baixo
+     e sujava o texto por cima do cartão */
+  --elev-hover: 0 2px 4px rgba(64, 41, 43, .06), 0 12px 28px -8px rgba(64, 41, 43, .2);
   --elev-accent: 0 6px 16px rgba(180, 83, 104, .28);
   --tabbar-bg: color-mix(in srgb, var(--surface) 96%, transparent);
 
@@ -141,6 +145,7 @@
     --elev-1: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .26);
     --elev-2: 0 -10px 40px rgba(0, 0, 0, .5);
     --elev-3: 0 24px 64px rgba(0, 0, 0, .6);
+    --elev-hover: 0 2px 4px rgba(0, 0, 0, .34), 0 12px 28px -8px rgba(0, 0, 0, .6);
     --elev-accent: 0 6px 16px rgba(0, 0, 0, .45);
 
     --chart-1: #d16d84; --chart-2: #6f90d9; --chart-grid: #3a2d2f; --chart-avg: #a78d8a;

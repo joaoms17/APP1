@@ -207,7 +207,7 @@ svg.i.lg { width: 24px; height: 24px; }
    grupo sticky por cima, e para a tabbar por baixo (WCAG 2.4.11) — um elemento por baixo das barras
    conta como fora de vista e o browser desloca a página */
 html {
-  scroll-padding-top: calc(env(safe-area-inset-top) + 48px + 64px * var(--text-scale));
+  scroll-padding-top: calc(var(--compact-h) + 64px * var(--text-scale));
   scroll-padding-bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
 }
 @media (min-width: 1024px) { html { scroll-padding-bottom: 16px; } }
