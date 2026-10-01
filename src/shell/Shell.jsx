@@ -1,3 +1,4 @@
+import { FEATURES } from '../features.js'
 import { Suspense, useEffect, useState } from 'react'
 import { TAB_LABELS, enableShortcuts, useRoute } from '../router.js'
 import { useStore } from '../store.jsx'
@@ -36,7 +37,7 @@ const SCREENS = [
   ['receber', Receber],
   ['despesas', Expenses],
   ['painel', Dashboard],
-]
+].filter(([id]) => id !== 'despesas' || FEATURES.expenses)
 
 const LOADING = {
   agenda: 'A carregar a agenda',

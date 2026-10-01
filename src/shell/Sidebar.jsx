@@ -1,7 +1,7 @@
 import { Avatar, Button, Icon, syncTime } from '../ui'
 import { openNew, tabHref } from '../router.js'
 import { useStore } from '../store.jsx'
-import { NAV, goTab } from './nav.js'
+import { NAV, NEW_LABEL, goTab } from './nav.js'
 import { accountOf, useSession } from './session.js'
 
 // Estado do Google no fundo da sidebar: "● Google atualizado às 09:12" ou aviso com "Tentar de novo".
@@ -36,7 +36,7 @@ export default function Sidebar({ tab, news = false }) {
   return (
     <aside className="sidebar" aria-label="Navegação">
       <div className="brand"><b>Joana</b><i aria-hidden="true" /><small>Concertos, noivas e contas.</small></div>
-      <Button variant="primary" block icon="plus" className="new" aria-label="Novo evento ou despesa" onClick={openNew}>
+      <Button variant="primary" block icon="plus" className="new" aria-label={NEW_LABEL} onClick={openNew}>
         Novo
       </Button>
       <nav aria-label="Principal">

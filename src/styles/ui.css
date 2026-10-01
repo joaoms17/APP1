@@ -72,6 +72,7 @@ svg.i.lg { width: 24px; height: 24px; }
   background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-top: 1px solid var(--rule);
 }
+.tabbar.four { grid-template-columns: repeat(4, 1fr); } /* sem Despesas (FEATURES.expenses) */
 .tab {
   display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 52px;
   color: var(--muted); font-size: var(--fs-caption); font-weight: 700; text-decoration: none; position: relative;

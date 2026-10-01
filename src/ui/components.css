@@ -192,7 +192,9 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 /* título ao centro e as mesmas ações do ecrã à direita (câmara, lupa, ano, J) */
 .topbar-compact {
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 8px;
+  /* a coluna das ações nunca fica mais estreita do que elas (‹ 2026 › + J no Painel): o título
+     desvia-se para a esquerda em vez de ficar por baixo das setas */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 8px;
   height: var(--compact-h); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
   background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;

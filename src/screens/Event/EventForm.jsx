@@ -1,3 +1,4 @@
+import { FEATURES } from '../../features.js'
 import { useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
@@ -11,7 +12,8 @@ import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
 
 const EPS = 0.005
-const TITLE = { edit: 'Editar evento', new: 'Novo', google: 'Registar do Google' }
+// com as despesas escondidas não há a escolha Evento | Despesa: o título diz o que é
+const TITLE = { edit: 'Editar evento', new: FEATURES.expenses ? 'Novo' : 'Novo evento', google: 'Registar do Google' }
 const PAY_OPTIONS = [
   { value: 'none', label: 'Nada ainda' },
   { value: 'deposit', label: 'Sinal' },
@@ -300,7 +302,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       initialFocusRef={focusRef}
       footer={<Button type="submit" form={formId} variant="primary" size="lg" block loading={busy}>{saveLabel}</Button>}>
       <form id={formId} className="ev-form" onSubmit={submit} onKeyDown={onKeyDown} noValidate>
-        {mode === 'new' && <NewKindSwitch value="evento" />}
+        {mode === 'new' && FEATURES.expenses && <NewKindSwitch value="evento" />}
         {mode === 'google' && (
           <Callout tone="info" title="A registar do Google Calendar.">Confirma o valor e guarda.</Callout>
         )}

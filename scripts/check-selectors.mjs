@@ -131,6 +131,29 @@ section('Painel · comparação até ao mesmo dia (ano corrente)')
   check('ano passado (2025) não tem ytd', S.yearTotals(events, F.expenses, pbe, 2025, TODAY).ytd, null)
 }
 
+section('Painel · penteados vs música')
+{
+  // contas à parte: Cabelos (tipo hair) contra o resto, 2026; variação até 30/09 contra 2025 até 30/09
+  const hairIds = new Set(F.projects.filter((p) => p.kind === 'hair').map((p) => p.id))
+  const r2 = (n) => Math.round(n * 100) / 100
+  const sum = (pred) => r2(events.filter(pred).reduce((a, e) => a + Number(e.value), 0))
+  const in26 = (e) => e.event_date.startsWith('2026')
+  const hairNet = sum((e) => in26(e) && hairIds.has(e.project_id))
+  const musicNet = sum((e) => in26(e) && !hairIds.has(e.project_id))
+  const hairN = events.filter((e) => in26(e) && hairIds.has(e.project_id)).length
+  const ytd = (y, hair) => sum((e) => e.event_date >= `${y}-01-01` && e.event_date <= `${y}-09-30` && hairIds.has(e.project_id) === hair)
+  const pctOf = (a, b) => Math.round(((a - b) / Math.abs(b)) * 100)
+  const [h, m] = S.kindSplitOf(events, F.projects, 2026, TODAY)
+  check('penteados · receita 2026', h.net, hairNet)
+  check('música · receita 2026', m.net, musicNet)
+  check('penteados + música = receita líquida do ano', r2(h.net + m.net), y26.net)
+  check('penteados · eventos e média', [h.count, h.avg], [hairN, r2(hairNet / hairN)])
+  check('partes somam 100 %', Math.round((h.share + m.share) * 1000) / 1000, 1)
+  check('penteados · variação até 30 set', h.delta, pctOf(ytd(2026, true), ytd(2025, true)))
+  check('música · variação até 30 set', m.delta, pctOf(ytd(2026, false), ytd(2025, false)))
+  check('meses somam o total (penteados)', r2(h.byMonth.reduce((a, v) => a + v, 0)), h.net)
+}
+
 section('Extra · Agenda e Receber (spec §10.3–10.4, §10.11)')
 const todays = events.filter((e) => e.event_date === TODAY)
 check('Hoje · eventos', todays.length, 2)

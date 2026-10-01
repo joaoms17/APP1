@@ -394,7 +394,7 @@ function ProjectForm({ project: p, onClose }) {
 
         <div className="switch-row">
           {/* nos eventos os chips vêm pelo uso (spec §10.7) — a ordem só manda aqui, nas despesas, na pesquisa e nos gráficos */}
-          <span className="txt"><b id={`${ordId}l`}>Ordem nas listas</b><small id={`${ordId}h`}>Nas Definições, despesas e gráficos. Nos eventos vêm primeiro os mais usados.</small></span>
+          <span className="txt"><b id={`${ordId}l`}>Ordem nas listas</b><small id={`${ordId}h`}>Nas Definições e nos gráficos. Nos eventos vêm primeiro os mais usados.</small></span>
           <span className="st-stepper" role="group" aria-labelledby={`${ordId}l`} aria-describedby={`${ordId}h`}>
             {/* aria-disabled (não disabled): no 0 o botão fica com o foco em vez de o atirar para o <body> */}
             <IconButton icon="minus" size="sm" variant="outlined" label="Subir na ordem" aria-disabled={f.sort_order <= 0 || undefined}

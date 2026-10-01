@@ -29,7 +29,7 @@ const REGISTRY = {
   evento: (s) => [EventSheet, { mode: 'detail', id: s.id }],
   'evento-editar': (s) => [EventSheet, { mode: 'edit', id: s.id, preset: presetOf(s.params) }], // { foco: 'notas' }
   registar: (s) => [EventSheet, { mode: 'google', id: null, preset: { ...presetOf(s.params), key: s.params.key || s.id } }],
-  novo: (s) => [s.params.kind === 'despesa' ? ExpenseSheet : EventSheet, { mode: 'new', id: null, preset: presetOf(s.params) }],
+  novo: (s) => [FEATURES.expenses && s.params.kind === 'despesa' ? ExpenseSheet : EventSheet, { mode: 'new', id: null, preset: presetOf(s.params) }],
   despesa: (s) => [ExpenseSheet, { mode: 'edit', id: s.id }],
   projeto: (s) => [ProjectSheet, { id: s.id }],
   'projeto-novo': () => [ProjectSheet, { id: null }],

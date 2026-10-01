@@ -32,19 +32,16 @@ export function mergeItems(evs, gs = [], desc = false) {
   return desc ? items.reverse() : items
 }
 
-// linhas de uma lista; com lead 'date', as linhas seguidas do mesmo dia deixam o lead vazio
+// linhas de uma lista; cada linha mostra sempre a sua data (também quando o dia se repete)
 export function ItemRows({ items, lead = 'date', flashId = null, hideProject = false }) {
-  let prev = null
   return items.map((it) => {
-    const blank = lead === 'date' && prev === it.date
-    prev = it.date
     if (it.ev) {
       return (
-        <EventRow key={it.ev.id} ev={it.ev} lead={lead} blank={blank} hideProject={hideProject}
+        <EventRow key={it.ev.id} ev={it.ev} lead={lead} hideProject={hideProject}
           flash={it.ev.id === flashId} className={rowClass(it.ev.id)} />
       )
     }
-    return <GoogleRow key={it.g.key} g={it.g} lead={lead} blank={blank} />
+    return <GoogleRow key={it.g.key} g={it.g} lead={lead} />
   })
 }
 

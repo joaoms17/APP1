@@ -33,6 +33,20 @@
 .db-compare small { font-size: var(--fs-caption); color: var(--muted); }
 .db-delta { display: grid; justify-items: start; gap: 3px; }
 .db-delta-note { font-size: var(--fs-caption); color: var(--muted); line-height: 1.35; }
+
+/* Penteados vs música: barra de partilha (2 px de papel entre as partes) e resumo por tipo */
+.db-split { display: flex; gap: 2px; height: 10px; margin: 2px 0 4px; }
+.db-split span { flex: 0 0 auto; width: var(--pct); min-width: 4px; border-radius: 3px; }
+.db-split .db-c1 { background: var(--chart-1); }
+.db-split .db-c2 { background: var(--chart-2); }
+.db-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.db-kindstat { display: grid; gap: 3px; align-content: start; justify-items: start; min-width: 0; }
+.db-kindstat dt { font-size: var(--fs-caption); }
+.db-kindstat dd { margin: 0; }
+.db-kindstat .v { font-weight: 800; font-size: calc(18 * var(--u)); font-variant-numeric: tabular-nums; color: var(--ink); }
+.db-kindstat .v small { font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+.db-kindstat .s { font-size: var(--fs-meta); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.db-kindstat .delta { white-space: normal; height: auto; min-height: 24px; }
 .db-facts {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
   margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule);
@@ -128,6 +142,8 @@
   .db-kpis { grid-column: span 2; gap: 18px; }
   .db-kpi { padding: 16px 18px; }
   .db-link { grid-column: span 2; padding: 16px 18px; }
+  .db-grid.no-exp .db-hero { grid-row: auto; }
+  .db-grid.no-exp .db-link { align-content: center; }
   .db-chart { padding: 18px 18px 16px; }
   .db-chart.wide, .db-tbl { grid-column: span 4; }
   .db-chart.half { grid-column: span 2; grid-template-rows: auto auto auto 1fr; }

@@ -5,6 +5,7 @@ import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
 import { MONTHS_LONG, fmtDM, fmtMoney, fmtPct } from '../../format.js'
 import { Boundary, lazyWithPreload } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
+import { FEATURES } from '../../features.js'
 import './Dashboard.css'
 
 // Painel (pacote E4, spec §10.13) — "Como está o ano?".
@@ -34,32 +35,41 @@ function YearSelect({ year, onChange }) {
 // completo fica por baixo, mais pequena.
 function Hero({ t, thisYear, desktop }) {
   const titleId = useId()
-  const best = t.bestMonth
   const months = t.closedMonths
   const prev = t.year - 1
   const ytd = t.ytd
   const until = ytd && fmtDM(ytd.until)
+  // sem despesas (FEATURES.expenses) a capa é a Receita líquida; com elas, o Saldo líquido
+  const exp = FEATURES.expenses
+  const v = exp
+    ? { label: 'Saldo líquido', value: t.saldo, prev: t.saldoPrev, delta: t.deltaSaldo, ytd: ytd?.saldo, ytdPrev: ytd?.saldoPrev, ytdDelta: ytd?.deltaSaldo }
+    : { label: 'Receita líquida', value: t.net, prev: t.netPrev, delta: t.deltaNet, ytd: ytd?.net, ytdPrev: ytd?.netPrev, ytdDelta: ytd?.deltaNet }
+  let best = t.bestMonth
+  if (!exp) {
+    const m = t.byMonth.net.reduce((b, x, i) => (x > 0 && (b < 0 || x > t.byMonth.net[b]) ? i : b), -1)
+    best = m < 0 ? null : { month: m, saldo: t.byMonth.net[m] }
+  }
   return (
     <Card as="section" className="hero db-hero" aria-labelledby={titleId}>
-      <h2 className="label" id={titleId}>Saldo líquido {t.year}</h2>
+      <h2 className="label" id={titleId}>{v.label} {t.year}</h2>
       <div className="rule" />
       <div className="row1">
-        <HeroNumber value={t.saldo} cents="never" />
+        <HeroNumber value={v.value} cents="never" />
         {ytd
-          ? <Delta value={ytd.deltaSaldo} suffix={`vs ${prev} até ${until}`} />
-          : <Delta value={t.deltaSaldo} suffix={`vs ${prev}`} />}
+          ? <Delta value={v.ytdDelta} suffix={`vs ${prev} até ${until}`} />
+          : <Delta value={v.delta} suffix={`vs ${prev}`} />}
       </div>
       {ytd && (
         <p className="db-compare">
-          <span>Até {until}: <b>{eur(ytd.saldo)}</b> · {prev} no mesmo período: <b>{eur(ytd.saldoPrev)}</b></span>
+          <span>Até {until}: <b>{eur(v.ytd)}</b> · {prev} no mesmo período: <b>{eur(v.ytdPrev)}</b></span>
           <small>
-            Ano completo de {prev}: {eur(t.saldoPrev)}
-            {t.deltaSaldo != null && <> · {t.year} com o já marcado: {fmtPct(t.deltaSaldo)}</>}
+            Ano completo de {prev}: {eur(v.prev)}
+            {v.delta != null && <> · {t.year} com o já marcado: {fmtPct(v.delta)}</>}
           </small>
         </p>
       )}
       <p className="sub">
-        Receita líquida − despesas.
+        {exp ? 'Receita líquida − despesas.' : `Bruto ${eur(t.gross)} · retido ${eur(t.retained)}.`}
         {best && ` Melhor mês: ${MONTHS_LONG[best.month]}, ${eur(best.saldo)}.`}
       </p>
       {desktop && (
@@ -151,7 +161,7 @@ function ChartsError({ retry }) {
 
 export default function Dashboard() {
   const route = useRoute()
-  const { today, projects, yearTotals, loadingPhases } = useStore()
+  const { today, projects, yearTotals, kindSplit, loadingPhases } = useStore()
   const desktop = useMediaQuery('(min-width: 1024px)')
   const thisYear = Number(today.slice(0, 4))
   const curMonth = Number(today.slice(5, 7)) - 1
@@ -171,6 +181,7 @@ export default function Dashboard() {
   // voltem a animar a cada render do store (só mudam quando mudam os dados ou o ano).
   const waiting = !!loadingPhases?.phase2
   const t = useMemo(() => (waiting ? null : yearTotals(year)), [waiting, yearTotals, year])
+  const split = useMemo(() => (waiting ? null : kindSplit(year)), [waiting, kindSplit, year])
 
   let body
   if (!t) {
@@ -181,18 +192,19 @@ export default function Dashboard() {
       ? <Button variant="secondary" onClick={() => goYear(thisYear)}>Ver {thisYear}</Button>
       : <Button variant="secondary" icon="plus" onClick={() => openSheet('novo', { kind: 'evento' })}>Novo evento</Button>
     body = (
-      <EmptyState icon="chart" title={`Sem movimentos em ${year}`} text="Não há eventos nem despesas registados neste ano."
+      <EmptyState icon="chart" title={`Sem movimentos em ${year}`}
+        text={FEATURES.expenses ? 'Não há eventos nem despesas registados neste ano.' : 'Não há eventos registados neste ano.'}
         action={action} />
     )
   } else {
     body = (
-      <div className="db-grid">
+      <div className={FEATURES.expenses ? 'db-grid' : 'db-grid no-exp'}>
         <Hero t={t} thisYear={thisYear} desktop={desktop} />
-        <Kpis t={t} />
+        {FEATURES.expenses && <Kpis t={t} />}
         <OverdueTile t={t} lateCount={t.overdueYearCount} />
         <Boundary resetKey={year} fallback={(error, retry) => <ChartsError retry={retry} />}>
           <Suspense fallback={<ChartsFallback />}>
-            <DashCharts t={t} projects={projects} month={month} onPick={onPick} thisYear={thisYear} curMonth={curMonth} />
+            <DashCharts t={t} split={split} projects={projects} month={month} onPick={onPick} thisYear={thisYear} curMonth={curMonth} />
           </Suspense>
         </Boundary>
         <SummaryTable t={t} full={desktop} />

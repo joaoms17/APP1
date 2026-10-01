@@ -1,8 +1,9 @@
 import { Icon } from '../ui'
 import { openNew, tabHref } from '../router.js'
-import { NAV, goTab } from './nav.js'
+import { NAV, NEW_LABEL, goTab } from './nav.js'
 
-// Tabbar do telemóvel (spec §3.1): Agenda · Receber · [Novo] · Despesas · Painel.
+// Tabbar do telemóvel (spec §3.1): Agenda · Receber · [Novo] · Despesas · Painel
+// (sem Despesas enquanto FEATURES.expenses estiver desligado: Agenda · Receber · [Novo] · Painel).
 // Receber mostra um ponto quando há novidades desde a última visita.
 function Tab({ item, active, news }) {
   return (
@@ -19,17 +20,15 @@ function Tab({ item, active, news }) {
 }
 
 export default function Tabbar({ tab, news = false }) {
-  const [agenda, receber, despesas, painel] = NAV
+  const tabOf = (item) => <Tab key={item.id} item={item} active={tab === item.id} news={item.id === 'receber' && news} />
   return (
-    <nav className="tabbar" aria-label="Principal">
-      <Tab item={agenda} active={tab === 'agenda'} />
-      <Tab item={receber} active={tab === 'receber'} news={news} />
-      <button type="button" className="tab-new" aria-label="Novo evento ou despesa" onClick={openNew}>
+    <nav className={NAV.length === 3 ? 'tabbar four' : 'tabbar'} aria-label="Principal">
+      {NAV.slice(0, 2).map(tabOf)}
+      <button type="button" className="tab-new" aria-label={NEW_LABEL} onClick={openNew}>
         <span className="plus"><Icon name="plus" /></span>
         Novo
       </button>
-      <Tab item={despesas} active={tab === 'despesas'} />
-      <Tab item={painel} active={tab === 'painel'} />
+      {NAV.slice(2).map(tabOf)}
     </nav>
   )
 }

@@ -2,8 +2,9 @@ import { Fragment, useCallback, useEffect, useId, useMemo, useState } from 'reac
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, ReferenceLine, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
-import { Card, useMediaQuery, useReducedMotion } from '../../ui'
-import { MONTHS_LONG, MONTH_INITIALS, cap, fmtMoney, fmtMoneyCompact, fmtPct } from '../../format.js'
+import { Card, Delta, useMediaQuery, useReducedMotion } from '../../ui'
+import { MONTHS_LONG, MONTH_INITIALS, cap, fmtDM, fmtMoney, fmtMoneyCompact, fmtPct } from '../../format.js'
+import { FEATURES } from '../../features.js'
 import { projectVars } from '../../color.js'
 
 // Gráficos do Painel (spec §9.18) — carregados a pedido: o Recharts só desce quando se abre o Painel.
@@ -298,8 +299,59 @@ function BalanceCard({ t, month, onPick, colors, height, animate, axisWidth }) {
   )
 }
 
-// Os 3 cartões de gráficos (itens diretos da grelha do Painel).
-export default function DashCharts({ t, projects, month, onPick, thisYear, curMonth }) {
+// ---------- Penteados vs música (lado a lado) --------------------------------
+// Cabelos (tipo 'hair') contra os projetos de música: barra de partilha do ano, um resumo por tipo
+// (total, parte, eventos, média por evento, variação) e as barras mês a mês. Rosa = penteados,
+// azul = música (o par --chart-1/--chart-2, validado para daltonismo nos dois modos).
+const shareOf = (x) => `${Math.round(x * 100)} %`
+function KindCard({ t, split, month, onPick, colors, height, animate, axisWidth }) {
+  const titleId = useId()
+  const [hair, music] = split
+  const kinds = [[hair, 'db-c1'], [music, 'db-c2']]
+  const prevYear = t.year - 1
+  const vs = t.ytd ? `vs ${prevYear} até ${fmtDM(t.ytd.until)}` : `vs ${prevYear}`
+  const data = useMemo(() => IDX.map((i) => ({ i, hair: hair.byMonth[i], music: music.byMonth[i] })), [hair, music])
+  const ticks = niceTicks(Math.max(...hair.byMonth, ...music.byMonth))
+  const any = hair.net + music.net > EPS
+  const aria = `Penteados e música por mês em ${t.year}: penteados ${eur(hair.net)}`
+    + (any ? ` (${shareOf(hair.share)})` : '') + `, música ${eur(music.net)}` + (any ? ` (${shareOf(music.share)})` : '') + '.'
+  return (
+    <Card as="section" className="db-chart half db-kind" aria-labelledby={titleId}>
+      <h2 id={titleId}>Penteados vs música</h2>
+      {any && (
+        <div className="db-split" aria-hidden="true">
+          {kinds.map(([k, c]) => k.share > 0 && <span key={k.key} className={c} style={{ '--pct': `${k.share * 100}%` }} />)}
+        </div>
+      )}
+      <dl className="db-kinds">
+        {kinds.map(([k, c]) => (
+          <div key={k.key} className="db-kindstat">
+            <dt className="legend"><span><i className={`sq ${c}`} />{k.label}</span></dt>
+            <dd className="v">{eur(k.net)}{any && <small> · {shareOf(k.share)}</small>}</dd>
+            <dd className="s">
+              {k.count} {k.count === 1 ? 'evento' : 'eventos'}{k.avg != null && <> · média {eur(k.avg)}</>}
+            </dd>
+            {k.delta != null && <dd><Delta value={k.delta} suffix={vs} /></dd>}
+          </div>
+        ))}
+      </dl>
+      <Readout month={month} items={[`penteados ${eur(hair.byMonth[month])}`, `música ${eur(music.byMonth[month])}`]} />
+      <MonthRange month={month} onPick={onPick} title="Penteados vs música" />
+      <div className="db-plot" role="img" aria-label={aria}>
+        <ResponsiveContainer width="100%" height={height}>
+          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} barGap={2} onClick={pickFrom(onPick)}>
+            {axes(month, ticks, colors, axisWidth(ticks))}
+            <Bar dataKey="hair" name="Penteados" fill={colors.c1} barSize={8} radius={[2, 2, 0, 0]} isAnimationActive={animate} {...ANIM} />
+            <Bar dataKey="music" name="Música" fill={colors.c2} barSize={8} radius={[2, 2, 0, 0]} isAnimationActive={animate} {...ANIM} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  )
+}
+
+// Os cartões de gráficos (itens diretos da grelha do Painel). Receita vs despesa só com despesas.
+export default function DashCharts({ t, split, projects, month, onPick, thisYear, curMonth }) {
   const colors = useChartColors()
   const desktop = useMediaQuery('(min-width: 1024px)')
   const mouse = useMediaQuery('(hover: hover) and (pointer: fine)')
@@ -312,7 +364,8 @@ export default function DashCharts({ t, projects, month, onPick, thisYear, curMo
     <>
       <RevenueCard {...common} thisYear={thisYear} curMonth={curMonth} pickHint={pickHint} height={desktop ? 240 : 172} />
       <ProjectsCard {...common} projects={projects} height={desktop ? 220 : 172} />
-      <BalanceCard {...common} height={desktop ? 220 : 172} />
+      {split && <KindCard {...common} split={split} height={desktop ? 220 : 172} />}
+      {FEATURES.expenses && <BalanceCard {...common} height={desktop ? 220 : 172} />}
     </>
   )
 }
