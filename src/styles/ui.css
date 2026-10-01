@@ -393,7 +393,8 @@ dialog.sheet::backdrop { background: var(--scrim); }
 .sheet-head h2 { text-align: center; font-size: var(--fs-title); font-weight: 800; }
 .sheet-head .l { justify-self: start; } .sheet-head .r { justify-self: end; }
 .sheet-head.form { border-bottom: 1px solid var(--rule); }
-.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px var(--gutter) 24px; display: grid; gap: var(--sp-5); align-content: start; }
+/* coluna única com a largura da folha: nenhum conteúdo comprido (URL, palavra sem espaços) a alarga (R1-34) */
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px var(--gutter) 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-5); align-content: start; }
 .sheet-body.form { gap: var(--sp-4); padding-top: 16px; }
 .sheet-foot {
   flex: none; display: flex; flex-wrap: wrap-reverse; gap: 10px; padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));

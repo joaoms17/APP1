@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, StatusBadge, STATE_PHRASE } from '../../ui'
+import { Button, StatusBadge, STATE_PHRASE, useTapSettle } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
 import { projectVars } from '../../color.js'
@@ -36,7 +36,10 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
   const label = [ev.title, 'hoje', t || 'sem hora', p?.name, ev.location, money(ev.value), STATE_PHRASE[st](money(mis))]
     .filter(Boolean).join(', ')
 
-  const open = () => openSheet('evento', ev.id)
+  // o "Recebi" sai quando fica tudo recebido e o cartão inteiro passa a abrir o Detalhe: o 2.º toque de um
+  // toque duplo no "Recebi" não o abre (R1-35)
+  const recv = useTapSettle()
+  const open = () => { if (!recv.settling()) openSheet('evento', ev.id) }
 
   // "Recebi" com o foco no botão (teclado, ou rato/toque quando o browser foca o botão): o botão sai quando o evento
   // fica pago e a raiz do cartão passa de <div> a <button> — o foco passa para o próprio cartão em vez de
@@ -55,6 +58,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
     target?.focus({ preventScroll: true })
   }, [canReceive])
   const receive = async (e) => {
+    recv.mark()
     const k = e.currentTarget === document.activeElement ? { done: false } : null
     keep.current = k
     try { await receiveRemaining(ev) } catch (ex) { notifyError(ex) }

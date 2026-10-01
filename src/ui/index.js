@@ -31,4 +31,4 @@ export { default as Attachments, PendingAttachments, useAttachmentUrl } from './
 export { default as AttachmentViewer } from './AttachmentViewer.jsx'
 export { default as NewKindSwitch } from './NewKindSwitch.jsx'
 export { default as TopBar, Avatar, AvatarButton } from './TopBar.jsx'
-export { useReducedMotion, useLocalPref, useScrollRestore, useVisualViewport, useMediaQuery, TEXT_SCALES, applyTextScale } from './hooks.js'
+export { useReducedMotion, useLocalPref, useScrollRestore, useVisualViewport, useMediaQuery, useTapSettle, TEXT_SCALES, applyTextScale } from './hooks.js'

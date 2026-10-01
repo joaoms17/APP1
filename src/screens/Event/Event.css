@@ -12,8 +12,9 @@
   overflow-wrap: anywhere; outline: none;
 }
 .ev-facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin-top: 2px; }
-.ev-facts > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.ev-facts svg.i { color: var(--muted); width: 18px; height: 18px; }
+/* um local ou ligação comprida (ex.: URL do Google Maps) parte dentro do facto, nunca alarga a folha (R1-34) */
+.ev-facts > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.ev-facts svg.i { flex: none; color: var(--muted); width: 18px; height: 18px; }
 .ev-facts b { color: var(--accent-text); font-weight: 800; }
 
 /* ---- secções do detalhe ------------------------------------------------------ */

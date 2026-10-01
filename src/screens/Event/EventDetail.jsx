@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import {
   Attachments, Button, Card, Dot, EmptyState, Icon, Sheet, Skeleton, StatusBadge, Switch, confirmDialog, discardText, parseMoney,
+  useTapSettle,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet, replaceSheet } from '../../router.js'
@@ -25,6 +26,7 @@ export default function EventDetail({ id, onClose }) {
   const [adding, setAddingState] = useState(false)
   const [draft, setDraft] = useState('') // valor escrito em "Registar outro valor" e ainda não registado
   const editRef = useRef(null)
+  const recv = useTapSettle()
   const setAdding = (on) => {
     setAddingState(on)
     if (!on) setDraft('')
@@ -107,14 +109,17 @@ export default function EventDetail({ id, onClose }) {
     { label: 'Apagar evento', icon: 'trash', danger: true, onSelect: remove },
   ]
 
-  // "Recebi" desaparece quando fica tudo recebido: o foco passa para o "Editar" (que se mantém montado)
+  // "Recebi" desaparece quando fica tudo recebido: o foco passa para o "Editar" (que se mantém montado),
+  // que fica com o lugar dele — o 2.º toque de um toque duplo no "Recebi" não abre o Editar (R1-35)
   const receive = () => {
+    recv.mark()
     receiveRemaining(ev)
     editRef.current?.focus({ preventScroll: true })
   }
+  const onEdit = () => { if (!recv.settling()) edit() }
   const footer = (
     <>
-      <Button ref={editRef} size="lg" block={paidAll} icon="pencil" onClick={edit}>Editar</Button>
+      <Button ref={editRef} size="lg" block={paidAll} icon="pencil" onClick={onEdit}>Editar</Button>
       {!paidAll && <Button variant="primary" size="lg" icon="check" onClick={receive}>Recebi {money(miss)}</Button>}
     </>
   )

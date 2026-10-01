@@ -1,5 +1,5 @@
 // Hooks partilhados da v2 (plano §F.3).
-import { useCallback, useEffect, useLayoutEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 const HAS_WINDOW = typeof window !== 'undefined'
 
@@ -65,6 +65,17 @@ export function applyTextScale(value) {
   else document.documentElement.style.setProperty('--text-scale', String(n))
 }
 if (HAS_WINDOW) applyTextScale(readPref('texto', 'normal'))
+
+// ---------- toque duplo num botão que sai ------------------------------------------
+// Um botão que desaparece ao ser tocado (ex.: "Recebi" quando fica tudo recebido) deixa outro no lugar
+// dele, e o 2.º toque de um toque duplo (ou duplo clique) cairia nesse (R1-35). mark() no 1.º toque;
+// settling() fica true durante `ms` — o que ocupa o lugar ignora o toque nesse intervalo.
+export function useTapSettle(ms = 600) {
+  const at = useRef(-Infinity)
+  const mark = useCallback(() => { at.current = Date.now() }, [])
+  const settling = useCallback(() => Date.now() - at.current < ms, [ms])
+  return { mark, settling }
+}
 
 // ---------- scroll por rota -------------------------------------------------------
 // Os separadores ficam montados; o scroll da janela é guardado por rota e reposto ao voltar.
