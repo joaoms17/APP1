@@ -22,6 +22,8 @@ function AddPayment({ ev, miss, onDone, onDraft }) {
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(false)
   const amountRef = useRef(null)
+  const alive = useRef(true)
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   useEffect(() => { amountRef.current?.focus({ preventScroll: false }) }, [])
 
   const submit = async (e) => {
@@ -45,6 +47,7 @@ function AddPayment({ ev, miss, onDone, onDraft }) {
         primary: 'cancel',
       })
       if (!ok) { amountRef.current?.focus(); return }
+      if (!alive.current) return // a folha fechou com a pergunta aberta (voltar + Descartar): nada a registar
     }
     setBusy(true)
     const row = await recordPayment(ev, n, date)

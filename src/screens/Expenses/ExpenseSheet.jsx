@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import {
   Attachments, Button, Chip, ChipGroup, DateInput, EmptyState, Field, Icon, MoneyInput, NewKindSwitch,
   PendingAttachments, ProjectChips, Sheet, Skeleton, TextInput, categoryIcon, moneyInputValue, parseMoney,
+  useFormSave,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
@@ -83,7 +84,7 @@ function dirtyText(changes, mode) {
 function ExpenseForm({ mode, ex, preset, onClose }) {
   const {
     today, projectById, projectOptions, expenseCategories, createExpense, saveExpense, deleteExpense,
-    notify, notifyError,
+    notify,
   } = useStore()
   const formId = useId()
   const listId = useId()
@@ -93,6 +94,8 @@ function ExpenseForm({ mode, ex, preset, onClose }) {
   const [f, setF] = useState(start)
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
+  // depois de gravar só fecha se o formulário ainda estiver aberto; o erro sai com ele
+  const { alive, fail } = useFormSave()
   // projetos: ativos (+ o atual), pela ordem dos projetos — numa despesa a ordem fixa ajuda mais do que o uso
   const options = useMemo(() => projectOptions(start.project_id).slice()
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)), [projectOptions, start.project_id])
@@ -180,10 +183,10 @@ function ExpenseForm({ mode, ex, preset, onClose }) {
       }
     } catch (err) {
       setBusy(false)
-      notifyError(err, () => submitRef.current?.())
+      fail(err, () => submitRef.current?.())
       return
     }
-    onClose()
+    if (alive.current) onClose()
   }
   submitRef.current = submit
 

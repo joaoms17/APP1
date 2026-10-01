@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import {
-  Avatar, Badge, Button, Card, Icon, IconButton, ProjectAvatar, SettingsRow, Skeleton, TopBar,
+  Avatar, Badge, Button, Callout, Card, Icon, IconButton, ProjectAvatar, SettingsRow, Skeleton, TopBar,
   syncTime, useConfirm, useLocalPref, useToast,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
@@ -141,6 +141,16 @@ function Calendars() {
   const refreshing = gcalStatus.refreshing
   return (
     <Section id="st-gcal" title="Calendários Google" note="só leitura">
+      {gcalStatus.listError && !loadingPhases.phase2 && (
+        <div className="st-pad">
+          <Callout tone="warning" title="Não foi possível ler os calendários ligados.">
+            Os que já ligaste podem não aparecer aqui.{' '}
+            <Button variant="ghost" size="sm" icon="refresh" loading={refreshing} loadingLabel="A carregar…" onClick={() => refreshGcal()}>
+              Tentar de novo
+            </Button>
+          </Callout>
+        </div>
+      )}
       <div className="card">
         {loadingPhases.phase2 ? <div className="st-pad"><Skeleton lines={2} label="A carregar os calendários" /></div> : (
           gcalCalendars.map((cal) => {

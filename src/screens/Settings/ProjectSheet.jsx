@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import {
   Button, EmptyState, Field, Icon, IconButton, Segmented, Sheet, Switch, TextInput,
-  useConfirm, useFieldGroup, useSheet, useToast,
+  useConfirm, useFieldGroup, useFormSave, useSheet, useToast,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate } from '../../router.js'
@@ -151,7 +151,7 @@ function LogoField({ project }) {
       await setProjectLogo(cur, file)
       notify({ text: 'Logotipo guardado', icon: 'checkCircle' })
     } catch (ex) {
-      setErr(humanError(ex).text)
+      setErr(humanError(ex))
     } finally {
       setBusy(false)
     }
@@ -183,7 +183,7 @@ function LogoField({ project }) {
       <input ref={fileRef} type="file" accept="image/*" hidden
         onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) upload(file) }} />
       {!cur && <div className="help" id={helpId}>Guarda o projeto primeiro; depois podes carregar o logotipo.</div>}
-      {err && <div className="err" role="alert"><Icon name="alert" size="sm" />{err}</div>}
+      {err && <div role="alert"><ErrorPanel title={err.text} detail={err.detail} /></div>}
     </div>
   )
 }
@@ -216,6 +216,7 @@ function ProjectForm({ project: p, onClose }) {
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [saveErr, setSaveErr] = useState(null)
+  const { alive } = useFormSave() // depois de gravar, só fecha se a folha ainda estiver aberta
   const refs = { name: useRef(null), active_from: useRef(null), active_to: useRef(null), err: useRef(null) }
 
   const set = (k) => (v) => {
@@ -237,7 +238,7 @@ function ProjectForm({ project: p, onClose }) {
 
   const errorOf = (ex) => {
     const h = humanError(ex)
-    if (ex?.code === '42703') return { ...h, detail: `${h.detail} — falta correr supabase/projects_admin.sql` }
+    if (ex?.code === '42703' && !/supabase\//.test(h.detail)) return { ...h, detail: `${h.detail} — falta correr supabase/projects_admin.sql` }
     if (ex?.code === '23503') {
       return { ...h, text: 'Este projeto ainda está a ser usado (por exemplo num orçamento), por isso não pode ser apagado. Desativa-o.' }
     }
@@ -273,6 +274,12 @@ function ProjectForm({ project: p, onClose }) {
       await saveProject(row)
     } catch (ex) {
       setBusy(false)
+      // nome repetido (projects.name é unique): erro do campo Nome
+      if (ex?.code === '23505') {
+        setErrors({ name: 'Já existe um projeto com esse nome.' })
+        refs.name.current?.focus()
+        return
+      }
       setSaveErr(errorOf(ex))
       return
     }
@@ -281,7 +288,7 @@ function ProjectForm({ project: p, onClose }) {
       icon: 'checkCircle',
       text: extra.active === false ? <>Projeto {name} desativado</> : isNew ? <>Projeto {name} criado</> : <>Projeto {name} guardado</>,
     })
-    onClose()
+    if (alive.current) onClose()
   }
 
   // apagar: com eventos/despesas/calendários não dá (a base de dados recusa) — explica e oferece Desativar
@@ -323,7 +330,7 @@ function ProjectForm({ project: p, onClose }) {
       return
     }
     notify({ text: <>Projeto <b>{p.name}</b> apagado</>, icon: 'checkCircle' })
-    onClose()
+    if (alive.current) onClose()
   }
 
   // "seguinte" no teclado passa ao campo seguinte em vez de gravar a meio

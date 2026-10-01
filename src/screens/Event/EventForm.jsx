@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import {
   Button, Callout, DateInput, EmptyState, Field, MoneyInput, NewKindSwitch, PendingAttachments, ProjectChips,
   Segmented, Sheet, Skeleton, Switch, TextArea, TextInput, TimeInput, confirmDialog, moneyInputValue, parseMoney,
+  useFormSave,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { getRoute, navigate, openSheet, tabHref } from '../../router.js'
@@ -108,8 +109,10 @@ function dirtyText(changes, mode) {
 function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const {
     today, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
-    createEvent, updateEventFields, setLastProjectId, notify, notifyError,
+    createEvent, updateEventFields, setLastProjectId, notify,
   } = useStore()
+  // depois de gravar só fecha/navega se o formulário ainda estiver aberto; o erro sai com ele
+  const { alive, fail } = useFormSave()
   const formId = useId()
   const netHelpId = useId()
 
@@ -175,6 +178,9 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   // depois de guardar: fecha e leva a Agenda ao dia, com a linha a piscar (flash=<id>).
   // Editar ou registar a partir de outro separador (ex.: Receber) fica onde estava.
   const finish = (evId, date) => {
+    // fechado entretanto (Cancelar a meio da gravação): não fecha nem leva a Agenda — outra folha
+    // aberta depois fica onde está (o toast "Evento guardado · Ver" diz que ficou gravado)
+    if (!alive.current) return
     const r = getRoute()
     const go = r.tab === 'agenda' || mode === 'new'
     const month = r.tab === 'agenda' ? r.path[1] === 'mes' : /^#\/agenda\/mes/.test(tabHref('agenda'))
@@ -217,13 +223,14 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
           primary: 'cancel',
         })
         if (!ok) { refs.gross.current?.focus(); return }
+        if (!alive.current) return // a folha fechou enquanto a pergunta estava aberta (ex.: voltar + Descartar)
       }
       setBusy(true)
       try {
         await updateEventFields(id, fields)
       } catch (ex) {
         setBusy(false)
-        notifyError(ex, () => submitRef.current?.())
+        fail(ex, () => submitRef.current?.())
         return
       }
       notify({ text: 'Evento guardado', action: { label: 'Ver', run: () => openSheet('evento', id) } })
@@ -240,7 +247,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       newId = await createEvent({ ...fields, receipt_issued: f.receipt }, { payment, files: f.files })
     } catch (ex) {
       setBusy(false)
-      notifyError(ex, () => submitRef.current?.())
+      fail(ex, () => submitRef.current?.())
       return
     }
     setLastProjectId(fields.project_id)

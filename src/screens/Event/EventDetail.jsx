@@ -15,7 +15,7 @@ const EPS = 0.005
 export default function EventDetail({ id, onClose }) {
   const {
     eventById, projectById, missing, receiveRemaining, setReceipt, deleteEvent,
-    attachmentsFor, paymentsByEvent, loadingPhases, quotes, today,
+    attachmentsFor, paymentsByEvent, loadingPhases, loadFailures, quotes, today,
   } = useStore()
   const titleId = useId()
   const payId = useId()
@@ -148,7 +148,7 @@ export default function EventDetail({ id, onClose }) {
       <section className="ev-sec" aria-labelledby={attId}>
         <div className="ev-sec-head">
           <h3 id={attId}>Anexos</h3>
-          <span className="n">{loadingPhases.phase2 ? 'a carregar…' : atts.length || 'nenhum'}</span>
+          <span className="n">{loadingPhases.phase2 ? 'a carregar…' : loadFailures?.attachments ? 'por carregar' : atts.length || 'nenhum'}</span>
         </div>
         {loadingPhases.phase2 ? <Skeleton lines={1} label="A carregar os anexos" /> : <Attachments kind="event" id={ev.id} />}
       </section>

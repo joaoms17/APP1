@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
+import Button from './Button.jsx'
+import Callout from './Callout.jsx'
 import { confirmDialog } from './ConfirmDialog.jsx'
 import { useToast } from './Toast.jsx'
 import { useSheet } from './Sheet.jsx'
@@ -62,10 +64,13 @@ function AddTile({ onFiles, label = 'Foto ou PDF' }) {
 
 // Anexos de um evento/despesa que já existe: cada ficheiro grava logo.
 export default function Attachments({ kind, id }) {
-  const { attachmentsFor, addAttachment } = useStore()
+  const { attachmentsFor, addAttachment, loadFailures, retryLoads } = useStore()
   const { notifyError } = useToast()
   const [sending, setSending] = useState([])
+  const [retrying, setRetrying] = useState(false)
   const list = attachmentsFor(kind, id)
+  // a lista de anexos não foi lida: nunca dizer "nenhum" — avisa e deixa tentar de novo
+  const unread = !!loadFailures?.attachments
 
   const onFiles = async (files) => {
     setSending((s) => [...s, ...files])
@@ -75,7 +80,7 @@ export default function Attachments({ kind, id }) {
     }
   }
 
-  return (
+  const grid = (
     <div className="attach-grid">
       {list.map((a) => <Thumb key={a.id} att={a} />)}
       {sending.map((f, i) => (
@@ -86,6 +91,19 @@ export default function Attachments({ kind, id }) {
       ))}
       <AddTile onFiles={onFiles} />
     </div>
+  )
+  if (!unread) return grid
+  return (
+    <>
+      <Callout tone="warning" title="Não foi possível carregar os anexos.">
+        Os que já existem podem não aparecer.{' '}
+        <Button variant="ghost" size="sm" icon="refresh" loading={retrying} loadingLabel="A carregar…"
+          onClick={async () => { setRetrying(true); try { await retryLoads?.(true, false) } finally { setRetrying(false) } }}>
+          Tentar de novo
+        </Button>
+      </Callout>
+      {grid}
+    </>
   )
 }
 

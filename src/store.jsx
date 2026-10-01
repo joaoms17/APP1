@@ -5,8 +5,8 @@ import { compressImage } from './img'
 import { FEATURES } from './features.js'
 import { todayYMD, toYMD, fmtMoney } from './format.js'
 import * as S from './selectors.js'
-import { humanError, userError } from './errors.js'
-import { useToast } from './ui/Toast.jsx'
+import { humanError, userError, isSetupError } from './errors.js'
+import { useToast, detailsAction } from './ui/Toast.jsx'
 import { openSheet } from './router.js'
 
 const Ctx = createContext(null)
@@ -27,6 +27,41 @@ const LS = {
 const K_LAST_PROJECT = 'joana.v2.ultimoProjeto'
 const K_RECEBER_SEEN = 'joana.v2.receberVistoEm'
 const K_GCAL_OK = 'joana.v2.gcal'
+const K_PENDING = 'joana.v2.pendente'
+
+// remoções à espera do Anular, guardadas até serem gravadas: se a página for recarregada ou
+// fechada dentro dos 10 s, o arranque seguinte conclui-as (o pagehide não chega a gravar)
+const Pending = {
+  list: () => { try { const v = JSON.parse(localStorage.getItem(K_PENDING)); return Array.isArray(v) ? v : [] } catch { return [] } },
+  add(item) { LS.set(K_PENDING, JSON.stringify([...Pending.list().filter((x) => !(x.kind === item.kind && x.id === item.id)), item])) },
+  drop(kind, id) {
+    const rest = Pending.list().filter((x) => !(x.kind === kind && x.id === id))
+    LS.set(K_PENDING, rest.length ? JSON.stringify(rest) : null)
+  },
+}
+const HIDDEN_KEY = { event: 'events', expense: 'expenses', payment: 'payments', attachment: 'attachments', gcal: 'gcal' }
+
+// tabela que ainda não existe (SQL por correr): lê-se como vazia, nunca bloqueia a app.
+// Qualquer outra falha de leitura lança e o estado anterior fica como estava (nunca "sem pagamentos").
+const isMissingTable = (e) => ['42P01', 'PGRST205'].includes(String(e?.code || ''))
+const rowsOrThrow = ({ data, error }) => {
+  if (error && !isMissingTable(error)) throw error
+  return data || []
+}
+
+// junta/atualiza linhas no estado local depois de uma escrita (a lista fica certa mesmo que a
+// leitura seguinte falhe); sort = ordem da leitura da BD
+const upsertRows = (rows, add, sort) => {
+  const byId = new Map(add.filter(Boolean).map((r) => [r.id, r]))
+  if (!byId.size) return rows
+  const out = rows.map((r) => (byId.has(r.id) ? { ...r, ...byId.get(r.id) } : r))
+  for (const r of byId.values()) if (!rows.some((x) => x.id === r.id)) out.push(r)
+  return sort ? out.sort(sort) : out
+}
+const byKeyDesc = (k) => (a, b) => (a[k] < b[k] ? 1 : a[k] > b[k] ? -1 : 0)
+const byKeyAsc = (k) => (a, b) => (a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0)
+const EVENTS_ORDER = byKeyDesc('event_date')
+const EXPENSES_ORDER = byKeyDesc('expense_date')
 
 // ids escondidos enquanto uma remoção espera pelo Anular
 const NO_HIDDEN = { events: new Set(), expenses: new Set(), payments: new Set(), attachments: new Set(), gcal: new Set() }
@@ -91,44 +126,59 @@ export function StoreProvider({ children }) {
     setExpenses(data)
   }, [])
 
+  // a última leitura de payments correu bem: o "Recebi" só calcula o que falta com ela
+  const paymentsFresh = useRef(false)
   const loadPayments = useCallback(async () => {
-    // a tabela payments pode ainda não existir — nunca bloquear a app
+    let rows
     try {
-      const { data } = await db.from('payments').select('*').order('paid_at')
-      setPayments(data || [])
-    } catch { /* sem payments */ }
+      rows = rowsOrThrow(await db.from('payments').select('*').order('paid_at'))
+    } catch (e) {
+      paymentsFresh.current = false
+      throw e
+    }
+    paymentsFresh.current = true
+    setPayments(rows)
+    return rows
   }, [])
+
+  // falhas de leitura que não bloqueiam a app (anexos, lista de calendários): avisos visíveis
+  const [loadFailed, setLoadFailed] = useState({ attachments: null, gcal: null })
+  const markLoad = (k, err) => setLoadFailed((s) => (s[k] === (err || null) ? s : { ...s, [k]: err || null }))
 
   const loadAttachments = useCallback(async () => {
     try {
-      const { data } = await db.from('attachments').select('*').order('created_at')
-      setAttachments(data || [])
-    } catch { /* sem attachments */ }
+      setAttachments(rowsOrThrow(await db.from('attachments').select('*').order('created_at')))
+      markLoad('attachments', null)
+    } catch (e) {
+      markLoad('attachments', humanError(e))
+      throw e
+    }
   }, [])
 
   const loadQuotes = useCallback(async () => {
-    // estas tabelas podem ainda não existir — nunca bloquear a app
-    try {
-      const [s, q, qi, sc] = await Promise.all([
-        db.from('services').select('*').order('sort_order'),
-        db.from('quotes').select('*').order('created_at', { ascending: false }),
-        db.from('quote_items').select('*').order('sort_order'),
-        db.from('schedule_items').select('*').order('time_at'),
-      ])
-      setServices(s.data || [])
-      setQuotes(q.data || [])
-      quoteItemsRef.current = qi.data || []
-      setQuoteItems(quoteItemsRef.current)
-      setScheduleItems(sc.data || [])
-    } catch { /* sem orçamentos */ }
+    // estas tabelas podem ainda não existir — nunca bloquear a app (mas uma falha não as esvazia)
+    const [s, q, qi, sc] = await Promise.all([
+      db.from('services').select('*').order('sort_order'),
+      db.from('quotes').select('*').order('created_at', { ascending: false }),
+      db.from('quote_items').select('*').order('sort_order'),
+      db.from('schedule_items').select('*').order('time_at'),
+    ])
+    const rows = [s, q, qi, sc].map(rowsOrThrow)
+    setServices(rows[0])
+    setQuotes(rows[1])
+    quoteItemsRef.current = rows[2]
+    setQuoteItems(quoteItemsRef.current)
+    setScheduleItems(rows[3])
   }, [])
 
   const loadGcalCalendars = useCallback(async () => {
-    // a tabela gcal_calendars pode ainda não existir — nunca bloquear a app
     try {
-      const { data } = await db.from('gcal_calendars').select('*').order('created_at')
-      setGcalCalendars(data || [])
-    } catch { /* sem gcal_calendars */ }
+      setGcalCalendars(rowsOrThrow(await db.from('gcal_calendars').select('*').order('created_at')))
+      markLoad('gcal', null)
+    } catch (e) {
+      markLoad('gcal', humanError(e))
+      throw e
+    }
   }, [])
 
   const fail = (e) => {
@@ -136,12 +186,17 @@ export function StoreProvider({ children }) {
     setErrorInfo(humanError(e))
   }
 
+  // remoções que ficaram à espera do Anular quando a página saiu: esconde-as já (no mesmo
+  // render que os dados) e grava-as a seguir
+  const resumePending = useRef(null)
+
   // carregamento em 2 fases (spec §10.2): a Agenda fica utilizável depois da fase 1
   const load = useCallback(async () => {
     setError(null)
     setErrorInfo(null)
     setPhase1(true)
     setPhase2(true)
+    let evRows
     try {
       const [pr, ev] = await Promise.all([
         db.from('projects').select('*').order('sort_order'),
@@ -152,23 +207,40 @@ export function StoreProvider({ children }) {
       if (ev.error) throw ev.error
       setProjects(pr.data)
       setEvents(ev.data)
+      evRows = ev.data
     } catch (e) {
       fail(e)
       setPhase1(false)
       setPhase2(false)
       return
     }
+    const resume = resumePending.current?.(evRows)
     setPhase1(false)
-    try {
-      await Promise.all([loadExpenses(), loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null])
-    } catch (e) {
-      fail(e)
-    } finally {
-      setPhase2(false)
-    }
+    const [ex, att, gc] = await Promise.allSettled([
+      loadExpenses(), loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null,
+    ])
+    if (ex.status === 'rejected') fail(ex.reason)
+    else warnLoadFailed(att.status === 'rejected', gc.status === 'rejected')
+    setPhase2(false)
+    await resume
   }, [loadPayments, loadExpenses, loadAttachments, loadGcalCalendars, loadQuotes])
 
   useEffect(() => { load() }, [load])
+
+  // anexos ou calendários por ler: toast de erro com "Tentar de novo" (e as marcas no Detalhe,
+  // nas Definições e na faixa do Google) — nunca "nenhum anexo" / "sem calendários" em silêncio
+  const warnLoadFailed = (att, gc) => {
+    if (!att && !gc) return
+    const what = [att && 'os anexos', gc && 'os calendários do Google'].filter(Boolean).join(' nem ')
+    toast.notify({
+      text: `Não foi possível carregar ${what}.`, icon: 'alert', tone: 'error', duration: 10000,
+      action: { label: 'Tentar de novo', run: () => retryLoads(att, gc) },
+    })
+  }
+  const retryLoads = async (att = true, gc = true) => {
+    const [a, g] = await Promise.allSettled([att ? loadAttachments() : null, gc ? loadGcalCalendars() : null])
+    warnLoadFailed(a.status === 'rejected', g.status === 'rejected')
+  }
 
   // o dia muda à meia-noite e ao voltar à app
   useEffect(() => {
@@ -206,13 +278,31 @@ export function StoreProvider({ children }) {
     return n
   }), [])
 
+  // ---------- depois de uma escrita bem-sucedida ----------------------------------------
+  // A escrita já está na BD e no estado local; recarregar é só para apanhar o resto. Uma falha
+  // aqui nunca chega ao "Não foi possível guardar" (o "Tentar de novo" voltaria a inserir):
+  // fica na consola e o "Recebi" seguinte volta a ler os pagamentos antes de calcular.
+  const reloadAfterWrite = async (...loaders) => {
+    try {
+      await Promise.all(loaders.filter(Boolean).map((f) => f()))
+      return true
+    } catch (ex) {
+      console.warn('Gravado, mas não foi possível recarregar:', humanError(ex).detail)
+      return false
+    }
+  }
+  const putEventsLocal = (...rows) => setEvents((es) => upsertRows(es, rows, EVENTS_ORDER))
+  const patchEventLocal = (id, patch) => setEvents((es) => es.map((e) => (e.id === id ? { ...e, ...patch } : e)))
+
   const saveEvent = async (ev) => {
     const row = { ...cleanEvent(ev), updated_at: nowIso() }
-    const { error } = ev.id
-      ? await db.from('events').update(row).eq('id', ev.id)
-      : await db.from('events').insert(row)
+    const { data, error } = ev.id
+      ? await db.from('events').update(row).eq('id', ev.id).select()
+      : await db.from('events').insert(row).select()
     if (error) throw error
-    await loadEvents()
+    if (data?.length) putEventsLocal(...data)
+    else if (ev.id) patchEventLocal(ev.id, row)
+    await reloadAfterWrite(loadEvents)
   }
 
   // --- pagamentos parciais ---------------------------------------------
@@ -230,26 +320,43 @@ export function StoreProvider({ children }) {
     return 'unpaid'
   }, [paidAmount])
 
-  const syncPaidFlag = async (ev) => {
-    const { data: ps } = await db.from('payments').select('amount, paid_at').eq('event_id', ev.id)
-    const got = (ps || []).reduce((a, p) => a + Number(p.amount), 0)
+  // grava o flag paid do evento a partir dos pagamentos na BD (sem os ids de `without`, que vão
+  // ser apagados a seguir) → { paid, paid_at }. Lança se a leitura ou a escrita falharem: quem
+  // apaga pagamentos chama-o ANTES do delete, para um evento nunca ficar "Recebido" sem pagamentos.
+  const syncPaidFlag = async (ev, without = []) => {
+    const { data: ps, error: e1 } = await db.from('payments').select('id, amount, paid_at').eq('event_id', ev.id)
+    if (e1) throw e1
+    const rows = (ps || []).filter((p) => !without.includes(p.id))
+    const got = rows.reduce((a, p) => a + Number(p.amount), 0)
     const full = Number(ev.value) > 0 && got >= Number(ev.value) - EPS
-    const lastDate = (ps || []).map((p) => p.paid_at).sort().pop() || null
-    await db.from('events').update({ paid: full, paid_at: full ? lastDate : null, updated_at: nowIso() }).eq('id', ev.id)
+    const lastDate = rows.map((p) => p.paid_at).sort().pop() || null
+    const patch = { paid: full, paid_at: full ? lastDate : null }
+    const { error: e2 } = await db.from('events').update({ ...patch, updated_at: nowIso() }).eq('id', ev.id)
+    if (e2) throw e2
+    patchEventLocal(ev.id, patch)
+    return patch
   }
+  // depois de inserir: o flag é secundário (com pagamentos manda a soma) — uma falha não desfaz nada
+  const syncPaidFlagQuiet = async (ev) => {
+    try { await syncPaidFlag(ev) } catch (ex) { console.warn('Flag paid por atualizar:', humanError(ex).detail) }
+  }
+  const putPaymentsLocal = (...rows) => setPayments((ps) => upsertRows(ps, rows, byKeyAsc('paid_at')))
+  const dropPaymentLocal = (id) => setPayments((ps) => ps.filter((p) => p.id !== id))
 
   const addPayment = async (ev, amount, paid_at) => {
-    const { error } = await db.from('payments').insert({ event_id: ev.id, amount, paid_at })
+    const { data, error } = await db.from('payments').insert({ event_id: ev.id, amount, paid_at }).select()
     if (error) throw error
-    await syncPaidFlag(ev)
-    await Promise.all([loadEvents(), loadPayments()])
+    putPaymentsLocal(...(data || []))
+    await syncPaidFlagQuiet(ev)
+    await reloadAfterWrite(loadEvents, loadPayments)
   }
 
   const deletePayment = async (payment, ev) => {
+    await syncPaidFlag(ev, [payment.id])
     const { error } = await db.from('payments').delete().eq('id', payment.id)
     if (error) throw error
-    await syncPaidFlag(ev)
-    await Promise.all([loadEvents(), loadPayments()])
+    dropPaymentLocal(payment.id)
+    await reloadAfterWrite(loadEvents, loadPayments)
   }
 
   // --- orçamentos, tabela de preços e cronograma -------------------------
@@ -266,13 +373,13 @@ export function StoreProvider({ children }) {
       ? await db.from('services').update(s).eq('id', s.id)
       : await db.from('services').insert(s)
     if (error) throw error
-    await loadQuotes()
+    await reloadAfterWrite(loadQuotes)
   }
 
   const deleteService = async (id) => {
     const { error } = await db.from('services').delete().eq('id', id)
     if (error) throw error
-    await loadQuotes()
+    await reloadAfterWrite(loadQuotes)
   }
 
   // guarda o orçamento e substitui as linhas de uma vez
@@ -295,14 +402,14 @@ export function StoreProvider({ children }) {
         if (error) throw error
       }
     }
-    await loadQuotes()
+    await reloadAfterWrite(loadQuotes)
     return quoteId
   }
 
   const deleteQuote = async (id) => {
     const { error } = await db.from('quotes').delete().eq('id', id)
     if (error) throw error
-    await loadQuotes()
+    await reloadAfterWrite(loadQuotes)
   }
 
   // aceitar: cria o evento no projeto do orçamento e liga-o
@@ -323,7 +430,7 @@ export function StoreProvider({ children }) {
     }).select('id').single()
     if (error) throw error
     await db.from('quotes').update({ status: 'accepted', event_id: ev.id, updated_at: nowIso() }).eq('id', q.id)
-    await Promise.all([loadEvents(), loadQuotes()])
+    await reloadAfterWrite(loadEvents, loadQuotes)
     return ev.id
   }
 
@@ -339,7 +446,7 @@ export function StoreProvider({ children }) {
         clean.map((r) => ({ event_id: eventId, time_at: r.time_at, person: r.person.trim(), service: r.service?.trim() || null })))
       if (error) throw error
     }
-    await loadQuotes()
+    await reloadAfterWrite(loadQuotes)
   }
 
   // --- anexos (fotos de recibos/faturas) ---------------------------------
@@ -353,20 +460,23 @@ export function StoreProvider({ children }) {
     const path = `${kind}/${id}/${Date.now()}.${ext}`
     const { error: upErr } = await db.storage.from('anexos').upload(path, blob, { contentType: blob.type || file.type })
     if (upErr) throw upErr
-    const { error } = await db.from('attachments').insert({ parent_kind: kind, parent_id: id, path, name: file.name })
+    const { data, error } = await db.from('attachments').insert({ parent_kind: kind, parent_id: id, path, name: file.name }).select()
     if (error) throw error
+    return data?.[0] || null
   }
+  const putAttachmentsLocal = (...rows) => setAttachments((as) => upsertRows(as, rows, byKeyAsc('created_at')))
 
   const addAttachment = async (kind, id, file) => {
-    await uploadAttachment(kind, id, file)
-    await loadAttachments()
+    putAttachmentsLocal(await uploadAttachment(kind, id, file))
+    await reloadAfterWrite(loadAttachments)
   }
 
   const deleteAttachment = async (att) => {
     await db.storage.from('anexos').remove([att.path])
     const { error } = await db.from('attachments').delete().eq('id', att.id)
     if (error) throw error
-    await loadAttachments()
+    setAttachments((as) => as.filter((a) => a.id !== att.id))
+    await reloadAfterWrite(loadAttachments)
   }
 
   const attachmentUrl = async (att) => {
@@ -413,28 +523,84 @@ export function StoreProvider({ children }) {
     } catch { /* tabela de anexos pode não existir */ }
   }, [])
 
-  const softDelete = (kind, row) => {
-    const key = kind === 'event' ? 'events' : 'expenses'
-    return toast.undoable({
-      text: kind === 'event' ? 'Evento apagado' : 'Despesa apagada',
-      run: async () => {
-        hide(key, row.id, true)
-        setPendingUndo({ kind, row })
-        return row
-      },
-      undo: async () => {
-        hide(key, row.id, false)
-        setPendingUndo(null)
-      },
-      commit: async () => {
-        await finalizeUndo({ kind, row })
-        if (kind === 'event') setEvents((es) => es.filter((e) => e.id !== row.id))
-        else setExpenses((es) => es.filter((e) => e.id !== row.id))
-        hide(key, row.id, false)
-        setPendingUndo((cur) => (cur?.row?.id === row.id ? null : cur))
-      },
-    })
+  // grava uma remoção diferida — { kind: event|expense|payment|attachment|gcal, id, … }.
+  // Usada no fim do toast e no arranque (remoções que ficaram por gravar quando a página saiu).
+  const commitRemoval = async (it, evRows) => {
+    if (it.kind === 'event' || it.kind === 'expense') {
+      await finalizeUndo({ kind: it.kind, row: { id: it.id } })
+      if (it.kind === 'event') {
+        setEvents((es) => es.filter((e) => e.id !== it.id))
+        setPayments((ps) => ps.filter((p) => p.event_id !== it.id))
+      } else setExpenses((es) => es.filter((e) => e.id !== it.id))
+    } else if (it.kind === 'payment') {
+      // o flag primeiro: se falhar, o pagamento fica (nunca "Recebido" sem pagamentos)
+      const ev = (evRows || live.current.rawEvents).find((e) => e.id === it.event_id)
+      if (ev) await syncPaidFlag(ev, [it.id])
+      const { error } = await db.from('payments').delete().eq('id', it.id)
+      if (error) throw error
+      dropPaymentLocal(it.id)
+    } else if (it.kind === 'attachment') {
+      if (it.path) await db.storage.from('anexos').remove([it.path]).catch(() => {})
+      const { error } = await db.from('attachments').delete().eq('id', it.id)
+      if (error) throw error
+      setAttachments((as) => as.filter((a) => a.id !== it.id))
+    } else if (it.kind === 'gcal') {
+      const { error } = await db.from('gcal_calendars').delete().eq('id', it.id)
+      if (error) throw error
+      setGcalCalendars((cs) => cs.filter((c) => c.id !== it.id))
+    }
+    Pending.drop(it.kind, it.id)
   }
+
+  // remoção com Anular: esconde já e guarda-a em localStorage até ser gravada ou anulada
+  const deferRemoval = (it, { text, run, undo, commit, retry }) => toast.undoable({
+    text,
+    run: async () => {
+      Pending.add(it)
+      hide(HIDDEN_KEY[it.kind], it.id, true)
+      return (await run?.()) ?? it
+    },
+    undo: async () => {
+      Pending.drop(it.kind, it.id)
+      hide(HIDDEN_KEY[it.kind], it.id, false)
+      await undo?.()
+    },
+    commit: async () => {
+      await commitRemoval(it)
+      hide(HIDDEN_KEY[it.kind], it.id, false)
+      await commit?.()
+    },
+    retry,
+  })
+
+  resumePending.current = (evRows) => {
+    const list = Pending.list().filter((it) => HIDDEN_KEY[it.kind] && it.id)
+    if (!list.length) return null
+    setHidden((h) => {
+      const n = { ...h }
+      for (const it of list) n[HIDDEN_KEY[it.kind]] = new Set([...n[HIDDEN_KEY[it.kind]], it.id])
+      return n
+    })
+    return (async () => {
+      for (const it of list) {
+        try {
+          await commitRemoval(it, evRows)
+        } catch (ex) {
+          Pending.drop(it.kind, it.id)
+          toast.notifyError(ex)
+        }
+        hide(HIDDEN_KEY[it.kind], it.id, false)
+      }
+    })()
+  }
+
+  const softDelete = (kind, row) => deferRemoval({ kind, id: row.id }, {
+    text: kind === 'event' ? 'Evento apagado' : 'Despesa apagada',
+    run: async () => { setPendingUndo({ kind, row }); return row },
+    undo: async () => { setPendingUndo(null) },
+    commit: async () => { setPendingUndo((cur) => (cur?.row?.id === row.id ? null : cur)) },
+    retry: () => softDelete(kind, row),
+  })
 
   // v1: o "Anular" do toast antigo — agora anula a operação pendente do Toast
   const undoDelete = () => toast.undoCurrent()
@@ -444,11 +610,12 @@ export function StoreProvider({ children }) {
 
   const saveExpense = async (ex) => {
     const row = cleanExpense(ex)
-    const { error } = ex.id
-      ? await db.from('expenses').update(row).eq('id', ex.id)
-      : await db.from('expenses').insert(row)
+    const { data, error } = ex.id
+      ? await db.from('expenses').update(row).eq('id', ex.id).select()
+      : await db.from('expenses').insert(row).select()
     if (error) throw error
-    await loadExpenses()
+    setExpenses((xs) => upsertRows(xs, data?.length ? data : ex.id ? [{ id: ex.id, ...row }] : [], EXPENSES_ORDER))
+    await reloadAfterWrite(loadExpenses)
   }
 
   // --- Google Calendar: estado por calendário -------------------------------
@@ -500,8 +667,15 @@ export function StoreProvider({ children }) {
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [fetchCalendars])
 
-  // "Tentar de novo": todos os calendários, sem folga
-  const refreshGcal = useCallback(() => fetchCalendars(gcalRef.current.cals), [fetchCalendars])
+  // "Tentar de novo": todos os calendários, sem folga (e a lista, se não foi possível lê-la)
+  const gcalListFailed = useRef(false)
+  gcalListFailed.current = !!loadFailed.gcal
+  const refreshGcal = useCallback(async () => {
+    if (gcalListFailed.current) {
+      try { await loadGcalCalendars() } catch { return } // os novos calendários são lidos pelo efeito acima
+    }
+    return fetchCalendars(gcalRef.current.cals)
+  }, [fetchCalendars, loadGcalCalendars])
 
   const googleEvents = useMemo(() => gcalCalendars.flatMap((cal) =>
     (gcalData[cal.id]?.events || []).map((e) => ({ ...e, project_id: cal.project_id, calendar_id: cal.id }))),
@@ -518,15 +692,17 @@ export function StoreProvider({ children }) {
       if (!d.ok) failures.push({ calendar_id: cal.id, project_id: cal.project_id, message: d.message })
       if (d.lastOkAt && (!lastOkAt || d.lastOkAt > lastOkAt)) lastOkAt = d.lastOkAt
     }
-    return { lastOkAt, failures, refreshing: gcalBusy > 0, byCalendar }
-  }, [gcalCalendars, gcalData, gcalBusy])
+    // a própria lista de calendários não foi lida: o aviso aparece na faixa (Agenda, Receber)
+    if (loadFailed.gcal) failures.push({ calendar_id: 'lista', project_id: null, message: loadFailed.gcal.text })
+    return { lastOkAt, failures, refreshing: gcalBusy > 0, byCalendar, listError: loadFailed.gcal }
+  }, [gcalCalendars, gcalData, gcalBusy, loadFailed.gcal])
   const gcalError = gcalStatus.failures[0]?.message || null
 
   const addGcalCalendar = async (url, project_id) => {
-    const { error } = await db.from('gcal_calendars').insert({ url: url.trim(), project_id })
+    const { data, error } = await db.from('gcal_calendars').insert({ url: url.trim(), project_id }).select()
     if (error) throw error
-    const { data } = await db.from('gcal_calendars').select('*').order('created_at')
-    setGcalCalendars(data || [])
+    setGcalCalendars((cs) => upsertRows(cs, data || [], byKeyAsc('created_at')))
+    await reloadAfterWrite(loadGcalCalendars)
   }
 
   const removeGcalCalendar = async (id) => {
@@ -542,23 +718,25 @@ export function StoreProvider({ children }) {
   }, [])
 
   const saveProject = async (p) => {
-    const { error } = p.id
-      ? await db.from('projects').update(p).eq('id', p.id)
-      : await db.from('projects').insert(p)
+    const { data, error } = p.id
+      ? await db.from('projects').update(p).eq('id', p.id).select()
+      : await db.from('projects').insert(p).select()
     if (error) throw error
-    await loadProjects()
+    setProjects((ps) => upsertRows(ps, data?.length ? data : p.id ? [p] : [], (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+    await reloadAfterWrite(loadProjects)
   }
 
   const deleteProject = async (id) => {
     const { error } = await db.from('projects').delete().eq('id', id)
     if (error) throw error
-    await loadProjects()
+    setProjects((ps) => ps.filter((p) => p.id !== id))
+    await reloadAfterWrite(loadProjects)
   }
 
   const importRows = async (table, rows) => {
     const { error } = await db.from(table).insert(rows)
     if (error) throw error
-    await Promise.all([loadEvents(), loadExpenses()])
+    await reloadAfterWrite(loadEvents, loadExpenses)
   }
 
   const projectById = (id) => projects.find((p) => p.id === id)
@@ -628,38 +806,56 @@ export function StoreProvider({ children }) {
   // v2 — ações (leem o evento vivo e usam undoable/notify) — plano §F.4
   // ======================================================================
   const live = useRef({})
-  live.current = { events, pbe, today }
+  live.current = { events, rawEvents, pbe, today, hidden }
   const liveEvent = (ev) => live.current.events.find((e) => e.id === (ev?.id ?? ev)) || ev
 
   // pagamentos a caminho: entram logo na lista (otimista) e contam para o que falta, mesmo antes
   // do re-render — dois toques seguidos em "Recebi" nunca registam o resto duas vezes
   const putGhost = (g) => { ghostRef.current = [...ghostRef.current, g]; setGhosts(ghostRef.current) }
   const dropGhost = (id) => { ghostRef.current = ghostRef.current.filter((g) => g.id !== id); setGhosts(ghostRef.current) }
-  const liveGot = (cur) => {
-    const rows = live.current.pbe.get(cur.id) || []
+  const liveGot = (cur, pbeNow = live.current.pbe) => {
+    const rows = pbeNow.get(cur.id) || []
     const ids = new Set(rows.map((p) => p.id))
     const all = [...rows, ...ghostRef.current.filter((g) => g.event_id === cur.id && !ids.has(g.id))]
     return S.paidAmountOf(cur, new Map([[cur.id, all]]))
   }
-  const liveMissing = (cur) => Math.max(0, Math.round((Number(cur.value) - liveGot(cur)) * 100) / 100)
+  const liveMissing = (cur, pbeNow) => Math.max(0, Math.round((Number(cur.value) - liveGot(cur, pbeNow)) * 100) / 100)
+
+  // o que falta só se calcula com pagamentos lidos com sucesso: se a última leitura falhou,
+  // lê de novo (uma só leitura para toques seguidos); se voltar a falhar, não regista nada
+  const freshRead = useRef(null)
+  const ensurePayments = async () => {
+    if (paymentsFresh.current) return live.current.pbe
+    freshRead.current ||= loadPayments().finally(() => { freshRead.current = null })
+    const rows = await freshRead.current
+    const hiddenP = live.current.hidden.payments
+    return S.paymentsByEventOf([...rows.filter((p) => !hiddenP.has(p.id))])
+  }
+  const paymentsUnreadable = (ex, retry) => {
+    console.warn('Pagamentos por ler:', humanError(ex).detail)
+    toast.notifyError(userError('Não foi possível confirmar os pagamentos deste evento. Verifica a ligação e tenta de novo.'), retry)
+    return null
+  }
 
   const insertPayment = async (event_id, amount, paid_at) => {
     const { data, error } = await db.from('payments').insert({ event_id, amount, paid_at }).select().single()
     if (error) throw error
     return data
   }
-  const resyncPaid = async (ev) => {
-    await syncPaidFlag(ev)
-    await Promise.all([loadEvents(), loadPayments()])
-  }
 
-  // regista um pagamento (sinal, parte ou o resto) → linha inserida; Anular apaga-a
-  const recordPayment = async (ev, amount, date) => {
+  // regista um pagamento (sinal, parte ou o resto) → linha inserida; Anular apaga-a.
+  // Depois do INSERT nada volta a lançar (o "Tentar de novo" só existe se o INSERT falhou).
+  const recordPayment = async (ev, amount, date, { retry, pbe: pbeIn } = {}) => {
     const amt = Math.round(Number(amount) * 100) / 100
     if (!(amt > 0)) throw userError('O valor tem de ser maior do que 0 €.')
+    const again = retry || (() => recordPayment(ev, amount, date))
+    let pbeNow = pbeIn
+    if (!pbeNow) {
+      try { pbeNow = await ensurePayments() } catch (ex) { return paymentsUnreadable(ex, again) }
+    }
     const cur = liveEvent(ev)
-    const got = liveGot(cur)
-    const miss = liveMissing(cur)
+    const got = liveGot(cur, pbeNow)
+    const miss = liveMissing(cur, pbeNow)
     const text = amt >= miss - EPS
       ? <><b>{money(amt)} registados</b> · {cur.title}</>
       : got > EPS ? <>Pagamento de <b>{money(amt)}</b> registado</> : <>Sinal de <b>{money(amt)}</b> registado</>
@@ -668,78 +864,110 @@ export function StoreProvider({ children }) {
     return toast.undoable({
       text,
       run: async () => {
+        let row
         try {
-          const row = await insertPayment(cur.id, amt, ghost.paid_at)
-          await resyncPaid(cur)
-          return row
+          row = await insertPayment(cur.id, amt, ghost.paid_at)
+          putPaymentsLocal(row)
         } finally {
           dropGhost(ghost.id)
         }
+        await syncPaidFlagQuiet(cur)
+        await reloadAfterWrite(loadEvents, loadPayments)
+        return row
       },
+      // o flag primeiro (sem este pagamento): se falhar, nada mudou e o erro aparece com "Tentar de novo"
       undo: async (row) => {
+        await syncPaidFlag(cur, [row.id])
         const { error } = await db.from('payments').delete().eq('id', row.id)
         if (error) throw error
-        await resyncPaid(cur)
+        dropPaymentLocal(row.id)
+        await reloadAfterWrite(loadEvents, loadPayments)
       },
+      retry: again,
     })
   }
 
   // "Recebi 370 €": regista o que falta, com a data de hoje
   const receiveRemaining = async (ev) => {
+    const retry = () => receiveRemaining(ev)
+    let pbeNow
+    try { pbeNow = await ensurePayments() } catch (ex) { return paymentsUnreadable(ex, retry) }
     const cur = liveEvent(ev)
-    const miss = liveMissing(cur)
+    const miss = liveMissing(cur, pbeNow)
     if (miss <= EPS) return null
-    return recordPayment(cur, miss, live.current.today)
+    return recordPayment(cur, miss, live.current.today, { retry, pbe: pbeNow })
   }
 
+  // sobe os ficheiros um a um → { rows (gravados), failed: [{ file, error }] }
   const uploadAll = async (kind, id, files) => {
+    const rows = []
     const failed = []
     for (const f of files || []) {
-      try { await uploadAttachment(kind, id, f) } catch { failed.push(f) }
+      try { rows.push(await uploadAttachment(kind, id, f)) } catch (error) { failed.push({ file: f, error }) }
     }
-    return failed
+    putAttachmentsLocal(...rows)
+    return { rows, failed }
   }
-  const failedText = (what, failed) => (failed.length
-    ? `${what} guardad${what === 'Evento' ? 'o' : 'a'}, mas ${failed.length === 1 ? 'um anexo não foi enviado' : `${failed.length} anexos não foram enviados`}.`
-    : null)
+  // "Despesa guardada, mas um anexo não foi enviado." (+ porquê, quando se sabe) · detalhe para o João
+  const failedNotice = (what, failed) => {
+    if (!failed.length) return null
+    const h = humanError(failed[0].error)
+    const why = isSetupError(h) ? ' Os anexos ainda não estão configurados.'
+      : h.text.startsWith('Sem ligação') ? ' Sem ligação à internet.' : ''
+    const n = failed.length === 1 ? 'um anexo não foi enviado' : `${failed.length} anexos não foram enviados`
+    return { text: `${what} guardad${what === 'Evento' ? 'o' : 'a'}, mas ${n}.${why}`, detail: h.detail, setup: isSetupError(h) }
+  }
 
   // evento novo: nunca envia paid/paid_at; o pagamento vira linhas de payments
-  // payment: { kind: 'none'|'deposit'|'full', amount, date } → id; toast "Evento guardado · Ver"
+  // payment: { kind: 'none'|'deposit'|'full', amount, date } → id; toast "Evento guardado · Ver".
+  // Com o INSERT feito devolve sempre o id (uma falha a seguir nunca leva a inserir de novo).
   const createEvent = async (fields, { payment, files } = {}) => {
     const { id: _id, paid: _p, paid_at: _pa, ...rest } = fields || {}
     const row = { ...cleanEvent(rest), paid: false, paid_at: null, updated_at: nowIso() }
     if (blank(row.value)) row.value = row.gross_value ?? 0
-    const { data, error } = await db.from('events').insert(row).select('id').single()
+    const { data, error } = await db.from('events').insert(row).select().single()
     if (error) throw error
     const id = data.id
-    let payFailed = false
+    putEventsLocal({ ...row, ...data })
+    let payFailed = null
     if (payment && payment.kind && payment.kind !== 'none') {
       const amt = Math.round(Number(payment.kind === 'full' ? payment.amount ?? row.value : payment.amount) * 100) / 100
       if (amt > 0) {
+        let pay = null
         try {
-          await insertPayment(id, amt, payment.date || live.current.today)
-          await syncPaidFlag({ id, value: row.value })
-        } catch { payFailed = true }
+          pay = await insertPayment(id, amt, payment.date || live.current.today)
+          putPaymentsLocal(pay)
+        } catch (ex) { payFailed = ex }
+        if (pay) await syncPaidFlagQuiet({ id, value: row.value })
       }
     }
-    const failed = await uploadAll('event', id, files)
-    await Promise.all([loadEvents(), loadPayments(), files?.length ? loadAttachments() : null])
+    const { failed } = await uploadAll('event', id, files)
+    await reloadAfterWrite(loadEvents, loadPayments, files?.length ? loadAttachments : null)
     if (row.project_id) setLastProjectId(row.project_id)
-    const text = payFailed ? 'Evento guardado, mas o pagamento não ficou registado.' : failedText('Evento', failed) || 'Evento guardado'
-    toast.notify({ text, icon: payFailed || failed.length ? 'alert' : 'checkCircle', action: { label: 'Ver', run: () => openSheet('evento', id) } })
+    const att = failedNotice('Evento', failed)
+    const view = { label: 'Ver', run: () => openSheet('evento', id) }
+    if (payFailed) {
+      toast.notify({ text: 'Evento guardado, mas o pagamento não ficou registado.', icon: 'alert', action: view })
+      console.warn(humanError(payFailed).detail)
+    } else if (att) toast.notify({ text: att.text, icon: 'alert', action: att.setup ? detailsAction(att.detail) : view })
+    else toast.notify({ text: 'Evento guardado', icon: 'checkCircle', action: view })
     return id
   }
 
   // despesa nova (+ ficheiros) → id; toast "Despesa guardada · Ver"
   const createExpense = async (fields, { files } = {}) => {
     const { id: _id, ...rest } = fields || {}
-    const { data, error } = await db.from('expenses').insert(cleanExpense(rest)).select('id').single()
+    const clean = cleanExpense(rest)
+    const { data, error } = await db.from('expenses').insert(clean).select().single()
     if (error) throw error
     const id = data.id
-    const failed = await uploadAll('expense', id, files)
-    await Promise.all([loadExpenses(), files?.length ? loadAttachments() : null])
-    toast.notify({ text: failedText('Despesa', failed) || 'Despesa guardada', icon: failed.length ? 'alert' : 'checkCircle',
-      action: { label: 'Ver', run: () => openSheet('despesa', id) } })
+    setExpenses((xs) => upsertRows(xs, [{ ...clean, ...data }], EXPENSES_ORDER))
+    const { failed } = await uploadAll('expense', id, files)
+    await reloadAfterWrite(loadExpenses, files?.length ? loadAttachments : null)
+    const att = failedNotice('Despesa', failed)
+    const view = { label: 'Ver', run: () => openSheet('despesa', id) }
+    if (att) toast.notify({ text: att.text, icon: 'alert', action: att.setup ? detailsAction(att.detail) : view })
+    else toast.notify({ text: 'Despesa guardada', icon: 'checkCircle', action: view })
     return id
   }
 
@@ -764,10 +992,11 @@ export function StoreProvider({ children }) {
       try {
         const { error } = await db.from('events').update({ receipt_issued: val, updated_at: nowIso() }).eq('id', cur.id)
         if (error) throw error
-        await loadEvents()
+        patchEventLocal(cur.id, { receipt_issued: val })
       } finally {
         clearOverride(cur.id, 'receipt_issued')
       }
+      await reloadAfterWrite(loadEvents)
     }
     return toast.undoable({
       text: next ? <>Recibo de <b>{cur.title}</b> marcado como emitido</> : <>Recibo de <b>{cur.title}</b> desmarcado</>,
@@ -788,55 +1017,35 @@ export function StoreProvider({ children }) {
   }
 
   // apagar pagamento: sai logo da lista; só é apagado na base de dados quando o toast expira
+  // (ou no arranque seguinte, se a página sair antes)
   const removePaymentDeferred = async (p, ev) => {
     if (p?.pending) return null // ainda a gravar
     const cur = liveEvent(ev || p.event_id)
     const rest = (live.current.pbe.get(cur.id) || []).filter((x) => x.id !== p.id)
     const full = Number(cur.value) > 0 && sumAmount(rest) >= Number(cur.value) - EPS
-    return toast.undoable({
+    return deferRemoval({ kind: 'payment', id: p.id, event_id: cur.id }, {
       text: <>Pagamento de <b>{money(p.amount)}</b> apagado</>,
       run: async () => {
-        hide('payments', p.id, true)
         setOverride(cur.id, { paid: full, paid_at: full ? cur.paid_at : null })
         return p
       },
-      undo: async () => {
-        hide('payments', p.id, false)
-        clearOverride(cur.id, 'paid', 'paid_at')
-      },
+      undo: async () => { clearOverride(cur.id, 'paid', 'paid_at') },
       commit: async () => {
-        const { error } = await db.from('payments').delete().eq('id', p.id)
-        if (error) throw error
-        await resyncPaid(cur)
-        hide('payments', p.id, false)
         clearOverride(cur.id, 'paid', 'paid_at')
+        await reloadAfterWrite(loadEvents, loadPayments)
       },
+      retry: () => removePaymentDeferred(p, ev),
     })
   }
 
-  const removeAttachmentDeferred = async (att) => toast.undoable({
+  const removeAttachmentDeferred = async (att) => deferRemoval({ kind: 'attachment', id: att.id, path: att.path }, {
     text: 'Anexo removido',
-    run: async () => { hide('attachments', att.id, true); return att },
-    undo: async () => { hide('attachments', att.id, false) },
-    commit: async () => {
-      await db.storage.from('anexos').remove([att.path]).catch(() => {})
-      const { error } = await db.from('attachments').delete().eq('id', att.id)
-      if (error) throw error
-      setAttachments((as) => as.filter((a) => a.id !== att.id))
-      hide('attachments', att.id, false)
-    },
+    retry: () => removeAttachmentDeferred(att),
   })
 
-  const removeGcalDeferred = async (cal) => toast.undoable({
+  const removeGcalDeferred = async (cal) => deferRemoval({ kind: 'gcal', id: cal.id }, {
     text: 'Calendário removido',
-    run: async () => { hide('gcal', cal.id, true); return cal },
-    undo: async () => { hide('gcal', cal.id, false) },
-    commit: async () => {
-      const { error } = await db.from('gcal_calendars').delete().eq('id', cal.id)
-      if (error) throw error
-      setGcalCalendars((cs) => cs.filter((c) => c.id !== cal.id))
-      hide('gcal', cal.id, false)
-    },
+    retry: () => removeGcalDeferred(cal),
   })
 
   return (
@@ -856,7 +1065,7 @@ export function StoreProvider({ children }) {
       today, eventsAsc, eventState, missing, needsReceipt, receivables, agingGroups, receiptsToIssue,
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, summary, eventById, expenseById, attachmentById,
-      gcalStatus, receberHasNews, markReceberSeen,
+      gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações
       recordPayment, receiveRemaining, createEvent, createExpense, updateEventFields, setReceipt, markUnpaid,
       removePaymentDeferred, removeAttachmentDeferred, removeGcalDeferred, refreshGcal, setLastProjectId,

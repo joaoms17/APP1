@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Button, Field, ProjectChips, Sheet, TextInput, useToast } from '../../ui'
+import { Button, Field, ProjectChips, Sheet, TextInput, useFormSave, useToast } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { humanError } from '../../errors.js'
 import { ErrorPanel } from '../../shell/lazy.jsx'
@@ -18,6 +18,7 @@ const sameUrl = (a, b) => normUrl(a).toLowerCase() === normUrl(b).toLowerCase()
 export default function GcalSheet({ preset, onClose }) {
   const { projects, projectOptions, gcalCalendars, addGcalCalendar, notify } = useStore()
   const { dismiss } = useToast()
+  const { alive } = useFormSave() // depois de gravar, só fecha se a folha ainda estiver aberta
   const formId = useId()
   const urlRef = useRef(null)
   const errRef = useRef(null)
@@ -74,7 +75,7 @@ export default function GcalSheet({ preset, onClose }) {
     }
     const p = projects.find((x) => x.id === projectId)
     notify({ text: <>Calendário ligado{p ? <> a <b>{p.name}</b></> : null}</>, icon: 'checkCircle' })
-    onClose()
+    if (alive.current) onClose()
   }
 
   const dirty = !busy && url.trim() ? 'Colaste o endereço de um calendário.' : false
