@@ -393,9 +393,12 @@ function ProjectForm({ project: p, onClose }) {
         <Switch checked={f.active} onChange={set('active')} label="Ativo" help="Aparece ao criar eventos novos." />
 
         <div className="switch-row">
-          <span className="txt"><b id={`${ordId}l`}>Ordem nas listas</b><small id={`${ordId}h`}>Posição nos chips e nos gráficos.</small></span>
+          {/* nos eventos os chips vêm pelo uso (spec §10.7) — a ordem só manda aqui, nas despesas, na pesquisa e nos gráficos */}
+          <span className="txt"><b id={`${ordId}l`}>Ordem nas listas</b><small id={`${ordId}h`}>Nas Definições, despesas e gráficos. Nos eventos vêm primeiro os mais usados.</small></span>
           <span className="st-stepper" role="group" aria-labelledby={`${ordId}l`} aria-describedby={`${ordId}h`}>
-            <IconButton icon="minus" size="sm" variant="outlined" label="Subir na ordem" disabled={f.sort_order <= 0} onClick={() => step(-1)} />
+            {/* aria-disabled (não disabled): no 0 o botão fica com o foco em vez de o atirar para o <body> */}
+            <IconButton icon="minus" size="sm" variant="outlined" label="Subir na ordem" aria-disabled={f.sort_order <= 0 || undefined}
+              onClick={() => { if (f.sort_order > 0) step(-1) }} />
             <output aria-live="polite">{f.sort_order}</output>
             <IconButton icon="plus" size="sm" variant="outlined" label="Descer na ordem" onClick={() => step(1)} />
           </span>
