@@ -206,7 +206,7 @@ export function useRoute() {
   return useSyncExternalStore(subscribe, getRoute, getRoute)
 }
 
-// navigate('#/receber/recibos') · navigate('#/agenda', { replace: true })
+// navigate('#/receber/google') · navigate('#/agenda', { replace: true })
 export function navigate(to, { replace = false } = {}) {
   start()
   if (pendingBack) { queued.push(() => navigate(to, { replace })); return }

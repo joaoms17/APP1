@@ -2,7 +2,7 @@ import { Suspense, useId, useMemo, useRef, useState } from 'react'
 import { Button, Card, Delta, EmptyState, HeroNumber, Icon, IconButton, Kpi, Skeleton, TopBar, useMediaQuery } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
-import { MONTHS_LONG, fmtMoney } from '../../format.js'
+import { MONTHS_LONG, fmtDM, fmtMoney, fmtPct } from '../../format.js'
 import { Boundary, lazyWithPreload } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
 import './Dashboard.css'
@@ -29,19 +29,35 @@ function YearSelect({ year, onChange }) {
   )
 }
 
-// capa: Saldo líquido do ano (um número de capa por ecrã); no computador, mais 3 factos
+// capa: Saldo líquido do ano (um número de capa por ecrã); no computador, mais 3 factos.
+// No ano corrente a comparação principal é com o ano anterior até ao mesmo dia; a do ano
+// completo fica por baixo, mais pequena.
 function Hero({ t, thisYear, desktop }) {
   const titleId = useId()
   const best = t.bestMonth
   const months = t.closedMonths
+  const prev = t.year - 1
+  const ytd = t.ytd
+  const until = ytd && fmtDM(ytd.until)
   return (
     <Card as="section" className="hero db-hero" aria-labelledby={titleId}>
       <h2 className="label" id={titleId}>Saldo líquido {t.year}</h2>
       <div className="rule" />
       <div className="row1">
         <HeroNumber value={t.saldo} cents="never" />
-        <Delta value={t.deltaSaldo} suffix={`vs ${t.year - 1}`} />
+        {ytd
+          ? <Delta value={ytd.deltaSaldo} suffix={`vs ${prev} até ${until}`} />
+          : <Delta value={t.deltaSaldo} suffix={`vs ${prev}`} />}
       </div>
+      {ytd && (
+        <p className="db-compare">
+          <span>Até {until}: <b>{eur(ytd.saldo)}</b> · {prev} no mesmo período: <b>{eur(ytd.saldoPrev)}</b></span>
+          <small>
+            Ano completo de {prev}: {eur(t.saldoPrev)}
+            {t.deltaSaldo != null && <> · {t.year} com o já marcado: {fmtPct(t.deltaSaldo)}</>}
+          </small>
+        </p>
+      )}
       <p className="sub">
         Receita líquida − despesas.
         {best && ` Melhor mês: ${MONTHS_LONG[best.month]}, ${eur(best.saldo)}.`}
@@ -59,17 +75,35 @@ function Hero({ t, thisYear, desktop }) {
   )
 }
 
+// no ano corrente, a variação compara até ao mesmo dia; o ano completo vai em letra pequena
 function Kpis({ t }) {
   const prev = t.year - 1
+  const ytd = t.ytd
+  const until = ytd && fmtDM(ytd.until)
+  const sr = ytd ? `Em relação a ${prev} até ${until}:` : `Em relação a ${prev}:`
+  const delta = (main, full, goodWhen) => {
+    const v = ytd ? main : full
+    if (v == null) return null
+    return (
+      <span className="db-delta">
+        <Delta value={v} goodWhen={goodWhen} srLabel={sr} />
+        {ytd && (
+          <small className="db-delta-note">
+            vs {prev} até {until}{full != null && <> · ano completo {fmtPct(full)}</>}
+          </small>
+        )}
+      </span>
+    )
+  }
   return (
     <div className="db-kpis">
       <Card className="db-kpi">
         <Kpi label="Receita líquida" value={eur(t.net)} sub={`bruto ${eur(t.gross)} · retido ${eur(t.retained)}`} />
-        {t.deltaNet != null && <span className="db-delta"><Delta value={t.deltaNet} srLabel={`Em relação a ${prev}:`} /></span>}
+        {delta(ytd?.deltaNet, t.deltaNet)}
       </Card>
       <Card className="db-kpi">
         <Kpi label="Despesas" value={eur(-t.exp)} sub={t.expPrev > EPS ? `${prev}: ${eur(-t.expPrev)}` : `sem despesas em ${prev}`} />
-        {t.deltaExp != null && <span className="db-delta"><Delta value={t.deltaExp} goodWhen="down" srLabel={`Em relação a ${prev}:`} /></span>}
+        {delta(ytd?.deltaExp, t.deltaExp, 'down')}
       </Card>
     </div>
   )

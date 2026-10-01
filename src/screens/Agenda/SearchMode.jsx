@@ -7,25 +7,25 @@ import { eventMatches, googleMatches, isProjectActive } from '../../selectors.js
 import { ItemRows, mergeItems, monthName, rowClass, useProgressive } from './AgendaList.jsx'
 
 // Procurar e filtrar — modo da Lista (spec §10.4). Estado na rota:
-//   #/agenda/lista?q=<texto>&quando=anteriores|proximos&estado=atraso|sinal|semrecibo|porreceber|recebidos&p=<projeto>
+//   #/agenda/lista?q=<texto>&quando=anteriores|proximos&estado=atraso|sinal|porreceber|recebidos&p=<projeto>
 // Pesquisa sem acentos em título, local e notas, em todas as datas, e também nos pendentes do Google.
 // flash = { id, date }: evento acabado de editar ou registar a partir dos resultados — o Procurar fica
 // (texto e chips) e a linha pisca.
 
 const QUANDO = { anteriores: 'anteriores', passados: 'anteriores', proximos: 'proximos', 'próximos': 'proximos', futuros: 'proximos' }
 const ESTADO = {
-  atraso: 'atraso', 'em-atraso': 'atraso', sinal: 'sinal', semrecibo: 'semrecibo', 'sem-recibo': 'semrecibo',
+  atraso: 'atraso', 'em-atraso': 'atraso', sinal: 'sinal',
   porreceber: 'porreceber', 'por-receber': 'porreceber', recebidos: 'recebidos', recebido: 'recebidos',
 }
-const ESTADO_WORD = { atraso: 'em atraso', sinal: 'com sinal', semrecibo: 'sem recibo', porreceber: 'por receber', recebidos: 'recebidos' }
+const ESTADO_WORD = { atraso: 'em atraso', sinal: 'com sinal', porreceber: 'por receber', recebidos: 'recebidos' }
 const WHEN_TEXT = { anteriores: 'antes de hoje', proximos: 'de hoje em diante' }
 
 const money = (n, cents = 'auto') => fmtMoney(n, { cents })
 
 export default function SearchMode({ params, onExit, flash = null }) {
   const {
-    today, events, googleMatch, projects, projectById, eventState, missing, needsReceipt,
-    receivables, receiptsToIssue, summary,
+    today, events, googleMatch, projects, projectById, eventState, missing,
+    receivables, summary,
   } = useStore()
   const q = params.q || ''
   const term = q.trim()
@@ -42,7 +42,6 @@ export default function SearchMode({ params, onExit, flash = null }) {
     const tests = {
       atraso: (ev) => ['overdue', 'partial-overdue'].includes(eventState(ev)),
       sinal: (ev) => ['partial', 'partial-overdue'].includes(eventState(ev)),
-      semrecibo: (ev) => needsReceipt(ev),
       porreceber: (ev) => eventState(ev) !== 'paid',
       recebidos: (ev) => eventState(ev) === 'paid',
     }
@@ -61,7 +60,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
       if (it.ev) g.evs.push(it.ev); else g.gs++
     }
     return { evs, gs, groups }
-  }, [events, googleMatch, today, term, quando, estado, proj, eventState, needsReceipt])
+  }, [events, googleMatch, today, term, quando, estado, proj, eventState])
 
   const filtered = !!(term || quando || estado || proj)
   const resetKey = [term, quando, estado, proj?.id].join('|')
@@ -111,7 +110,6 @@ export default function SearchMode({ params, onExit, flash = null }) {
           <span className="chip-sep" aria-hidden="true" />
           <Chip selected={estado === 'atraso'} count={receivables.overdue.length} onClick={() => toggle('estado', 'atraso', estado)}>Em atraso</Chip>
           <Chip selected={estado === 'sinal'} onClick={() => toggle('estado', 'sinal', estado)}>Sinal</Chip>
-          <Chip selected={estado === 'semrecibo'} count={receiptsToIssue.length} onClick={() => toggle('estado', 'semrecibo', estado)}>Sem recibo</Chip>
           <Chip selected={estado === 'porreceber'} onClick={() => toggle('estado', 'porreceber', estado)}>Por receber</Chip>
           <Chip selected={estado === 'recebidos'} onClick={() => toggle('estado', 'recebidos', estado)}>Recebidos</Chip>
         </ChipRow>

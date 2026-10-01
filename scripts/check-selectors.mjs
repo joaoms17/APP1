@@ -52,7 +52,6 @@ for (const cal of F.gcal_calendars) {
 }
 const rec = S.receivablesOf(events, pbe, TODAY)
 const aging = S.agingGroups(rec.overdue, TODAY, pbe)
-const receipts = S.receiptsToIssueOf(events, pbe, TODAY)
 const gm = S.matchGoogle(events, google)
 const gp = S.googlePendingOf(gm.pending, TODAY)
 const y26 = S.yearTotals(events, F.expenses, pbe, 2026, TODAY)
@@ -75,10 +74,9 @@ check('Entre 1 e 3 meses · total', ag.d31to90?.total, 2911.90)
 check('Últimos 30 dias · eventos', ag.le30?.events.length, 6)
 check('Últimos 30 dias · total', ag.le30?.total, 1652.25)
 
-section('§F.8 · Sinais e recibos')
+section('§F.8 · Sinais')
 check('Sinais recebidos · total', rec.depositsTotal, 629)
 check('Sinais recebidos · eventos', rec.depositsCount, 4)
-check('Recibos por emitir', receipts.length, 20)
 
 section('§F.8 · Google')
 check('eventos lidos dos feeds', google.length, 7)
@@ -112,6 +110,26 @@ check('Em atraso · eventos de 2025', y25.overdueYear, 979.60)
 check('2025 muda os valores', y25.net !== y26.net && y25.exp !== y26.exp, true)
 check('ano sem dados (2024)', S.yearTotals(events, F.expenses, pbe, 2024, TODAY).hasData, false)
 check('melhor mês de 2026', y26.bestMonth && [fmt.MONTHS_LONG[y26.bestMonth.month], euro(y26.bestMonth.saldo)], ['setembro', '2 936 €'])
+
+section('Painel · comparação até ao mesmo dia (ano corrente)')
+{
+  // contas feitas à parte, à mão, sobre as fixtures: 2026 até 30/09 vs 2025 até 30/09
+  const sumIn = (rows, key, val, from, to) => Math.round(rows.filter((r) => r[key] >= from && r[key] <= to)
+    .reduce((a, r) => a + Number(r[val]), 0) * 100) / 100
+  const n26 = sumIn(events, 'event_date', 'value', '2026-01-01', '2026-09-30')
+  const n25 = sumIn(events, 'event_date', 'value', '2025-01-01', '2025-09-30')
+  const x26 = sumIn(F.expenses, 'expense_date', 'amount', '2026-01-01', '2026-09-30')
+  const x25 = sumIn(F.expenses, 'expense_date', 'amount', '2025-01-01', '2025-09-30')
+  const pctOf = (a, b) => Math.round(((a - b) / Math.abs(b)) * 100)
+  const yt = y26.ytd
+  check('ytd existe no ano corrente', !!yt, true)
+  check('ytd · datas de corte', yt && [yt.until, yt.untilPrev], ['2026-09-30', '2025-09-30'])
+  check('ytd · receita 2026 / 2025', yt && [yt.net, yt.netPrev], [n26, n25])
+  check('ytd · despesas 2026 / 2025', yt && [yt.exp, yt.expPrev], [x26, x25])
+  check('ytd · saldo e variação', yt && [yt.saldo, yt.deltaSaldo], [Math.round((n26 - x26) * 100) / 100, pctOf(n26 - x26, n25 - x25)])
+  check('ytd · eventos marcados depois de hoje não entram', yt && yt.net < y26.net, true)
+  check('ano passado (2025) não tem ytd', S.yearTotals(events, F.expenses, pbe, 2025, TODAY).ytd, null)
+}
 
 section('Extra · Agenda e Receber (spec §10.3–10.4, §10.11)')
 const todays = events.filter((e) => e.event_date === TODAY)
@@ -152,7 +170,6 @@ section('Extra · estados (spec §9.1, casos sintéticos)')
   check('legado (paid sem pagamentos) → paid', S.eventStateOf(e('leg', 300, true), pays, TODAY), 'paid')
   check('flag desatualizado: paid mas pagamentos < valor → conta a soma', [S.eventStateOf(e('flag', 300, true), pays, TODAY), S.missingOf(e('flag', 300, true), pays)], ['partial-overdue', 200])
   check('0 € no passado → paid (nada a receber)', S.eventStateOf(e('zero', 0, false), pays, TODAY), 'paid')
-  check('0 € não pede recibo', S.receiptsToIssueOf([e('zero', 0, false)], pays, TODAY).length, 0)
 }
 
 section('Extra · projetos e categorias')

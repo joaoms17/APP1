@@ -27,6 +27,12 @@
 }
 .db-hero .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .db-hero .sub { line-height: 1.4; }
+/* ano corrente: comparação até ao mesmo dia + ano completo em letra pequena */
+.db-compare { display: grid; gap: 2px; margin: 10px 0 2px; font-size: var(--fs-meta); color: var(--ink-2); line-height: 1.4; }
+.db-compare b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.db-compare small { font-size: var(--fs-caption); color: var(--muted); }
+.db-delta { display: grid; justify-items: start; gap: 3px; }
+.db-delta-note { font-size: var(--fs-caption); color: var(--muted); line-height: 1.35; }
 .db-facts {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
   margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule);

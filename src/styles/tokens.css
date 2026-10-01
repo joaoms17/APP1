@@ -78,7 +78,7 @@
   --st-partial-fg: #7d5314; --st-partial-bg: #f7e8cf;
   --st-due-fg: #664b4e;     --st-due-border: #b8a09c;
   --st-overdue-fg: #a1323a; --st-overdue-bg: #fbe2e0;
-  --warn-fg: #8c4a12;                                  /* "Sem recibo" */
+  --warn-fg: #8c4a12;                                  /* avisos */
   --info-fg: #3f4c7a;       --info-bg: #ecedf6;
   --warning-fg: #7a4f12;    --warning-bg: #f9ecd9;
   --critical-fg: #a1323a;   --critical-bg: #fbe2e0;

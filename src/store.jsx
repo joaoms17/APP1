@@ -761,8 +761,6 @@ export function StoreProvider({ children }) {
   const missing = useCallback((ev) => S.missingOf(ev, pbe), [pbe])
   const receivables = useMemo(() => S.receivablesOf(events, pbe, today), [events, pbe, today])
   const agingGroups = useMemo(() => S.agingGroups(receivables.overdue, today, pbe), [receivables, today, pbe])
-  const receiptsToIssue = useMemo(() => S.receiptsToIssueOf(events, pbe, today), [events, pbe, today])
-  const needsReceipt = useCallback((ev) => S.needsReceipt(ev, pbe, today), [pbe, today])
   const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents), [events, googleEvents])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
@@ -780,24 +778,18 @@ export function StoreProvider({ children }) {
     || googleEvents.find((g) => g.key === key || `${g.calendar_id || ''}|${g.date}|${g.time || ''}|${g.uid || g.title}` === key) || null,
   [googleMatch, googleEvents])
 
-  // Receber: ponto de novidades — algo que passou a Em atraso, um Google já realizado ou um recibo
-  // por emitir depois da última visita (spec §3.1)
+  // Receber: ponto de novidades — algo que passou a Em atraso ou um Google já realizado depois da
+  // última visita (spec §3.1). Os recibos não entram: por omissão os eventos não levam recibo.
   const receberHasNews = useMemo(() => {
     const { overdue } = receivables
     const past = googlePending.past
-    if (!receberSeenAt) return overdue.length > 0 || past.length > 0 || receiptsToIssue.length > 0
+    if (!receberSeenAt) return overdue.length > 0 || past.length > 0
     const seenMs = Date.parse(receberSeenAt)
     if (Number.isNaN(seenMs)) return overdue.length > 0
     const seenDay = toYMD(new Date(seenMs))
     if (overdue.some((e) => e.event_date >= seenDay)) return true
-    if (past.some((g) => g.date >= seenDay)) return true
-    return receiptsToIssue.some((e) => {
-      if (e.event_date > seenDay) return true
-      const ps = pbe.get(e.id)
-      const at = ps?.length ? Math.max(...ps.map((p) => Date.parse(p.created_at) || 0)) : Date.parse(e.updated_at) || 0
-      return at > seenMs
-    })
-  }, [receivables, googlePending, receiptsToIssue, receberSeenAt, pbe])
+    return past.some((g) => g.date >= seenDay)
+  }, [receivables, googlePending, receberSeenAt])
 
   const markReceberSeen = useCallback(() => {
     const now = nowIso()
@@ -989,7 +981,7 @@ export function StoreProvider({ children }) {
     await saveEvent({ id, ...rest })
   }
 
-  // Recibo emitido (Detalhe, Receber › Recibos) — grava logo, com Anular
+  // Recibo emitido (Detalhe) — grava logo, com Anular
   const setReceipt = async (ev, on) => {
     const cur = liveEvent(ev)
     const prev = !!cur.receipt_issued
@@ -1070,7 +1062,7 @@ export function StoreProvider({ children }) {
       gcalCalendars, googleEvents, gcalError, addGcalCalendar, removeGcalCalendar,
       // v2 — estado
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
-      today, eventsAsc, eventState, missing, needsReceipt, receivables, agingGroups, receiptsToIssue,
+      today, eventsAsc, eventState, missing, receivables, agingGroups,
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
