@@ -16,7 +16,7 @@
   .db-yearsel b { pointer-events: none; } /* o toque na sobreposição vai para a seta */
 }
 
-.db-grid { display: grid; gap: 14px; }
+.db-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; } /* a coluna nunca cresce com o conteúdo (R1-61) */
 .db-wait { padding: 16px 14px; }
 
 /* capa: Saldo líquido */
@@ -32,11 +32,16 @@
   margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule);
 }
 
-/* Receita líquida | Despesas */
-.db-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* Receita líquida | Despesas — colunas iguais, que não crescem com o valor (R1-61) */
+.db-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .db-kpi { padding: 14px; display: grid; align-content: start; justify-items: start; gap: 6px; }
 .db-kpi .kpi .v { font-size: calc(22 * var(--u)); margin-top: 2px; }
 .db-kpi .kpi .s { line-height: 1.4; margin-top: 2px; }
+/* 320 px com texto muito grande: "16 753 €" a 27,5 px cabe no cartão sem encostar ao bordo */
+@media (max-width: 359px) {
+  .db-kpis { gap: 10px; }
+  .db-kpi { padding: 14px 10px; }
+}
 
 /* Em atraso · eventos do ano → Receber */
 .db-link {
@@ -55,12 +60,18 @@
 @media (hover: hover) { .db-link:hover .go { text-decoration: underline; text-underline-offset: 3px; } }
 
 /* cartões de gráficos */
-.db-chart { padding: 16px 14px 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.db-chart { padding: 16px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: start; min-width: 0; }
 .db-chart h2, .db-tbl h2 { font-size: var(--fs-title); font-weight: 800; }
 .db-chart .note { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); line-height: 1.45; }
-.db-chart .readout .db-ro { white-space: nowrap; }
+/* cada valor da faixa é um bloco inteiro (só se parte entre valores); um valor mais largo do que a
+   faixa — nome de projeto muito comprido — parte-se por dentro em vez de alargar o cartão (R1-62) */
+.db-chart .readout .db-ro { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+.db-chart .legend span { min-width: 0; overflow-wrap: anywhere; }
 .db-plot { min-width: 0; margin: 0 -4px; }
 .db-plot .recharts-wrapper, .db-plot .recharts-surface { cursor: pointer; }
+/* seletor de mês por teclado (input range só para tecnologias de apoio): o anel vai para o gráfico (R1-36),
+   afastado 6 px para não passar por cima dos rótulos do eixo Y (que saem 3 px da caixa) */
+.db-month:focus-visible + .db-plot { outline: 2px solid var(--focus); outline-offset: 6px; border-radius: var(--radius-sm); }
 .db-plot svg { overflow: visible; }
 /* amostras da legenda (texto sempre --ink-2; a cor só na amostra) */
 .db-screen .legend i.db-c1 { --c: var(--chart-1); }

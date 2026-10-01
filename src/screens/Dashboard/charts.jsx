@@ -1,15 +1,15 @@
-import { Fragment, useId, useMemo } from 'react'
+import { Fragment, useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, ReferenceLine, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
 import { Card, useMediaQuery, useReducedMotion } from '../../ui'
-import { MONTHS_LONG, MONTH_INITIALS, cap, fmtMoney, fmtMoneyCompact } from '../../format.js'
+import { MONTHS_LONG, MONTH_INITIALS, cap, fmtMoney, fmtMoneyCompact, fmtPct } from '../../format.js'
 import { projectVars } from '../../color.js'
 
 // Gráficos do Painel (spec §9.18) — carregados a pedido: o Recharts só desce quando se abre o Painel.
 // Semântica da v1 (D11): recebido cheio, tracejado "com por receber" só à volta dos meses com
 // valor em falta, ano anterior a azul, média com rótulo. Legenda em HTML e faixa de leitura
-// (um toque/clique fixa o mês) em vez do tooltip flutuante.
+// (um toque/clique, ou as setas do teclado, fixam o mês) em vez do tooltip flutuante.
 
 const EPS = 0.005
 const MONEY = { cents: 'never' }
@@ -34,15 +34,46 @@ function useChartColors() {
 // cor do projeto no modo atual (darkMark no escuro, como os pontos)
 const projectColor = (p, dark) => projectVars(p.color)[dark ? '--p-d' : '--p-l']
 
-// eixo Y com valores redondos: 0 · 1 mil € · 2 mil € … (no máximo 4 intervalos)
-const STEPS = [50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000, 100000]
+// eixo Y com valores redondos: 0 · 1 mil € · 2 mil € … (no máximo 4 intervalos). Passos 1 · 2 · 2,5 · 5 × 10ⁿ
+// a partir de 50 €, sem teto: um mês de 150 mil € dá 0 · 50 mil € … 200 mil €, nunca 12 marcas (R1-63)
+function niceStep(m) {
+  for (let p = 10; p < 1e15; p *= 10) {
+    for (const k of [1, 2, 2.5, 5]) if (k * p >= 50 && Math.ceil(m / (k * p)) <= 4) return k * p
+  }
+  return Math.ceil(m / 4)
+}
 function niceTicks(max) {
   const m = Math.max(0, Number(max) || 0)
-  const step = STEPS.find((s) => Math.ceil(m / s) <= 4) || STEPS[STEPS.length - 1]
+  const step = niceStep(m)
   const top = Math.max(step, Math.ceil(m / step) * step)
   const ticks = []
   for (let v = 0; v <= top; v += step) ticks.push(v)
   return { top, ticks }
+}
+
+// largura do eixo Y à medida do rótulo mais comprido (11 px, 700): os 46 px de sempre chegam para
+// "4 mil €"; "2,5 mil €", "150 mil €" ou "1,5 M €" alargam o eixo em vez de saírem do cartão (R1-63).
+// Mede-se com a fonte da página já carregada (a de recurso é mais larga e mexia no caso normal).
+let ctx2d
+function textWidth(s, font) {
+  if (ctx2d === undefined) ctx2d = document.createElement('canvas').getContext('2d')
+  if (!ctx2d) return s.length * 6.5
+  ctx2d.font = font
+  return ctx2d.measureText(s).width
+}
+function useAxisWidth() {
+  const [fontsReady, setFontsReady] = useState(() => document.fonts?.status !== 'loading')
+  useEffect(() => {
+    if (fontsReady) return undefined
+    let on = true
+    document.fonts.ready.then(() => { if (on) setFontsReady(true) })
+    return () => { on = false }
+  }, [fontsReady])
+  return useCallback((ticks) => {
+    const font = `700 11px ${getComputedStyle(document.body).fontFamily}`
+    const w = Math.max(...ticks.ticks.map((v) => textWidth(fmtMoneyCompact(v), font)))
+    return Math.max(46, Math.ceil(w) + 9)
+  }, [fontsReady]) // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 // iniciais dos meses; o mês fixado a negrito
@@ -62,7 +93,7 @@ function AvgLabel({ viewBox, text }) {
 
 // eixos e grelha comuns aos 3 gráficos. Nas linhas o eixo X é numérico (−0,5…11,5) para os
 // pontos ficarem ao centro de cada mês, alinhados com as barras dos outros gráficos.
-function axes(month, ticks, colors, line = false) {
+function axes(month, ticks, colors, yWidth, line = false) {
   const x = line
     ? { type: 'number', domain: [-0.5, 11.5], ticks: IDX, allowDecimals: false }
     : { type: 'category' }
@@ -70,12 +101,13 @@ function axes(month, ticks, colors, line = false) {
     <CartesianGrid key="g" vertical={false} stroke={colors.grid} strokeWidth={1} />,
     <XAxis key="x" dataKey="i" {...x} interval={0} tickLine={false} axisLine={false} height={20}
       tick={<MonthTick sel={month} />} />,
-    <YAxis key="y" width={46} domain={[0, ticks.top]} ticks={ticks.ticks} tickFormatter={fmtMoneyCompact}
+    <YAxis key="y" width={yWidth} domain={[0, ticks.top]} ticks={ticks.ticks} tickFormatter={fmtMoneyCompact}
       tickLine={false} axisLine={false} interval={0} allowDecimals={false} />,
   ]
 }
 
-// faixa de leitura: cada valor fica inteiro numa linha (só se parte entre valores)
+// faixa de leitura: cada valor fica inteiro numa linha (só se parte entre valores); só um valor mais
+// largo do que a faixa (nome de projeto muito comprido) se parte por dentro — R1-62, ver .db-ro no CSS
 function Readout({ month, items }) {
   return (
     <div className="readout" aria-live="polite">
@@ -95,8 +127,19 @@ const pickFrom = (onPick) => (state) => {
   if (Number.isInteger(i) && i >= 0 && i < 12) onPick(i)
 }
 
+// teclado e leitores de ecrã (R1-36): antes de cada gráfico, um seletor de mês nativo (range 0–11)
+// só para tecnologias de apoio. ←/→ (↑/↓, Home/End, PgUp/PgDn) mudam o mês fixado nos 3 gráficos,
+// como o toque; o anel de foco aparece à volta do gráfico (.db-month:focus-visible + .db-plot).
+function MonthRange({ month, onPick, title }) {
+  return (
+    <input type="range" className="sr-only db-month" min={0} max={11} step={1} value={month}
+      aria-label={`Mês fixado · ${title}`} aria-valuetext={MONTHS[month]}
+      onChange={(e) => onPick(Number(e.target.value))} />
+  )
+}
+
 // ---------- Receita líquida por mês ----------------------------------------
-function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, animate }) {
+function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, animate, axisWidth, pickHint }) {
   const titleId = useId()
   const M = t.byMonth
   const { year } = t
@@ -131,10 +174,10 @@ function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, ani
 
   const delta = t.deltaNet
   const aria = `Receita líquida ${year}: ${eur(t.net)}`
-    + (delta != null ? `, ${delta >= 0 ? 'mais' : 'menos'} ${Math.abs(delta)} % do que em ${prevYear}` : '')
+    + (delta != null ? `, ${delta >= 0 ? 'mais' : 'menos'} ${fmtPct(Math.abs(delta), { sign: false })} do que em ${prevYear}` : '')
     + '.' + (avg != null ? ` Média de ${eur(avg)} por mês fechado.` : '')
 
-  const note = ['Toca num mês para fixar os valores.']
+  const note = [pickHint]
   if (avg != null) note.push(`Média ${year}: ${eur(avg)}${t.closedMonths < 12 ? ` (${t.closedMonths} ${t.closedMonths === 1 ? 'mês fechado' : 'meses fechados'})` : ''}`)
   if (t.avgPrev != null) note.push(`${avg != null ? '' : 'Média '}${prevYear}: ${eur(t.avgPrev)}`)
 
@@ -148,10 +191,11 @@ function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, ani
         {avg != null && <span><i className="dash db-cavg" />média {year}</span>}
       </div>
       <Readout month={month} items={ro} />
+      <MonthRange month={month} onPick={onPick} title="Receita líquida por mês" />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} onClick={pickFrom(onPick)}>
-            {axes(month, ticks, colors, true)}
+            {axes(month, ticks, colors, axisWidth(ticks), true)}
             <ReferenceLine x={month} stroke={colors.ink2} strokeWidth={1} strokeDasharray="2 3" strokeOpacity={0.6} />
             {avg != null && (
               <ReferenceLine y={avg} stroke={colors.avg} strokeWidth={1.25} strokeDasharray="5 4"
@@ -176,7 +220,7 @@ function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, ani
 }
 
 // ---------- Receita por projeto (barras empilhadas) -------------------------
-function ProjectsCard({ t, projects, month, onPick, colors, height, animate }) {
+function ProjectsCard({ t, projects, month, onPick, colors, height, animate, axisWidth }) {
   const titleId = useId()
   const { year } = t
   // projetos presentes no ano, pela ordem dos projetos; ids sem projeto conhecido no fim
@@ -207,10 +251,11 @@ function ProjectsCard({ t, projects, month, onPick, colors, height, animate }) {
         {order.map((p) => <span key={p.id} data-p style={projectVars(p.color)}><i className="sq db-cp" />{p.name}</span>)}
       </div>
       <Readout month={month} items={ro.length ? ro : ['sem receita']} />
+      <MonthRange month={month} onPick={onPick} title="Receita por projeto" />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} barCategoryGap={4} onClick={pickFrom(onPick)}>
-            {axes(month, ticks, colors)}
+            {axes(month, ticks, colors, axisWidth(ticks))}
             {order.map((p) => (
               <Bar key={p.id} dataKey={p.id} name={p.name} stackId="p" barSize={14} radius={2}
                 fill={projectColor(p, colors.dark)} stroke={colors.surface} strokeWidth={1.5} isAnimationActive={animate} {...ANIM} />
@@ -223,7 +268,7 @@ function ProjectsCard({ t, projects, month, onPick, colors, height, animate }) {
 }
 
 // ---------- Receita vs despesa (lado a lado) --------------------------------
-function BalanceCard({ t, month, onPick, colors, height, animate }) {
+function BalanceCard({ t, month, onPick, colors, height, animate, axisWidth }) {
   const titleId = useId()
   const M = t.byMonth
   const data = useMemo(() => IDX.map((i) => ({ i, net: M.net[i], exp: M.exp[i] })), [M])
@@ -238,10 +283,11 @@ function BalanceCard({ t, month, onPick, colors, height, animate }) {
       </div>
       <Readout month={month}
         items={[`receita ${eur(M.net[month])}`, `despesa ${eur(-M.exp[month])}`, `saldo ${eur(M.saldo[month])}`]} />
+      <MonthRange month={month} onPick={onPick} title="Receita vs despesa" />
       <div className="db-plot" role="img" aria-label={aria}>
         <ResponsiveContainer width="100%" height={height}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }} barGap={1} onClick={pickFrom(onPick)}>
-            {axes(month, ticks, colors)}
+            {axes(month, ticks, colors, axisWidth(ticks))}
             <Bar dataKey="net" name="Receita líquida" fill={colors.c1} barSize={8} radius={[2, 2, 0, 0]} isAnimationActive={animate} {...ANIM} />
             <Bar dataKey="exp" name="Despesa" fill={colors.c2} barSize={8} radius={[2, 2, 0, 0]} isAnimationActive={animate} {...ANIM} />
           </BarChart>
@@ -255,11 +301,15 @@ function BalanceCard({ t, month, onPick, colors, height, animate }) {
 export default function DashCharts({ t, projects, month, onPick, thisYear, curMonth }) {
   const colors = useChartColors()
   const desktop = useMediaQuery('(min-width: 1024px)')
+  const mouse = useMediaQuery('(hover: hover) and (pointer: fine)')
   const animate = !useReducedMotion()
-  const common = { t, month, onPick, colors, animate }
+  const axisWidth = useAxisWidth()
+  const common = { t, month, onPick, colors, animate, axisWidth }
+  // com rato também há teclado: a nota diz como (R1-36); no telemóvel fica o "Toca" da spec
+  const pickHint = mouse ? 'Clica num mês (ou usa as setas) para fixar os valores.' : 'Toca num mês para fixar os valores.'
   return (
     <>
-      <RevenueCard {...common} thisYear={thisYear} curMonth={curMonth} height={desktop ? 240 : 172} />
+      <RevenueCard {...common} thisYear={thisYear} curMonth={curMonth} pickHint={pickHint} height={desktop ? 240 : 172} />
       <ProjectsCard {...common} projects={projects} height={desktop ? 220 : 172} />
       <BalanceCard {...common} height={desktop ? 220 : 172} />
     </>

@@ -57,21 +57,25 @@ export function fmtMoneyParts(n, { cents = 'auto' } = {}) {
   }
 }
 
-// eixos dos gráficos: 850 € · 1 mil € · 1,7 mil €
+// eixos dos gráficos: 850 € · 1 mil € · 1,7 mil € · 250 mil € · 1 M € · 1,5 M €
+// (a partir do milhão "M €": nunca "1000 mil €")
+const dec1 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 1, useGrouping: 'always' })
 export function fmtMoneyCompact(n) {
   const v = Number(n) || 0
   const abs = Math.abs(v)
   if (abs < 0.5) return '0'
   const pre = v < 0 ? MINUS : ''
-  if (abs >= 999.5) return `${pre}${(abs / 1000).toLocaleString('pt-PT', { maximumFractionDigits: 1 })}${NB}mil${NB}€`
+  if (abs >= 999950) return `${pre}${dec1.format(abs / 1e6)}${NB}M${NB}€`
+  if (abs >= 999.5) return `${pre}${dec1.format(abs / 1000)}${NB}mil${NB}€`
   return `${pre}${Math.round(abs)}${NB}€`
 }
 
-// deltas: "+9 %" · "−16 %" · "0 %"
+// deltas: "+9 %" · "−16 %" · "0 %" · "+6 501 %" (milhares separados, como o dinheiro)
+const int0 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0, useGrouping: 'always' })
 export function fmtPct(n, { sign = true } = {}) {
   const v = Math.round(Number(n) || 0)
   const pre = v < 0 ? MINUS : v > 0 && sign ? '+' : ''
-  return `${pre}${Math.abs(v)}${NB}%`
+  return `${pre}${int0.format(Math.abs(v))}${NB}%`
 }
 
 // ---------- datas (dias de calendário) -------------------------------------
