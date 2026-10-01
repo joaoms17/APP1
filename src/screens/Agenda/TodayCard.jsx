@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, StatusBadge, STATE_PHRASE } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
@@ -37,8 +37,28 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
     .filter(Boolean).join(', ')
 
   const open = () => openSheet('evento', ev.id)
-  const receive = async () => {
+
+  // "Recebi" com o foco no botão (teclado, ou rato/toque quando o browser foca o botão): o botão sai quando o evento
+  // fica pago e a raiz do cartão passa de <div> a <button> — o foco passa para o próprio cartão em vez de
+  // cair no <body>, longe de tudo (R1-31). Se a gravação falhar ou for anulada (o "Recebi" volta), o foco
+  // volta ao "Recebi". Só quando o foco se perdeu: nunca o tira de onde a pessoa entretanto o pôs.
+  const root = useRef(null)
+  const recebi = useRef(null)
+  const keep = useRef(null) // { done } enquanto o cartão segura o foco do "Recebi"
+  useLayoutEffect(() => {
+    const k = keep.current
+    if (!k) return
+    if (k.done) keep.current = null
+    const a = document.activeElement
+    if (a && a !== document.body) return
+    const target = canReceive ? recebi.current : root.current
+    target?.focus({ preventScroll: true })
+  }, [canReceive])
+  const receive = async (e) => {
+    const k = e.currentTarget === document.activeElement ? { done: false } : null
+    keep.current = k
     try { await receiveRemaining(ev) } catch (ex) { notifyError(ex) }
+    if (k) k.done = true
   }
   const pv = { 'data-p': '', style: projectVars(p?.color || '#929292') }
   const cls = ['today-card', compact && 'compact', flash && 'flash', className].filter(Boolean).join(' ')
@@ -56,7 +76,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
         <span className="foot">
           <span className="ag-tc-state" {...hide}><StatusBadge ev={ev} always /></span>
           {canReceive && (
-            <Button variant="row" icon="check" iconTone="ok" onClick={receive}
+            <Button ref={recebi} variant="row" icon="check" iconTone="ok" onClick={receive}
               aria-label={`Recebi ${money(mis)} de ${ev.title}`}>
               Recebi {money(mis)}
             </Button>
@@ -68,14 +88,14 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
 
   if (canReceive) {
     return (
-      <div className={cls} {...pv}>
+      <div ref={root} className={cls} {...pv}>
         <button type="button" className="row-open" aria-label={label} onClick={open} />
         {content}
       </div>
     )
   }
   return (
-    <button type="button" className={cls} {...pv} aria-label={label} onClick={open}>
+    <button ref={root} type="button" className={cls} {...pv} aria-label={label} onClick={open}>
       {content}
     </button>
   )
