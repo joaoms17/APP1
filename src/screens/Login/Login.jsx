@@ -69,6 +69,15 @@ export default function Login() {
     if (missing[k]) setMissing((m) => ({ ...m, [k]: false }))
   }
 
+  // "seguinte" no email passa à password (como nos formulários) em vez de submeter e marcar logo
+  // "Escreve a tua password." antes de a Joana a poder escrever; com a password já preenchida
+  // (gestor de passwords) o Enter entra
+  const emailKey = (e) => {
+    if (e.key !== 'Enter' || password) return
+    e.preventDefault()
+    pwRef.current?.focus()
+  }
+
   return (
     <main className="lg-wrap">
       <form className="lg-form" aria-labelledby="lg-title" onSubmit={submit} noValidate>
@@ -81,7 +90,7 @@ export default function Login() {
           {err && <Callout tone="error">{err}</Callout>}
           <Field label="Email" error={missing.email && 'Escreve o teu email.'}>
             <TextInput ref={emailRef} type="email" value={email} onChange={typing(setEmail, 'email')} autoComplete="email"
-              inputMode="email" enterKeyHint="next" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+              inputMode="email" enterKeyHint="next" autoCapitalize="none" autoCorrect="off" spellCheck={false} onKeyDown={emailKey} />
           </Field>
           <Field label="Password" error={missing.password && 'Escreve a tua password.'}>
             <PasswordInput ref={pwRef} value={password} onChange={typing(setPassword, 'password')} shown={shown}
