@@ -220,10 +220,11 @@ export function yearTotals(events, expenses, pbe, year, today) {
   const avgClosed = closedMonths ? cents(total(byMonth.net.slice(0, closedMonths)) / closedMonths) : null
   const avgPrev = netPrev > 0 ? cents(netPrev / 12) : null
 
-  // melhor mês: maior saldo entre os meses com movimento
+  // melhor mês: maior saldo positivo (um ano só com despesas, ou só com meses em prejuízo,
+  // não tem "melhor mês" — R1-64)
   let bestMonth = null
   byMonth.saldo.forEach((v, i) => {
-    if ((byMonth.net[i] || byMonth.exp[i]) && (bestMonth === null || v > byMonth.saldo[bestMonth])) bestMonth = i
+    if (v > 0 && (bestMonth === null || v > byMonth.saldo[bestMonth])) bestMonth = i
   })
 
   return {
