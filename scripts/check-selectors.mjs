@@ -111,6 +111,26 @@ check('2025 muda os valores', y25.net !== y26.net && y25.exp !== y26.exp, true)
 check('ano sem dados (2024)', S.yearTotals(events, F.expenses, pbe, 2024, TODAY).hasData, false)
 check('melhor mês de 2026', y26.bestMonth && [fmt.MONTHS_LONG[y26.bestMonth.month], euro(y26.bestMonth.saldo)], ['setembro', '2 936 €'])
 
+section('Painel · comparação até ao mesmo dia (ano corrente)')
+{
+  // contas feitas à parte, à mão, sobre as fixtures: 2026 até 30/09 vs 2025 até 30/09
+  const sumIn = (rows, key, val, from, to) => Math.round(rows.filter((r) => r[key] >= from && r[key] <= to)
+    .reduce((a, r) => a + Number(r[val]), 0) * 100) / 100
+  const n26 = sumIn(events, 'event_date', 'value', '2026-01-01', '2026-09-30')
+  const n25 = sumIn(events, 'event_date', 'value', '2025-01-01', '2025-09-30')
+  const x26 = sumIn(F.expenses, 'expense_date', 'amount', '2026-01-01', '2026-09-30')
+  const x25 = sumIn(F.expenses, 'expense_date', 'amount', '2025-01-01', '2025-09-30')
+  const pctOf = (a, b) => Math.round(((a - b) / Math.abs(b)) * 100)
+  const yt = y26.ytd
+  check('ytd existe no ano corrente', !!yt, true)
+  check('ytd · datas de corte', yt && [yt.until, yt.untilPrev], ['2026-09-30', '2025-09-30'])
+  check('ytd · receita 2026 / 2025', yt && [yt.net, yt.netPrev], [n26, n25])
+  check('ytd · despesas 2026 / 2025', yt && [yt.exp, yt.expPrev], [x26, x25])
+  check('ytd · saldo e variação', yt && [yt.saldo, yt.deltaSaldo], [Math.round((n26 - x26) * 100) / 100, pctOf(n26 - x26, n25 - x25)])
+  check('ytd · eventos marcados depois de hoje não entram', yt && yt.net < y26.net, true)
+  check('ano passado (2025) não tem ytd', S.yearTotals(events, F.expenses, pbe, 2025, TODAY).ytd, null)
+}
+
 section('Extra · Agenda e Receber (spec §10.3–10.4, §10.11)')
 const todays = events.filter((e) => e.event_date === TODAY)
 check('Hoje · eventos', todays.length, 2)

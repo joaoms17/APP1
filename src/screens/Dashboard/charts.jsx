@@ -172,9 +172,10 @@ function RevenueCard({ t, month, onPick, thisYear, curMonth, colors, height, ani
   if (M.unpaid[month] > EPS) ro.push(`falta ${eur(M.unpaid[month])}`)
   if (hasPrev) ro.push(`${prevYear} ${eur(M.netPrev[month])}`)
 
-  const delta = t.deltaNet
+  // no ano corrente compara até ao mesmo dia (como a capa)
+  const delta = t.ytd ? t.ytd.deltaNet : t.deltaNet
   const aria = `Receita líquida ${year}: ${eur(t.net)}`
-    + (delta != null ? `, ${delta >= 0 ? 'mais' : 'menos'} ${fmtPct(Math.abs(delta), { sign: false })} do que em ${prevYear}` : '')
+    + (delta != null ? `, ${delta >= 0 ? 'mais' : 'menos'} ${fmtPct(Math.abs(delta), { sign: false })} do que em ${prevYear}${t.ytd ? ' no mesmo período' : ''}` : '')
     + '.' + (avg != null ? ` Média de ${eur(avg)} por mês fechado.` : '')
 
   const note = [pickHint]

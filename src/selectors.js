@@ -213,6 +213,29 @@ export function yearTotals(events, expenses, pbe, year, today) {
   const avgClosed = closedMonths ? cents(total(byMonth.net.slice(0, closedMonths)) / closedMonths) : null
   const avgPrev = netPrev > 0 ? cents(netPrev / 12) : null
 
+  // ano corrente: comparação justa com o ano anterior só até ao mesmo dia (o ano completo fica
+  // como comparação secundária). Eventos pela data do evento, despesas pela data da despesa.
+  let ytd = null
+  if (year === ty) {
+    const md = today.slice(4) // '-10-01'
+    const until = `${year}${md}`, untilPrev = `${year - 1}${md}`
+    let n = 0, np = 0, x = 0, xp = 0
+    for (const e of events) {
+      if (e.event_date >= `${year}-01-01` && e.event_date <= until) n += num(e.value)
+      else if (e.event_date >= `${year - 1}-01-01` && e.event_date <= untilPrev) np += num(e.value)
+    }
+    for (const ex of expenses) {
+      if (ex.expense_date >= `${year}-01-01` && ex.expense_date <= until) x += num(ex.amount)
+      else if (ex.expense_date >= `${year - 1}-01-01` && ex.expense_date <= untilPrev) xp += num(ex.amount)
+    }
+    n = cents(n); np = cents(np); x = cents(x); xp = cents(xp)
+    const s = cents(n - x), sp = cents(np - xp)
+    ytd = {
+      until, untilPrev, net: n, netPrev: np, exp: x, expPrev: xp, saldo: s, saldoPrev: sp,
+      deltaNet: pct(n, np), deltaExp: pct(x, xp), deltaSaldo: pct(s, sp),
+    }
+  }
+
   // melhor mês: maior saldo positivo (um ano só com despesas, ou só com meses em prejuízo,
   // não tem "melhor mês" — R1-64)
   let bestMonth = null
@@ -224,6 +247,7 @@ export function yearTotals(events, expenses, pbe, year, today) {
     year, net, gross, retained: cents(gross - net), exp, saldo,
     netPrev, expPrev, saldoPrev,
     deltaNet: pct(net, netPrev), deltaExp: pct(exp, expPrev), deltaSaldo: pct(saldo, saldoPrev),
+    ytd,
     overdueYear: cents(overdueYear), overdueYearCount, upcomingYear: cents(upcomingYear),
     closedMonths, avgClosed, avgPrev,
     bestMonth: bestMonth === null ? null : { month: bestMonth, saldo: byMonth.saldo[bestMonth] },
