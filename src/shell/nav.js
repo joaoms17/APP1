@@ -1,12 +1,16 @@
 // Destinos da navegação principal (tabbar no telemóvel, sidebar no computador).
 import { getRoute, navigate, tabHref } from '../router.js'
+import { FEATURES } from '../features.js'
 
 export const NAV = [
   { id: 'agenda', label: 'Agenda', icon: 'calendar' },
   { id: 'receber', label: 'Receber', icon: 'inbox' },
   { id: 'despesas', label: 'Despesas', icon: 'wallet' },
   { id: 'painel', label: 'Painel', icon: 'chart' },
-]
+].filter((n) => n.id !== 'despesas' || FEATURES.expenses)
+
+// rótulo acessível do botão Novo
+export const NEW_LABEL = FEATURES.expenses ? 'Novo evento ou despesa' : 'Novo evento'
 
 // tocar num separador volta ao último URL dele (vista, filtros); no separador ativo, sobe ao topo
 export function goTab(e, id) {

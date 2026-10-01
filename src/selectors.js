@@ -166,6 +166,38 @@ export function expenseCategoriesOf(expenses) {
 }
 
 // ---------- Painel (spec §10.13) -------------------------------------------
+// Penteados vs música: projetos do tipo 'hair' contra todos os outros (que são de música).
+// Por tipo: receita líquida do ano por mês, nº de eventos, média por evento, parte do total e a
+// variação face ao ano anterior — no ano corrente só até ao mesmo dia (como a capa do Painel).
+export function kindSplitOf(events, projects, year, today) {
+  const kindOf = new Map(projects.map((p) => [p.id, p.kind === 'hair' ? 'hair' : 'music']))
+  const cur = yearOf(today) === year
+  const md = today.slice(4)
+  const mk = (key, label) => ({ key, label, byMonth: Array(12).fill(0), net: 0, count: 0, prevNet: 0, ytd: 0, prevYtd: 0 })
+  const k = { hair: mk('hair', 'Penteados'), music: mk('music', 'Música') }
+  for (const e of events) {
+    const x = k[kindOf.get(e.project_id) || 'music']
+    const y = yearOf(e.event_date)
+    const v = num(e.value)
+    if (y === year) {
+      x.byMonth[monthOf(e.event_date)] += v; x.net += v; x.count++
+      if (cur && e.event_date <= `${year}${md}`) x.ytd += v
+    } else if (y === year - 1) {
+      x.prevNet += v
+      if (cur && e.event_date <= `${year - 1}${md}`) x.prevYtd += v
+    }
+  }
+  const total = k.hair.net + k.music.net
+  const pct = (a, b) => (b ? Math.round(((a - b) / Math.abs(b)) * 100) : null)
+  return [k.hair, k.music].map((x) => ({
+    key: x.key, label: x.label, count: x.count,
+    byMonth: x.byMonth.map(cents), net: cents(x.net), prevNet: cents(x.prevNet),
+    share: total > EPS ? x.net / total : 0,
+    avg: x.count ? cents(x.net / x.count) : null,
+    delta: cur ? pct(cents(x.ytd), cents(x.prevYtd)) : pct(cents(x.net), cents(x.prevNet)),
+  }))
+}
+
 // receita = valor líquido dos eventos do ano (regra da v1); retido = bruto − líquido;
 // a média conta só os meses fechados; Em atraso/futuros respeitam o ano escolhido (D19)
 export function yearTotals(events, expenses, pbe, year, today) {

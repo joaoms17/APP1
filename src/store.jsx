@@ -769,6 +769,7 @@ export function StoreProvider({ children }) {
     [projects, events, today, lastProjectId])
   const expenseCategories = useMemo(() => S.expenseCategoriesOf(expenses), [expenses])
   const yearTotals = useCallback((year) => S.yearTotals(events, expenses, pbe, Number(year), today), [events, expenses, pbe, today])
+  const kindSplit = useCallback((year) => S.kindSplitOf(events, projects, Number(year), today), [events, projects, today])
   const summary = useCallback((evs) => S.summaryOf(evs, pbe), [pbe])
 
   const eventById = useCallback((id) => events.find((e) => e.id === id) || null, [events])
@@ -1064,7 +1065,7 @@ export function StoreProvider({ children }) {
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
-      expenseCategories, yearTotals, summary, eventById, expenseById, attachmentById,
+      expenseCategories, yearTotals, kindSplit, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações
       recordPayment, receiveRemaining, createEvent, createExpense, updateEventFields, setReceipt, markUnpaid,

@@ -4,6 +4,7 @@
 // Abrir uma folha faz pushState (voltar do browser fecha-a); fechar volta atrás no histórico.
 // Parâmetros de folha que não cabem no URL (File[], objetos) ficam em memória (s.ref).
 // A última rota (sem folha) fica em localStorage "joana.v2.rota" e é reposta ao abrir a app.
+import { FEATURES } from './features.js'
 import { useSyncExternalStore } from 'react'
 
 export const TABS = ['agenda', 'receber', 'despesas', 'painel', 'definicoes']
@@ -45,7 +46,8 @@ function parse(hash) {
   const pathStr = qi < 0 ? h : h.slice(0, qi)
   const query = new URLSearchParams(qi < 0 ? '' : h.slice(qi + 1))
   let path = pathStr.split('/').filter(Boolean).map((s) => { try { return decodeURIComponent(s) } catch { return s } })
-  if (!TABS.includes(path[0])) path = ['agenda']
+  // Despesas escondidas (FEATURES.expenses): um link antigo para #/despesas abre a Agenda
+  if (!TABS.includes(path[0]) || (path[0] === 'despesas' && !FEATURES.expenses)) path = ['agenda']
   const params = {}
   const sheetParams = {}
   let s = null
@@ -300,12 +302,13 @@ export function closeSheet() {
   }
 }
 
-// "Novo" (tabbar, sidebar, tecla N): Despesa no separador Despesas, Evento nos outros;
+// "Novo" (tabbar, sidebar, tecla N): Despesa no separador Despesas, Evento nos outros (sempre Evento
+// com as despesas escondidas);
 // na Agenda › Mês usa o dia selecionado como data
 export function openNew() {
   const r = getRoute()
   const data = r.tab === 'agenda' && r.path[1] === 'mes' && r.path[2] ? r.path[2] : undefined
-  openSheet('novo', { kind: r.tab === 'despesas' ? 'despesa' : 'evento', data })
+  openSheet('novo', { kind: FEATURES.expenses && r.tab === 'despesas' ? 'despesa' : 'evento', data })
 }
 
 // último URL visitado de um separador (vista, filtros e pesquisa sobrevivem à troca)
