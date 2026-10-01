@@ -119,7 +119,7 @@ export default function Agenda() {
   if (searching) {
     return (
       <div className="ag-screen">
-        <SearchMode params={r.params} onExit={exitSearch} />
+        <SearchMode params={r.params} onExit={exitSearch} flash={flash} />
       </div>
     )
   }

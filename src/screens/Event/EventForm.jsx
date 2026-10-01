@@ -1,11 +1,12 @@
 import { useId, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   Button, Callout, DateInput, EmptyState, Field, MoneyInput, NewKindSwitch, PendingAttachments, ProjectChips,
   Segmented, Sheet, Skeleton, Switch, TextArea, TextInput, TimeInput, confirmDialog, moneyInputValue, parseMoney,
   useFormSave,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
-import { getRoute, navigate, openSheet, tabHref } from '../../router.js'
+import { getRoute, navigate, openSheet, setParams, tabHref } from '../../router.js'
 import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
 
@@ -16,6 +17,8 @@ const PAY_OPTIONS = [
   { value: 'deposit', label: 'Sinal' },
   { value: 'full', label: 'Tudo recebido' },
 ]
+// Agenda em modo Procurar: texto ou um filtro na rota (como em Agenda.jsx)
+const SEARCH_KEYS = ['q', 'quando', 'estado', 'p']
 const BAD_MONEY = 'Escreve um valor válido, por exemplo 269,50.'
 const NEG_MONEY = 'O valor não pode ser negativo.'
 
@@ -176,16 +179,23 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   }
 
   // depois de guardar: fecha e leva a Agenda ao dia, com a linha a piscar (flash=<id>).
-  // Editar ou registar a partir de outro separador (ex.: Receber) fica onde estava.
+  //   já na Agenda → fica na vista em que estava, sem entrada nova no histórico (o 1.º voltar sai da
+  //     Agenda): o Procurar mantém o texto e os chips (spec §10.4); a Lista só mostra de hoje em diante,
+  //     por isso um evento de um dia passado leva ao Mês desse dia (R1-32)
+  //   Novo noutro separador → vai à Agenda (com entrada: voltar regressa ao separador de onde se veio)
+  //   Editar ou registar a partir de outro separador (ex.: Receber) fica onde estava.
   const finish = (evId, date) => {
     // fechado entretanto (Cancelar a meio da gravação): não fecha nem leva a Agenda — outra folha
     // aberta depois fica onde está (o toast "Evento guardado · Ver" diz que ficou gravado)
     if (!alive.current) return
     const r = getRoute()
-    const go = r.tab === 'agenda' || mode === 'new'
-    const month = r.tab === 'agenda' ? r.path[1] === 'mes' : /^#\/agenda\/mes/.test(tabHref('agenda'))
+    const inAgenda = r.tab === 'agenda'
     onClose()
-    if (go) navigate(month ? `#/agenda/mes/${date}?flash=${evId}` : `#/agenda/lista?flash=${evId}`)
+    if (!inAgenda && mode !== 'new') return
+    const searching = inAgenda && SEARCH_KEYS.some((k) => k in r.params)
+    const month = date < today || (inAgenda ? r.path[1] === 'mes' : /^#\/agenda\/mes/.test(tabHref('agenda')))
+    if (searching) setParams({ flash: evId })
+    else navigate(month ? `#/agenda/mes/${date}?flash=${evId}` : `#/agenda/lista?flash=${evId}`, { replace: inAgenda })
   }
 
   const submitRef = useRef(null)
@@ -264,6 +274,20 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
     els[els.indexOf(e.target) + 1]?.focus()
   }
 
+  // Pagamento: o sub-bloco que aparece (Sinal → Valor do sinal + Recebido a; Tudo recebido → Recebido a)
+  // fica à vista acima da barra; no Sinal o foco vai logo para o valor (teclado numérico aberto) — "Noiva
+  // com sinal" em 3–4 toques (spec §3.5), sem rolar à procura do campo (R1-33). O foco é dado aqui, ainda
+  // dentro do toque (o iOS só abre o teclado assim); com as setas, o Segmented devolve-o à opção a seguir.
+  const paySub = useRef(null)
+  const choosePay = (v) => {
+    flushSync(() => set('pay')(v))
+    const sub = paySub.current
+    if (!sub) return
+    if (v === 'deposit') refs.payAmount.current?.focus({ preventScroll: true })
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    sub.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+  }
+
   const saveLabel = mode === 'edit' ? 'Guardar alterações'
     : f.pay === 'deposit' && deposit > 0 ? `Guardar · sinal ${money(deposit)}`
     : f.pay === 'full' && value > 0 ? `Guardar · recebido ${money(value)}`
@@ -331,9 +355,9 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
         ) : (
           <>
             <Field label="Pagamento">
-              <Segmented value={f.pay} options={PAY_OPTIONS} onChange={set('pay')} />
+              <Segmented value={f.pay} options={PAY_OPTIONS} onChange={choosePay} />
               {f.pay === 'deposit' && (
-                <div className="ev-sub">
+                <div ref={paySub} className="ev-sub">
                   <div className="row2">
                     <Field label="Valor do sinal" error={errors.payAmount}>
                       <MoneyInput ref={refs.payAmount} value={f.payAmount} onChange={set('payAmount')} />
@@ -349,7 +373,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
                 </div>
               )}
               {f.pay === 'full' && (
-                <div className="ev-sub">
+                <div ref={paySub} className="ev-sub">
                   <Field label="Recebido a" error={errors.payDate}>
                     <DateInput ref={refs.payDate} value={f.payDate} format={payDayFormat(today)} onChange={set('payDate')} />
                   </Field>

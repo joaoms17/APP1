@@ -1,14 +1,16 @@
-import { useMemo } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Button, Card, Chip, ChipRow, EmptyState, GroupHeader, SearchInput, eventsSummary } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { setParams } from '../../router.js'
 import { fmtMoney } from '../../format.js'
 import { eventMatches, googleMatches, isProjectActive } from '../../selectors.js'
-import { ItemRows, mergeItems, monthName, useProgressive } from './AgendaList.jsx'
+import { ItemRows, mergeItems, monthName, rowClass, useProgressive } from './AgendaList.jsx'
 
 // Procurar e filtrar — modo da Lista (spec §10.4). Estado na rota:
 //   #/agenda/lista?q=<texto>&quando=anteriores|proximos&estado=atraso|sinal|semrecibo|porreceber|recebidos&p=<projeto>
 // Pesquisa sem acentos em título, local e notas, em todas as datas, e também nos pendentes do Google.
+// flash = { id, date }: evento acabado de editar ou registar a partir dos resultados — o Procurar fica
+// (texto e chips) e a linha pisca.
 
 const QUANDO = { anteriores: 'anteriores', passados: 'anteriores', proximos: 'proximos', 'próximos': 'proximos', futuros: 'proximos' }
 const ESTADO = {
@@ -20,7 +22,7 @@ const WHEN_TEXT = { anteriores: 'antes de hoje', proximos: 'de hoje em diante' }
 
 const money = (n, cents = 'auto') => fmtMoney(n, { cents })
 
-export default function SearchMode({ params, onExit }) {
+export default function SearchMode({ params, onExit, flash = null }) {
   const {
     today, events, googleMatch, projects, projectById, eventState, missing, needsReceipt,
     receivables, receiptsToIssue, summary,
@@ -63,7 +65,23 @@ export default function SearchMode({ params, onExit }) {
 
   const filtered = !!(term || quando || estado || proj)
   const resetKey = [term, quando, estado, proj?.id].join('|')
-  const [shown, sentinel] = useProgressive(result.groups.length, 6, resetKey)
+  const [shown, sentinel, ensure] = useProgressive(result.groups.length, 6, resetKey)
+
+  // a linha que pisca: carregar o grupo dela e, se estiver fora do ecrã, trazê-la à vista (o mínimo)
+  const scrolled = useRef(null)
+  useEffect(() => {
+    if (!flash) return
+    const i = result.groups.findIndex((g) => g.evs.some((e) => e.id === flash.id))
+    if (i >= 0) ensure(i + 1)
+  }, [flash, result])
+  useLayoutEffect(() => {
+    if (!flash || scrolled.current === flash) return
+    const el = document.querySelector(`.ag-search .${rowClass(flash.id)}`)
+    if (!el) return
+    scrolled.current = flash
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+  })
   const s = summary(result.evs)
   const n = result.evs.length
   const found = n + result.gs.length > 0
@@ -133,7 +151,7 @@ export default function SearchMode({ params, onExit }) {
         <div key={g.key} className="ag-group">
           <GroupHeader title={monthName(g.key)} small={g.key.slice(0, 4)} first={i === 0}
             summary={eventsSummary(g.evs, missing, g.gs)} />
-          <div className="list"><ItemRows items={g.items} hideProject={!!proj} /></div>
+          <div className="list"><ItemRows items={g.items} hideProject={!!proj} flashId={flash?.id || null} /></div>
         </div>
       ))}
       {shown < result.groups.length && <div ref={sentinel} className="ag-more" aria-hidden="true" />}
