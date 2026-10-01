@@ -1,9 +1,9 @@
-import { lazy, Suspense, useId, useMemo, useRef, useState } from 'react'
+import { Suspense, useId, useMemo, useRef, useState } from 'react'
 import { Button, Card, Delta, EmptyState, HeroNumber, Icon, IconButton, Kpi, Skeleton, TopBar, useMediaQuery } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
 import { MONTHS_LONG, fmtMoney } from '../../format.js'
-import { Boundary } from '../../shell/lazy.jsx'
+import { Boundary, lazyWithPreload } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
 import './Dashboard.css'
 
@@ -12,7 +12,7 @@ import './Dashboard.css'
 //   · gráficos (carregados a pedido) · Resumo mensal.
 // Todos os números vêm de yearTotals(ano) do store: Em atraso e futuros respeitam o ano escolhido (D19).
 
-const DashCharts = lazy(() => import('./charts.jsx'))
+const DashCharts = lazyWithPreload(() => import('./charts.jsx')) // sem rede, "Tentar de novo" volta a pedir o código
 
 const EPS = 0.005
 const eur = (n) => fmtMoney(n, { cents: 'never' })

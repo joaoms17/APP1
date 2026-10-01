@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRoute, closeSheet, navigate } from '../router.js'
 import { FEATURES } from '../features.js'
 import { AttachmentViewer, Sheet, Skeleton } from '../ui'
-import { Boundary, ErrorPanel, errorDetail, lazyWithPreload } from './lazy.jsx'
+import { Boundary, ErrorPanel, errorDetail, lazyWithPreload, screenErrorText } from './lazy.jsx'
 
 // Folhas abertas por cima da rota (s=tipo[:id] no URL). Cada folha desenha o seu <Sheet>
 // e recebe onClose (= closeSheet, que volta atrás no histórico). Código carregado a pedido.
@@ -43,17 +43,16 @@ const REGISTRY = {
   }),
 }
 
-// o código das folhas mais usadas desce quando a app fica parada (Novo e Detalhe abrem logo)
-function usePrefetch() {
-  useEffect(() => {
-    const run = () => { EventSheet.preload(); ExpenseSheet.preload() }
-    if (typeof requestIdleCallback === 'function') {
-      const id = requestIdleCallback(run, { timeout: 4000 })
-      return () => cancelIdleCallback(id)
-    }
-    const t = setTimeout(run, 2000)
-    return () => clearTimeout(t)
-  }, [])
+// o código de todas as folhas desce quando a app fica parada: Novo e Detalhe abrem logo e, se a
+// rede cair depois de a app abrir, todas as folhas continuam a abrir (os dados já estão em memória).
+// As mais usadas primeiro; Documentos só com a funcionalidade ligada.
+export function preloadSheets() {
+  EventSheet.preload()
+  ExpenseSheet.preload()
+  MonthPicker.preload()
+  ProjectSheet.preload()
+  GcalSheet.preload()
+  if (FEATURES.docs) QuoteSheet.preload()
 }
 
 // enquanto o código da folha chega: nada nos primeiros 300 ms, depois uma folha com esqueleto
@@ -73,7 +72,6 @@ function SheetLoading() {
 
 export default function SheetHost() {
   const { sheet } = useRoute()
-  usePrefetch()
   const make = sheet && REGISTRY[sheet.type]
 
   // tipo desconhecido (ou Documentos desligados): fecha; "texto" é um ecrã das Definições
@@ -88,7 +86,7 @@ export default function SheetHost() {
   return (
     <Boundary resetKey={`${sheet.type}:${sheet.id}`} fallback={(error, retry) => (
       <Sheet onClose={closeSheet} title="Não foi possível abrir">
-        <ErrorPanel title="Não foi possível abrir." text="Verifica a ligação e tenta de novo."
+        <ErrorPanel title="Não foi possível abrir." text={screenErrorText(error)}
           detail={errorDetail(error)} onRetry={retry} />
       </Sheet>
     )}>

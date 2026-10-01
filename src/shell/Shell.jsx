@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { TAB_LABELS, useRoute } from '../router.js'
+import { TAB_LABELS, enableShortcuts, useRoute } from '../router.js'
 import { useStore } from '../store.jsx'
 import { Skeleton, useScrollRestore } from '../ui'
 import Agenda from '../screens/Agenda/Agenda.jsx'
@@ -7,13 +7,29 @@ import Receber from '../screens/Receber/Receber.jsx'
 import Expenses from '../screens/Expenses/Expenses.jsx'
 import Sidebar from './Sidebar.jsx'
 import Tabbar from './Tabbar.jsx'
-import SheetHost from './SheetHost.jsx'
-import { Boundary, ErrorPanel, errorDetail, lazyWithPreload } from './lazy.jsx'
+import SheetHost, { preloadSheets } from './SheetHost.jsx'
+import { Boundary, ErrorPanel, errorDetail, lazyWithPreload, screenErrorText } from './lazy.jsx'
 import './shell.css'
 
 // O Painel (Recharts) só é descarregado quando se abre o separador; as Definições, quando se abrem.
 const Dashboard = lazyWithPreload(() => import('../screens/Dashboard/Dashboard.jsx'))
 const Settings = lazyWithPreload(() => import('../screens/Settings/Settings.jsx'))
+const DashCharts = lazyWithPreload(() => import('../screens/Dashboard/charts.jsx')) // só para pré-carregar
+
+// Depois de a app abrir, todo o código que falta desce quando o browser fica parado (folhas,
+// Painel e gráficos, Definições): se a rede cair a seguir, todos os ecrãs continuam a abrir.
+function usePrefetch(ready) {
+  useEffect(() => {
+    if (!ready) return
+    const run = () => { preloadSheets(); Settings.preload(); Dashboard.preload(); DashCharts.preload() }
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(run, { timeout: 3000 })
+      return () => cancelIdleCallback(id)
+    }
+    const t = setTimeout(run, 1500)
+    return () => clearTimeout(t)
+  }, [ready])
+}
 
 const SCREENS = [
   ['agenda', Agenda],
@@ -55,7 +71,7 @@ function ScreenSkeleton({ label }) {
 
 function ScreenError({ error, retry }) {
   return (
-    <ErrorPanel title="Não foi possível abrir este ecrã." text="Verifica a ligação e tenta de novo."
+    <ErrorPanel title="Não foi possível abrir este ecrã." text={screenErrorText(error)}
       detail={errorDetail(error)} onRetry={retry} />
   )
 }
@@ -99,6 +115,10 @@ export default function Shell({ booting = false }) {
   const news = ready && store.receberHasNews && tab !== 'receber'
 
   useScrollRestore(ready ? scrollKey(route) : null)
+  usePrefetch(ready)
+
+  // atalhos N (Novo) e / (Procurar): só com a sessão iniciada (no ecrã Entrar não fazem nada)
+  useEffect(() => (booting ? undefined : enableShortcuts()), [booting])
 
   // título da janela por ecrã (também é o que os leitores de ecrã anunciam)
   useEffect(() => { document.title = `${TAB_LABELS[tab] || 'Agenda'} · Joana` }, [tab])

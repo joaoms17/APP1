@@ -24,6 +24,7 @@ let bypassGuard = false // o próprio closeSheet() vai voltar atrás: não pergu
 let pendingBack = false // history.back() pedido e ainda sem popstate
 let queued = []         // navegações pedidas enquanto o back não chega
 let started = false
+let shortcuts = false   // N e / só com a app (sessão iniciada) montada — nunca no ecrã Entrar
 const lastByTab = new Map() // separador → último URL (sem folha): a tabbar volta onde se estava
 let lastTab = null          // último separador que não é Definições (para o "‹ Voltar")
 
@@ -108,9 +109,22 @@ function emit(hash) {
 
 const sameSheet = (a, b) => (!a && !b) || (a && b && a.type === b.type && a.id === b.id)
 
+let backHops = 0 // voltas extra para saltar entradas repetidas da mesma folha
+
 function onPop() {
   const hash = normHash(location.hash)
+  // popstate e hashchange chegam os dois para o mesmo voltar: o segundo (já tratado) não muda nada
+  if (!pendingBack && hash === currentHash) return
   if (pendingBack) {
+    // voltou-se para uma entrada repetida da mesma folha (ex.: aberta duas vezes seguidas):
+    // continua a voltar até a folha fechar — senão o × ficava sem efeito
+    const back = parse(hash)
+    if (current?.sheet && back.sheet && sameSheet(current.sheet, back.sheet) && backHops < 5) {
+      backHops++
+      history.back()
+      return
+    }
+    backHops = 0
     pendingBack = false
     bypassGuard = false
     emit(hash)
@@ -118,6 +132,15 @@ function onPop() {
     queued = []
     for (const fn of q) fn()
     return
+  }
+  // voltar do browser com uma confirmação aberta: o voltar cancela a confirmação e a folha por baixo
+  // fica onde está — nunca abre outra pergunta por cima nem deixa a primeira órfã
+  if (confirmStack.length) {
+    confirmStack[confirmStack.length - 1]()
+    if (current?.sheet) {
+      if (hash !== currentHash) history.pushState({ sheet: true }, '', currentHash)
+      return
+    }
   }
   const next = parse(hash)
   if (!bypassGuard && guard?.active() && current?.sheet && !sameSheet(current.sheet, next.sheet)) {
@@ -150,7 +173,7 @@ function start() {
 // ---------- atalhos globais: "/" Procurar · "N" Novo ------------------------
 const isEditable = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))
 function onKey(e) {
-  if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || isEditable(e.target)) return
+  if (!shortcuts || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || isEditable(e.target)) return
   if (document.querySelector('dialog[open]')) return
   if (e.key === '/') {
     e.preventDefault()
@@ -211,6 +234,14 @@ export function setParams(patch) {
   emit(hash)
 }
 
+// a folha aberta tem alterações por guardar e vai ser substituída por outra (ex.: o "Ver" de um
+// toast): pergunta "Descartar alterações?" primeiro; go() só corre se a pessoa confirmar
+function guarded(nextSheet, go) {
+  if (bypassGuard || !guard?.active() || !current?.sheet || sameSheet(current.sheet, nextSheet)) return go()
+  if (!guard.confirm) { guard.ask(); return }
+  guard.confirm().then((ok) => { if (ok) go() })
+}
+
 // openSheet('evento', 'ev-1') · openSheet('novo', { kind: 'evento', data: '2026-10-17' }) · openSheet('registar', { key })
 export function openSheet(type, idOrParams) {
   start()
@@ -219,8 +250,12 @@ export function openSheet(type, idOrParams) {
   const isObj = idOrParams != null && typeof idOrParams === 'object'
   const { id = null, ...params } = isObj ? idOrParams : { id: idOrParams ?? null }
   const hash = build(r.path, r.params, { type, id, params })
-  history.pushState({ sheet: true }, '', hash)
-  emit(hash)
+  // a mesma folha já está aberta (2.º toque antes de a folha aparecer): não cria outra entrada
+  if (hash === currentHash) return
+  guarded({ type, id }, () => {
+    history.pushState({ sheet: true }, '', hash)
+    emit(hash)
+  })
 }
 
 // troca a folha aberta sem criar entrada no histórico (Detalhe → Editar, Evento ⇄ Despesa)
@@ -230,8 +265,11 @@ export function replaceSheet(type, idOrParams) {
   const isObj = idOrParams != null && typeof idOrParams === 'object'
   const { id = null, ...params } = isObj ? idOrParams : { id: idOrParams ?? null }
   const hash = build(r.path, r.params, { type, id, params })
-  history.replaceState(history.state?.sheet ? history.state : { sheet: true }, '', hash)
-  emit(hash)
+  if (hash === currentHash) return
+  guarded({ type, id }, () => {
+    history.replaceState(history.state?.sheet ? history.state : { sheet: true }, '', hash)
+    emit(hash)
+  })
 }
 
 export function closeSheet() {
@@ -280,10 +318,24 @@ export function backRoute() {
 }
 
 // A folha com alterações regista-se aqui: o "voltar" do browser pergunta antes de fechar.
-// registerSheetGuard({ active: () => bool, ask: () => void }) → função para remover
+// registerSheetGuard({ active: () => bool, ask: () => void, confirm?: () => Promise<bool> }) → função para remover
+// confirm: pergunta e responde (sem fechar) — usado quando outra folha a vai substituir
 export function registerSheetGuard(g) {
   guard = g
   return () => { if (guard === g) guard = null }
+}
+
+// confirmações abertas (ConfirmDialog regista o seu "Cancelar" aqui): o voltar do browser cancela a de cima
+const confirmStack = []
+export function registerConfirmCancel(fn) {
+  confirmStack.push(fn)
+  return () => { const i = confirmStack.lastIndexOf(fn); if (i >= 0) confirmStack.splice(i, 1) }
+}
+
+// atalhos de teclado (N, /): o Shell com sessão liga-os ao montar e desliga-os ao desmontar
+export function enableShortcuts() {
+  shortcuts = true
+  return () => { shortcuts = false }
 }
 
 // href de uma rota (para <a>): routeHref('#/receber/atraso')

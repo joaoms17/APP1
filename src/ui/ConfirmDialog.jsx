@@ -2,6 +2,7 @@ import { useId, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import Button from './Button.jsx'
+import { registerConfirmCancel } from '../router.js'
 import './components.css'
 
 const HAS_DIALOG = typeof HTMLDialogElement === 'function' && typeof HTMLDialogElement.prototype.showModal === 'function'
@@ -29,7 +30,10 @@ export default function ConfirmDialog({
     dlg.addEventListener('cancel', onCancelEv)
     if (HAS_DIALOG) { if (!dlg.open) dlg.showModal() } else { dlg.setAttribute('open', ''); document.addEventListener('keydown', onKey) }
     first.current?.focus()
+    // o voltar do browser (router) responde "Cancelar" a esta confirmação
+    const unregister = registerConfirmCancel(() => cancelRef.current?.())
     return () => {
+      unregister()
       dlg.removeEventListener('cancel', onCancelEv)
       document.removeEventListener('keydown', onKey)
       if (HAS_DIALOG && dlg.open) dlg.close()

@@ -43,6 +43,33 @@ const askDiscard = (dirty) => confirmDialog({
 
 let localSeq = 0
 
+// herdeiros do foco de origem (a linha vizinha, a seguir e antes): se a linha desaparecer enquanto a
+// folha está aberta (apagar, mudar de dia), o foco vai para um sítio útil e não para o <body>
+const FOCUSABLE = '.row-open:not([tabindex="-1"]), button:not([tabindex="-1"]), a[href]'
+const focusableIn = (n) => (n && (n.matches(FOCUSABLE) ? n : n.querySelector(FOCUSABLE))) || null
+const ITEMS = '.row, .today-card, .task, .srow'
+function heirsOf(el) {
+  const item = el?.closest?.(ITEMS)
+  if (!item) return []
+  // a seguinte e a anterior na ordem do ecrã (mesmo noutro grupo/mês)
+  const all = [...(item.closest('.sh-tab, main') || document).querySelectorAll(ITEMS)].filter((n) => n.offsetParent !== null)
+  const i = all.indexOf(item)
+  return [all[i + 1], all[i - 1]].map(focusableIn).filter(Boolean)
+}
+function focusHeir(heirs) {
+  // depois de a lista se redesenhar (e de outra folha que abra a seguir pôr o seu foco)
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (document.activeElement && document.activeElement !== document.body) return
+    const flash = document.querySelector('.row.flash, .today-card.flash')
+    const visible = (n) => n?.isConnected && !n.closest('[hidden]')
+    const target = (visible(flash) && focusableIn(flash)) || heirs.find(visible)
+      || document.querySelector('.sh-tab:not([hidden]) h1, main h1')
+    if (!target) return
+    if (target.tagName === 'H1' && !target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1')
+    target.focus({ preventScroll: target.tagName === 'H1' })
+  }))
+}
+
 export default function Sheet({
   open = true, onClose, variant = 'detail', title, labelledBy, dirty = false, menu,
   footer, initialFocusRef, className = '', children,
@@ -55,31 +82,36 @@ export default function Sheet({
   onCloseRef.current = onClose
   const asking = useRef(false)
   const closing = useRef(false)
+  const leaving = useRef(false) // guard(fn) já perguntou: o que fn() fizer (trocar de folha) não pergunta outra vez
+  const alive = useRef(true)
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+
+  // pergunta "Descartar alterações?" (se houver) → true para avançar
+  const confirmLeave = useCallback(async () => {
+    if (!dirtyRef.current) return true
+    if (asking.current) return false
+    asking.current = true
+    const ok = await askDiscard(dirtyRef.current)
+    asking.current = false
+    return ok
+  }, [])
 
   const requestClose = useCallback(async () => {
     if (asking.current || closing.current) return false
-    if (dirtyRef.current) {
-      asking.current = true
-      const ok = await askDiscard(dirtyRef.current)
-      asking.current = false
-      if (!ok) return false
-    }
+    if (!(await confirmLeave())) return false
     closing.current = true
     onCloseRef.current?.()
+    // o fecho não teve efeito (a folha continua aberta passado 1 s): ×, Escape e o fundo voltam a fechar
+    setTimeout(() => { if (alive.current) closing.current = false }, 1000)
     return true
-  }, [])
+  }, [confirmLeave])
 
   const guard = useCallback(async (fn) => {
-    if (dirtyRef.current) {
-      if (asking.current) return false
-      asking.current = true
-      const ok = await askDiscard(dirtyRef.current)
-      asking.current = false
-      if (!ok) return false
-    }
-    await fn()
+    if (!(await confirmLeave())) return false
+    leaving.current = true
+    try { await fn() } finally { leaving.current = false }
     return true
-  }, [])
+  }, [confirmLeave])
 
   useVisualViewport(open)
 
@@ -88,12 +120,15 @@ export default function Sheet({
     if (!open) return
     const dlg = ref.current
     const prevFocus = document.activeElement
+    const heirs = heirsOf(prevFocus)
     closing.current = false
 
     const onCancel = (e) => { e.preventDefault(); requestClose() }
     // fechado pelo browser (ex.: Escape repetido): se houver alterações, reabre e pergunta
     const onNativeClose = () => {
-      if (closing.current) return
+      // 'close' atrasado de um fecho anterior (React StrictMode desmonta e volta a montar o efeito:
+      // o close() da limpeza chega depois do showModal() seguinte) — a folha está aberta: ignorar
+      if (closing.current || dlg.open) return
       if (dirtyRef.current) { try { dlg.showModal() } catch { /* já aberto */ } requestClose() } else {
         closing.current = true
         onCloseRef.current?.()
@@ -153,6 +188,7 @@ export default function Sheet({
       if (HAS_DIALOG) { if (dlg.open) dlg.close() } else if (root) root.inert = false
       unlock?.()
       if (prevFocus?.isConnected && prevFocus !== document.body) prevFocus.focus({ preventScroll: true })
+      else if (prevFocus && prevFocus !== document.body) focusHeir(heirs)
     }
   }, [open])
 
@@ -161,7 +197,16 @@ export default function Sheet({
   useEffect(() => {
     if (!open) return
     if (getRoute().sheet) {
-      return registerSheetGuard({ active: () => !!dirtyRef.current && !closing.current, ask: () => { requestClose() } })
+      return registerSheetGuard({
+        active: () => !!dirtyRef.current && !closing.current && !leaving.current,
+        ask: () => { requestClose() },
+        // outra folha vai substituir esta (ex.: "Ver" de um toast): pergunta sem fechar
+        confirm: async () => {
+          const ok = await confirmLeave()
+          if (ok) closing.current = true
+          return ok
+        },
+      })
     }
     const marker = `folha-${++localSeq}`
     history.pushState({ ...(history.state || {}), localSheet: marker }, '')
@@ -180,13 +225,16 @@ export default function Sheet({
       window.removeEventListener('popstate', onPop)
       setTimeout(() => { if (history.state?.localSheet === marker) history.back() }, 0)
     }
-  }, [open, requestClose])
+  }, [open, requestClose, confirmLeave])
 
-  // toque no fundo: só se o pointerdown E o click forem fora da caixa (arrastar a selecionar não fecha)
+  // toque no fundo: só se o pointerdown E o click forem fora da caixa (arrastar a selecionar não fecha).
+  // Nos primeiros 400 ms não conta: o 2.º clique de um duplo clique que abriu a folha não a fecha logo.
   const downOut = useRef(false)
+  const openedAt = useRef(0)
+  useLayoutEffect(() => { if (open) openedAt.current = performance.now() }, [open])
   const outside = (e) => {
     const dlg = ref.current
-    if (e.target !== dlg) return false
+    if (e.target !== dlg || performance.now() - openedAt.current < 400) return false
     const r = dlg.getBoundingClientRect()
     return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom
   }
