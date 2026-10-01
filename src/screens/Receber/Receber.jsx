@@ -246,10 +246,15 @@ function GoogleSync() {
   )
 }
 
+// O Google ainda não respondeu desde o arranque (2.ª fase ou 1.ª leitura sem resposta nem falha):
+// a lista mostra o esqueleto e o separador fica sem número, em vez de um "0" que ainda não é verdade.
+const googleWaiting = (loadingPhases, gcalStatus) =>
+  loadingPhases.phase2 || (gcalStatus.refreshing && !gcalStatus.lastOkAt && !gcalStatus.failures.length)
+
 function Pending() {
   const { googlePending, gcalCalendars, gcalStatus, loadingPhases, today } = useStore()
   const { past, upcoming } = googlePending
-  const waiting = loadingPhases.phase2 || (gcalStatus.refreshing && !gcalStatus.lastOkAt && !gcalStatus.failures.length)
+  const waiting = googleWaiting(loadingPhases, gcalStatus)
 
   if (!past.length && !upcoming.length) {
     if (waiting) return <Skeleton lines={3} label="A ver o Google Calendar" />
@@ -295,7 +300,7 @@ function Pending() {
 // ---------- ecrã -----------------------------------------------------------------------------------------
 export default function Receber() {
   const route = useRoute()
-  const { receivables, receiptsToIssue, googlePending, loadingPhases } = useStore()
+  const { receivables, receiptsToIssue, googlePending, loadingPhases, gcalStatus } = useStore()
   // separador escondido: mantém o último sub-separador visto
   const subRef = useRef('atraso')
   if (route.tab === 'receber') subRef.current = SUBS.includes(route.path[1]) ? route.path[1] : 'atraso'
@@ -305,7 +310,7 @@ export default function Receber() {
   const tabs = [
     { value: 'atraso', label: 'Em atraso', count: receivables.overdue.length, countTone: 'alert' },
     { value: 'recibos', label: 'Recibos', count: receiptsToIssue.length },
-    { value: 'google', label: 'Por registar', count: loadingPhases.phase2 && !gCount ? undefined : gCount },
+    { value: 'google', label: 'Por registar', count: googleWaiting(loadingPhases, gcalStatus) && !gCount ? undefined : gCount },
   ]
 
   return (
