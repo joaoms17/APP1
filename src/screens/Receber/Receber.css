@@ -19,6 +19,8 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; padding-top: 8px; padding-bottom: 4px;
   font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
 }
+/* sem espaço (320 px, texto muito grande) o botão desce para a linha de baixo, mas fica à direita */
+.rc-sort .btn { margin-left: auto; }
 .rc-sort .btn .i { width: 16px; height: 16px; }
 
 .rc-panel > .callout { margin-top: 12px; }

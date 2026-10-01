@@ -147,6 +147,10 @@ svg.i.lg { width: 24px; height: 24px; }
   box-shadow: 0 1px 2px rgba(40, 20, 22, .10), 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent);
 }
 .seg .n { font-weight: 800; color: var(--muted); font-size: var(--fs-caption); }
+/* opção com contagem: quando rótulo + número não cabem (320 px, texto grande), o número desce para baixo
+   do rótulo em vez de o partir ao meio ("Em / atraso 21"); o rótulo numa linha é o mínimo da coluna
+   (1fr = minmax(auto, 1fr)): as colunas ficam iguais e só a que precisa (opção ativa a 800) fica mais larga */
+.seg > button:has(> .n) { flex-wrap: wrap; row-gap: 0; align-content: center; white-space: nowrap; }
 /* opção ativa: a contagem sobe para --ink-2 (--muted sobre --seg-on fica abaixo de AA no escuro) */
 .seg > [aria-selected="true"] .n, .seg > [aria-checked="true"] .n, .seg > [aria-pressed="true"] .n { color: var(--ink-2); }
 .seg > [aria-selected="true"] .n.alert { color: var(--st-overdue-fg); }

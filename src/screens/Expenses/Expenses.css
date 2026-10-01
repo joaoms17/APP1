@@ -3,11 +3,13 @@
    Só layout do ecrã; tudo o resto vem do ui.css.
    ===================================================================== */
 
-/* capa: total do ano (número de capa) + média e ano anterior à direita */
-.ex-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+/* capa: total do ano (número de capa) + média e ano anterior à direita; quando não cabem lado a lado
+   (320 px, texto grande, totais altos) a coluna passa para baixo do número, ainda à direita, sem sair do cartão */
+.ex-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.ex-hero > div:first-child { min-width: 0; }
 .ex-hero .hero-num { display: block; margin-top: 8px; font-size: calc(40 * var(--u)); }
 .ex-hero .side {
-  display: grid; justify-items: end; text-align: right; padding-bottom: 2px;
+  display: grid; justify-items: end; text-align: right; padding-bottom: 2px; margin-left: auto;
   font-size: var(--fs-meta); font-weight: 600; color: var(--muted); line-height: 1.5; white-space: nowrap;
 }
 .ex-hero .side b { color: var(--ink); font-weight: 800; }
