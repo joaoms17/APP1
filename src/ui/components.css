@@ -9,6 +9,20 @@
 /* ---- linhas: ponto de projeto na meta, linha com ação (botão esticado) ---- */
 /* isolate: a ação da linha (z-index 2) não passa por cima do cabeçalho de grupo sticky (--z-sticky) */
 .row { isolation: isolate; }
+/* linha com ação ("Recebi", "Emitido", "Registar"): com pouca largura útil (ecrã estreito ou texto
+   grande — o limite em em cresce com o Tamanho do texto), a ação desce para baixo da meta e o título
+   e a meta ficam com a largura toda; em .end fica só o valor */
+.row.act { container-type: inline-size; }
+@container (max-width: 23.5em) {
+  .row.act > .bar { grid-row: 1 / span 2; }
+  .row.act > .end { display: contents; }
+  .row.act > .end > .money { grid-column: 4; grid-row: 1; justify-self: end; padding-top: 1px; }
+  .row.act > .end > .btn { grid-column: 3 / span 2; grid-row: 2; justify-self: start; margin-top: 2px; }
+  .row.act > .main .meta { white-space: normal; }
+}
+/* ReceivableRow/ReceiptRow: a meta é o dado da vista ("há 1 ano e 3 meses", "recebido a 24 ago ·
+   Banda do Algarve") — parte em 2 linhas em vez de cortar */
+.row.act:not(.g) > .main .meta { white-space: normal; }
 .row .meta .dot { display: inline-block; width: 8px; height: 8px; margin: 0 4px 1px 2px; vertical-align: middle; }
 .row .row-open, .today-card .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .row .end .btn { position: relative; z-index: 2; }
@@ -22,7 +36,7 @@
 .today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
 .today-card .row-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
 .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
-.today-card.compact .time { font-size: calc(20 * var(--u)); }
+.today-card.compact .time:not(.none) { font-size: calc(20 * var(--u)); }
 .today-card.compact .foot { margin-top: 4px; }
 .today-card.flash { animation: tc-flash 1.2s var(--ease-out); }
 @keyframes tc-flash {
@@ -46,7 +60,7 @@
   position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
   appearance: none; -webkit-appearance: none; min-width: 0;
 }
-.control .clear { position: relative; z-index: 1; margin-right: -10px; width: 40px; height: 40px; }
+.control .clear { position: relative; z-index: 1; margin-right: -12px; width: var(--hit); height: var(--hit); flex: none; }
 .control select { appearance: none; -webkit-appearance: none; cursor: pointer; }
 .control.select > svg.i { pointer-events: none; }
 .control input[type="search"]::-webkit-search-cancel-button { display: none; }
@@ -86,6 +100,12 @@ dialog.confirm[open] { animation: ui-fade var(--dur-2) var(--ease-out); }
 .sheet .grabber { position: relative; touch-action: none; cursor: grab; }
 .sheet .grabber::before { content: ''; position: absolute; inset: -14px -80px; }
 .sheet-head h2 { min-width: 0; outline: none; }
+.sheet-head.form h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* campos lado a lado só com largura útil (o limite em em cresce com o Tamanho do texto) */
+.sheet-body { container-type: inline-size; }
+@container (max-width: 22.5em) {
+  .row-dt, .row2 { grid-template-columns: minmax(0, 1fr); }
+}
 dialog.sheet:focus, dialog.sheet:focus-visible { outline: none; } /* foco inicial na folha (sem título a focar) */
 .sheet-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) - 1); background: var(--scrim); }
 .confirm-scrim { position: fixed; inset: 0; z-index: calc(var(--z-sheet) + 1); background: var(--scrim); }
@@ -106,6 +126,11 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 
 /* ---- visualizador de anexo ------------------------------------------------------ */
 .viewer .sheet-body { padding: 0; gap: 0; align-content: stretch; }
+.viewer .sheet-foot { flex-wrap: wrap; }
+@media (min-width: 1024px) {
+  .viewer .sheet-foot { justify-content: center; }
+  .viewer .sheet-foot > * { flex: 0 0 auto; min-width: 200px; }
+}
 .viewer-stage { display: grid; place-items: center; min-height: 100%; padding: 16px; }
 .viewer-stage.img { background: rgba(0, 0, 0, .92); touch-action: none; overflow: hidden; }
 .viewer-stage.img img { will-change: transform; user-select: none; -webkit-user-drag: none; }
@@ -128,6 +153,12 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 /* dentro de uma folha (telemóvel): por cima da barra de ações e do teclado, não colado a ela */
 @media (max-width: 1023.98px) {
   dialog.sheet .toast { bottom: calc(var(--kb, 0px) + 89px + env(safe-area-inset-bottom)); }
+}
+/* computador com uma folha aberta: o toast fica no canto do conteúdo só se couber ao lado do painel
+   (sidebar + 40 + 440 + 24 + painel = 1232 px); senão vai para dentro do painel, por cima da barra de
+   ações — nunca tapa o "Editar"/"Recebi" */
+@media (min-width: 1024px) and (max-width: 1231.98px) {
+  dialog.sheet .toast { left: auto; right: var(--gutter); width: calc(var(--panel-w) - 2 * var(--gutter)); bottom: 89px; }
 }
 
 /* ---- vazio compacto, esqueleto, linha de sincronização ---------------------------- */
@@ -158,19 +189,24 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 
 /* ---- barra de topo: voltar e barra compacta ao fazer scroll ------------------------- */
 .back { margin: calc(env(safe-area-inset-top) + 12px) 0 -8px -10px; }
+/* título ao centro e as mesmas ações do ecrã à direita (câmara, lupa, ano, J) */
 .topbar-compact {
   position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav);
-  display: flex; align-items: center; justify-content: center;
-  height: calc(48px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) var(--gutter) 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 8px;
+  height: calc(48px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
   background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;
   opacity: 0; transform: translateY(-100%); pointer-events: none;
   transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
 }
-.topbar-compact.on { opacity: 1; transform: none; }
+.topbar-compact .t { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar-compact .actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 2px; }
+.topbar-compact .avatar-btn .avatar { width: 32px; height: 32px; }
+.topbar-compact.on { opacity: 1; transform: none; pointer-events: auto; }
 /* com a barra compacta visível, os cabeçalhos de grupo colam por baixo dela */
 :root:has(.topbar-compact.on) .group-head { top: calc(48px + env(safe-area-inset-top)); }
 @media (min-width: 1024px) {
   .back { display: none; }
   .topbar-compact { left: var(--sidebar-w); }
+  .topbar-compact .avatar-btn { display: none; }
 }

@@ -24,7 +24,8 @@ export function AvatarButton({ onClick }) {
 
 // Barra de topo do ecrã: kicker dourado + h1 Fraunces + ações + "J".
 // back={{ label: 'Agenda', to: '#/agenda' }} (ou { label, onClick }) mostra "‹ Agenda" por cima.
-// Ao passar o título, aparece uma barra compacta com o título (decorativa: as ações ficam no sítio).
+// Ao passar o título, aparece uma barra compacta com o título e as mesmas ações (spec §9.15: a câmara
+// e a lupa continuam a 1 toque com a lista em scroll). Escondida, fica inerte (fora do Tab).
 export default function TopBar({ kicker, title, actions, back, avatar = true, className = '' }) {
   const h1 = useRef(null)
   const [compact, setCompact] = useState(false)
@@ -47,7 +48,11 @@ export default function TopBar({ kicker, title, actions, back, avatar = true, cl
         </div>
         {(actions || avatar) && <div className="actions">{actions}{avatar && <AvatarButton />}</div>}
       </header>
-      <div className={`topbar-compact${compact ? ' on' : ''}`} aria-hidden="true">{title}</div>
+      <div className={`topbar-compact${compact ? ' on' : ''}`} inert={compact ? undefined : ''}>
+        <span className="t" aria-hidden="true">{title}</span>
+        {/* só existem enquanto a barra está à vista (o cabeçalho tem as originais; sem duplicados no topo) */}
+        {compact && (actions || avatar) && <div className="actions">{actions}{avatar && <AvatarButton />}</div>}
+      </div>
     </>
   )
 }

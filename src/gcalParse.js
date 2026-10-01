@@ -27,7 +27,14 @@ export function parseGoogleIcs(text, now = new Date()) {
     })
   }
 
-  for (const v of comp.getAllSubcomponents('vevent')) {
+  // ocorrência alterada de uma série (RECURRENCE-ID): o iterador do mestre já a aplica (data, hora e
+  // título novos) — se o mestre está no feed, não se acrescenta outra vez como evento solto
+  const vevents = comp.getAllSubcomponents('vevent')
+  const masters = new Set(vevents
+    .filter((v) => v.hasProperty('rrule') && !v.hasProperty('recurrence-id'))
+    .map((v) => v.getFirstPropertyValue('uid')))
+  for (const v of vevents) {
+    if (v.hasProperty('recurrence-id') && masters.has(v.getFirstPropertyValue('uid'))) continue
     let ev
     try { ev = new ICAL.Event(v) } catch { continue }
     try {
@@ -51,6 +58,9 @@ export function parseGoogleIcs(text, now = new Date()) {
     } catch { /* evento malformado — ignorar */ }
   }
 
-  out.sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')))
-  return out
+  // nunca a mesma ocorrência duas vezes (uid + dia + hora)
+  const seen = new Set()
+  const unique = out.filter((e) => { const k = `${e.uid || e.title}|${e.date}|${e.time || ''}`; return !seen.has(k) && seen.add(k) })
+  unique.sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')))
+  return unique
 }

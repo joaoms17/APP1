@@ -52,13 +52,23 @@ function useControl(props) {
 
 const ctrlClass = (base, invalid, extra = '') => ['control', base, invalid && 'invalid', extra].filter(Boolean).join(' ')
 
+// a caixa inteira do campo (48 px, com o ícone, o "€" e as margens) põe o foco no campo, como na v1
+// — o <input> só ocupa a linha do texto; os botões dentro da caixa ("Limpar") ficam com o seu clique
+function focusInner(e) {
+  if (e.target.closest?.('button, a, input, select, textarea')) return
+  const el = e.currentTarget.querySelector('input, textarea, select')
+  if (!el || el.disabled) return
+  e.preventDefault()
+  el.focus()
+}
+
 export const TextInput = forwardRef(function TextInput({
   value, onChange, placeholder, enterKeyHint = 'next', autoComplete, inputMode, type = 'text',
   icon, affix, className = '', ...rest
 }, ref) {
   const { invalid, ...a } = useControl(rest)
   return (
-    <div className={ctrlClass('', invalid, className)}>
+    <div className={ctrlClass('', invalid, className)} onMouseDown={focusInner}>
       {icon && <Icon name={icon} />}
       <input ref={ref} type={type} value={value ?? ''} placeholder={placeholder} enterKeyHint={enterKeyHint}
         autoComplete={autoComplete} inputMode={inputMode} {...rest} {...a}
@@ -145,7 +155,7 @@ export const TimeInput = forwardRef(function TimeInput({
 export const TextArea = forwardRef(function TextArea({ value, onChange, placeholder, rows = 3, className = '', ...rest }, ref) {
   const { invalid, ...a } = useControl(rest)
   return (
-    <div className={ctrlClass('area', invalid, className)}>
+    <div className={ctrlClass('area', invalid, className)} onMouseDown={focusInner}>
       <textarea ref={ref} value={value ?? ''} placeholder={placeholder} rows={rows} {...rest} {...a}
         onChange={(e) => onChange?.(e.target.value, e)} />
     </div>
@@ -161,7 +171,7 @@ export const SearchInput = forwardRef(function SearchInput({
   const id = rest.id || autoId
   const own = useRef(null)
   return (
-    <div className={ctrlClass('search', false, className)}>
+    <div className={ctrlClass('search', false, className)} onMouseDown={focusInner}>
       <Icon name="search" />
       <label htmlFor={id} className="sr-only">{label}</label>
       <input ref={mergeRefs(ref, own)} id={id} type="search" enterKeyHint="search" autoComplete="off"

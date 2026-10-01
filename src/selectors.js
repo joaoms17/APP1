@@ -126,16 +126,15 @@ export const googlePendingOf = (pending, today) => ({
 })
 
 // ---------- pesquisa (spec §10.4): sem acentos, em título, local e notas ----
-export const eventMatches = (ev, q) => {
-  const k = foldText(q).trim()
-  if (!k) return true
-  return [ev.title, ev.location, ev.notes].some((s) => foldText(s).includes(k))
+// cada palavra da pesquisa tem de aparecer em algum dos campos ("figuras faro", "noiva almancil")
+const matchesAll = (fields, q) => {
+  const words = foldText(q).split(/\s+/).filter(Boolean)
+  if (!words.length) return true
+  const text = fields.map((s) => foldText(s)).join(' \n ')
+  return words.every((w) => text.includes(w))
 }
-export const googleMatches = (g, q) => {
-  const k = foldText(q).trim()
-  if (!k) return true
-  return [g.title, g.location].some((s) => foldText(s).includes(k))
-}
+export const eventMatches = (ev, q) => matchesAll([ev.title, ev.location, ev.notes], q)
+export const googleMatches = (g, q) => matchesAll([g.title, g.location], q)
 
 // ---------- projetos e categorias ------------------------------------------
 // projeto escolhível num ano: ativo e dentro do período (mesma regra da v1)

@@ -15,7 +15,8 @@
 
 /* linha "Por antiguidade · Mais antigos primeiro ⌄" */
 .rc-sort {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px;
+  /* padding-bottom: a área de 44 px do botão (::before) não fica por baixo do cabeçalho de grupo seguinte */
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; padding-top: 8px; padding-bottom: 4px;
   font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
 }
 .rc-sort .btn .i { width: 16px; height: 16px; }

@@ -25,24 +25,34 @@ export default function Chip({ selected, onClick, icon, count, project, classNam
   )
 }
 
-// setas ←/→ movem o foco entre os botões do grupo; num grupo de rádio também escolhem
+// setas ←/→ (e Home/End) movem o foco entre os botões do grupo; num grupo de rádio também escolhem.
+// Numa toolbar, o ponto de Tab acompanha o foco (roving tabindex).
 function arrowFocus(e, select = false) {
   const d = { ArrowRight: 1, ArrowLeft: -1, ...(select && { ArrowDown: 1, ArrowUp: -1 }) }[e.key]
-  if (!d) return
+  if (!d && e.key !== 'Home' && e.key !== 'End') return
   const btns = [...e.currentTarget.querySelectorAll('button:not([disabled])')]
   const i = btns.indexOf(document.activeElement)
   if (i < 0) return
-  e.preventDefault()
-  const next = btns[(i + d + btns.length) % btns.length]
+  e.preventDefault() // Home/End nunca fazem scroll da página
+  const next = d ? btns[(i + d + btns.length) % btns.length] : e.key === 'Home' ? btns[0] : btns[btns.length - 1]
+  if (!select) for (const b of btns) b.tabIndex = b === next ? 0 : -1
   next.focus()
   next.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
   if (select && next.getAttribute('role') === 'radio' && next.getAttribute('aria-checked') !== 'true') next.click()
 }
 
-// filtros: uma linha com scroll horizontal (role="toolbar")
+// filtros: uma linha com scroll horizontal (role="toolbar"). Um só ponto de Tab (o chip ativo, ou o
+// primeiro); as setas, Home e End andam entre os chips (padrão ARIA toolbar).
 export function ChipRow({ label, className = '', children }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const btns = [...(ref.current?.querySelectorAll('button:not([disabled])') || [])]
+    const focused = btns.find((b) => b === document.activeElement)
+    const on = focused || btns.find((b) => b.getAttribute('aria-pressed') === 'true') || btns[0]
+    for (const b of btns) b.tabIndex = b === on ? 0 : -1
+  })
   return (
-    <div className={`chips ${className}`.trim()} role="toolbar" aria-label={label} onKeyDown={arrowFocus}>
+    <div ref={ref} className={`chips ${className}`.trim()} role="toolbar" aria-label={label} onKeyDown={arrowFocus}>
       <GroupCtx.Provider value="toolbar">{children}</GroupCtx.Provider>
     </div>
   )

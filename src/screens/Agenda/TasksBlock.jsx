@@ -32,7 +32,8 @@ export default function TasksBlock() {
   }
 
   const oldest = receivables.oldestDate
-  const since = oldest ? ` · desde ${MONTHS_ABBR[Number(oldest.slice(5, 7)) - 1]} ${oldest.slice(0, 4)}` : ''
+  // "desde jul 2025" nunca se parte ao meio (com pouca largura passa inteiro para a linha de baixo)
+  const since = oldest ? ` · desde\u00a0${MONTHS_ABBR[Number(oldest.slice(5, 7)) - 1]}\u00a0${oldest.slice(0, 4)}` : ''
   const gSub = [
     gPast ? `${gPast} já ${gPast === 1 ? 'aconteceu' : 'aconteceram'}` : null,
     gNext ? count(gNext, 'próximo', 'próximos') : null,

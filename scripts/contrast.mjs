@@ -34,6 +34,9 @@ const P = [
   ['accent-text / page', 'accent-text', 'page', 4.5], ['accent-text / surface', 'accent-text', 'surface', 4.5],
   ['accent-text / accent-soft (tab/chip ativos)', 'accent-text', 'accent-soft', 4.5], ['accent-text / sheet', 'accent-text', 'sheet-bg', 4.5],
   ['accent-text / seg-on', 'accent-text', 'seg-on', 4.5],
+  // contagens (.n) na opção ativa: usam ink-2 (seg-on) e accent-text (chip ativo); muted ali falha no escuro
+  ['muted / seg-on — PROIBIDO em texto (.n ativa usa ink-2)', 'muted', 'seg-on', 0],
+  ['muted / accent-soft — PROIBIDO em texto (.n do chip ativo usa accent-text)', 'muted', 'accent-soft', 0],
   ['on-accent / accent (primário)', 'on-accent', 'accent', 4.5], ['on-accent / accent-strong', 'on-accent', 'accent-strong', 4.5],
   ['accent / page — UI', 'accent', 'page', 3], ['accent / surface — UI', 'accent', 'surface', 3],
   ['field-border / surface — UI', 'field-border', 'surface', 3], ['field-border / field-bg — UI', 'field-border', 'field-bg', 3],

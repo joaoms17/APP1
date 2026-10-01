@@ -3,7 +3,8 @@ import { foldText } from './format.js'
 // Deduplicação do Google (spec §14.3) — uma só implementação, usada pela Lista, Mês,
 // Receber e A tratar. Para cada (projeto, dia):
 //   1) hora    — |hora do Google − start_time| ≤ 30 min, 1:1 (o mais próximo);
-//   2) título  — ≥ 2 palavras de > 2 letras em comum, sem acentos, 1:1;
+//   2) título  — ≥ 2 palavras de > 2 letras em comum, sem acentos, 1:1 — ou títulos iguais, ou todas
+//      as palavras do mais curto no outro ("Ensaio" ↔ "Ensaio", "Concerto" ↔ "Concerto de Natal");
 //   3) contagem — cada evento da app ainda livre esconde no máximo UM do Google
 //      em que falte a hora de um dos lados.
 // O que sobra fica "por registar". Registar a partir do Google copia a hora → emparelha no passo 1.
@@ -14,12 +15,18 @@ const hm = (t) => (t ? String(t).slice(0, 5) : null)
 const minutesOf = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
 const words = (s) => new Set(foldText(s).split(/[^a-z0-9]+/).filter((w) => w.length > 2))
 
+const norm = (s) => foldText(s).split(/[^a-z0-9]+/).filter(Boolean).join(' ')
+
 export function similarTitles(a, b) {
+  if (norm(a) && norm(a) === norm(b)) return true
   const A = words(a)
   const B = words(b)
   let n = 0
   for (const w of A) if (B.has(w)) n++
-  return n >= 2
+  if (n >= 2) return true
+  // título curto (uma palavra, ex.: "Ensaio") contido no outro
+  const [short, long] = A.size <= B.size ? [A, B] : [B, A]
+  return short.size > 0 && n === short.size
 }
 
 // chave estável de um evento do Google (rota s=registar:<key>)
@@ -79,8 +86,11 @@ export function matchGoogle(events, googleEvents) {
     }
   }
 
+  // a mesma ocorrência repetida no feed (mesma chave) conta uma vez só
+  const seen = new Set()
   const out = pending
     .map((g) => (g.key ? g : { ...g, key: googleKey(g) }))
+    .filter((g) => !seen.has(g.key) && seen.add(g.key))
     .sort((a, b) => ascKey(a).localeCompare(ascKey(b)))
   const byDay = new Map()
   for (const g of out) {

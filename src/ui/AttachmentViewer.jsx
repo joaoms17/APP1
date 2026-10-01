@@ -7,7 +7,7 @@ import EmptyState from './EmptyState.jsx'
 import { isImageName, useAttachmentUrl } from './Attachments.jsx'
 import { useStore } from '../store.jsx'
 import { closeSheet } from '../router.js'
-import { fmtDMY } from '../format.js'
+import { dayOfTimestamp, fmtDMY } from '../format.js'
 import './components.css'
 
 // Zoom da imagem com dois dedos, arrastar quando ampliada e duplo toque (1× ↔ 2,5×).
@@ -132,7 +132,7 @@ export default function AttachmentViewer({ id, onClose }) {
           <div className="viewer-file">
             <Icon name="file" size="lg" />
             <b>{att.name || 'Documento'}</b>
-            {att.created_at && !Number.isNaN(Date.parse(att.created_at)) && <small>Anexado a {fmtDMY(att.created_at.slice(0, 10))}</small>}
+            {dayOfTimestamp(att.created_at) && <small>Anexado a {fmtDMY(dayOfTimestamp(att.created_at))}</small>}
           </div>
         </div>
       )}

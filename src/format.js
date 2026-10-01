@@ -81,6 +81,12 @@ const utc = (ymd) => { const [y, m, d] = parts(ymd); return Date.UTC(y, m - 1, d
 
 export const toYMD = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 export const todayYMD = () => toYMD(new Date())
+// dia (no fuso do aparelho, Lisboa) de um timestamp da BD ("2026-09-29T23:30:00.123456+00:00" → "2026-09-30");
+// nunca o .slice(0, 10), que é o dia UTC
+export const dayOfTimestamp = (iso) => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : toYMD(d)
+}
 
 export const addDays = (ymd, n) => {
   const x = new Date(utc(ymd) + n * 86400000)

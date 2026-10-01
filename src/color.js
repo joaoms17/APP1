@@ -1,5 +1,9 @@
 // Cor de projeto em qualquer modo (spec §7).
-// darkMark(hex): variante escura de QUALQUER cor — limita a luminosidade OKLCH a 0,66.
+// darkMark(hex): variante escura de QUALQUER cor — limita a luminosidade OKLCH a 0,66 e, para cores
+// quase pretas, sobe-a até ter ≥ 2:1 com --surface escuro (faixas, pontos e barras nunca desaparecem,
+// e o ponto cheio da app nunca parece o anel oco do Google).
+// lightMark(hex): no claro, só as cores quase brancas (#fff, amarelo-limão…) escurecem até ≥ 1,8:1
+// com --surface. As 9 predefinidas não mudam em nenhum dos modos.
 // Substitui o mapa DARK_VARIANT da v1, que só cobria as 9 cores predefinidas.
 const toLin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
 const toSrgb = (c) => Math.round(255 * Math.max(0, Math.min(1, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)))
@@ -27,16 +31,32 @@ const normHex = (hex) => {
   return /^#[0-9a-f]{6}$/.test(h) ? h : '#929292'
 }
 
+const LIGHT_SURFACE = '#fffdfb' // --surface (claro)
+const DARK_SURFACE = '#322729'  // --surface (escuro)
+
+// muda a luminosidade OKLab (dir +1 sobe, −1 desce) até ter o contraste mínimo com o fundo
+const untilContrast = (hex, bg, min, dir) => {
+  let h = hex
+  let [L, a, b] = hex2oklab(h)
+  for (let i = 0; i < 50 && contrastRatio(h, bg) < min; i++) {
+    L = Math.max(0, Math.min(1, L + dir * 0.02))
+    h = oklab2hex([L, a, b])
+  }
+  return h
+}
+
 export const darkMark = (hex) => {
   const h = normHex(hex)
   const [L, a, b] = hex2oklab(h)
-  return L > 0.66 ? oklab2hex([0.66, a, b]) : h
+  return untilContrast(L > 0.66 ? oklab2hex([0.66, a, b]) : h, DARK_SURFACE, 2, +1)
 }
+
+export const lightMark = (hex) => untilContrast(normHex(hex), LIGHT_SURFACE, 1.8, -1)
 
 // o único style inline permitido: <span data-p style={projectVars(p.color)}>
 export const projectVars = (hex) => {
   const h = normHex(hex)
-  return { '--p-l': h, '--p-d': darkMark(h) }
+  return { '--p-l': lightMark(h), '--p-d': darkMark(h) }
 }
 
 // contraste WCAG entre duas cores (aviso da "Cor livre" quando < 1,5:1 com --surface)

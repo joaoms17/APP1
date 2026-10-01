@@ -66,8 +66,7 @@ export function EventRow({
 
   const showsMissing = end === 'missing' || end === 'recebi'
   const noReceipt = needsReceipt(ev)
-  const receiptWord = ev.event_date > today ? null
-    : ev.receipt_issued ? 'recibo emitido' : noReceipt ? 'sem recibo' : null
+  const receiptWord = ev.receipt_issued ? 'recibo emitido' : noReceipt ? 'sem recibo' : null
   const label = [
     ev.title, datePhrase(ev.event_date, today), t, p?.name, ev.location,
     showsMissing ? null : money(ev.value),
@@ -84,7 +83,7 @@ export function EventRow({
 
   // a 3.ª linha só existe quando há algo a assinalar (mesmas regras do StatusBadge/ReceiptMark)
   const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
-  const receiptShown = marks && ev.event_date <= today && (ev.receipt_issued || noReceipt)
+  const receiptShown = marks && (ev.receipt_issued || noReceipt) // noReceipt já exige evento realizado
   const hasTags = badgeShown || receiptShown || hasAtt
   const tags = (
     <>
@@ -93,9 +92,9 @@ export function EventRow({
       {hasAtt && <span className="mark"><Icon name="paperclip" /><span className="sr-only">tem anexo</span></span>}
     </>
   )
-  const cls = cx('row', ev.event_date === today && lead === 'date' && 'today', blank && 'blank', flash && 'flash', className)
   // com ação de linha, o texto visível repete o nome do botão esticado: fica escondido dos leitores de ecrã
   const withAction = end === 'recebi' || end === 'emitido'
+  const cls = cx('row', withAction && 'act', ev.event_date === today && lead === 'date' && 'today', blank && 'blank', flash && 'flash', className)
   const content = (
     <>
       <span className="bar" />
@@ -140,7 +139,9 @@ export function GoogleRow({ g, lead = 'date', blank = false, onRegister, classNa
     .filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
   const register = () => (onRegister ? onRegister(g) : openSheet('registar', { key: g.key }))
   return (
-    <div className={cx('row g', blank && 'blank', className)} {...pvOf(p?.color)} {...rest}>
+    <div className={cx('row g act', blank && 'blank', className)} {...pvOf(p?.color)} {...rest}>
+      {/* a linha toda regista (alvo de toque); para o teclado e leitores de ecrã basta o botão "Registar" */}
+      <button type="button" className="row-open" tabIndex={-1} aria-hidden="true" onClick={register} />
       <span className="bar" />
       <Lead kind={lead} ymd={g.date} time={g.time} today={today} />
       <span className="main">
@@ -164,8 +165,9 @@ export function ExpenseRow({ ex, onOpen, className = '' }) {
   const p = ex.project_id ? projectById(ex.project_id) : null
   const hasAtt = attachmentsFor('expense', ex.id).length > 0
   const value = money(ex.amount, 'always')
+  const minus = Number(ex.amount) ? '−' : '' // 0 € sem sinal (só pode vir da v1)
   const label = [ex.description, fmtDay(ex.expense_date, { weekday: null, month: 'long' }), p ? p.name : 'Geral',
-    ex.category, `menos ${value}`, hasAtt ? 'talão anexado' : null].filter(Boolean).join(', ')
+    ex.category, minus ? `menos ${value}` : value, hasAtt ? 'talão anexado' : null].filter(Boolean).join(', ')
   return (
     <button type="button" className={cx('row x', className)} {...(p ? pvOf(p.color) : {})} aria-label={label}
       onClick={() => (onOpen ? onOpen(ex) : openSheet('despesa', ex.id))}>
@@ -179,7 +181,7 @@ export function ExpenseRow({ ex, onOpen, className = '' }) {
         </span>
       </span>
       <span className="end">
-        <span className="money">−{value}</span>
+        <span className="money">{minus}{value}</span>
         {hasAtt && <span className="mark"><Icon name="paperclip" /><span className="sr-only">talão anexado</span></span>}
       </span>
     </button>

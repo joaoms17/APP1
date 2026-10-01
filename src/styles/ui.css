@@ -147,6 +147,8 @@ svg.i.lg { width: 24px; height: 24px; }
   box-shadow: 0 1px 2px rgba(40, 20, 22, .10), 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent);
 }
 .seg .n { font-weight: 800; color: var(--muted); font-size: var(--fs-caption); }
+/* opção ativa: a contagem sobe para --ink-2 (--muted sobre --seg-on fica abaixo de AA no escuro) */
+.seg > [aria-selected="true"] .n, .seg > [aria-checked="true"] .n, .seg > [aria-pressed="true"] .n { color: var(--ink-2); }
 .seg > [aria-selected="true"] .n.alert { color: var(--st-overdue-fg); }
 
 /* ---- chips ------------------------------------------------------------ */
@@ -163,7 +165,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .chip[aria-checked="true"], .chip[aria-pressed="true"], .chip.on {
   background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent-text) 55%, transparent);
 }
-.chip[aria-checked="true"] .n, .chip.on .n { color: var(--accent-text); }
+.chip[aria-checked="true"] .n, .chip[aria-pressed="true"] .n, .chip.on .n { color: var(--accent-text); }
 .chip .i { width: 16px; height: 16px; }
 .chip-sep { flex: none; width: 1px; background: var(--line); margin: 6px 2px; }
 
@@ -182,7 +184,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .group-head h2 {
   font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: var(--fs-group);
   font-variation-settings: "opsz" 48; letter-spacing: -0.01em; line-height: 1.1; color: var(--ink);
-  display: flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap;
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; min-width: 0; white-space: nowrap;
 }
 .group-head h2 small { font-family: var(--font-sans); font-style: normal; font-size: var(--fs-meta); font-weight: 700; color: var(--muted); letter-spacing: 0; white-space: nowrap; }
 .group-head .sum { margin-left: auto; font-size: var(--fs-meta); font-weight: 700; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -201,6 +203,14 @@ svg.i.lg { width: 24px; height: 24px; }
   border-radius: var(--radius-sm);
 }
 .row + .row::after { content: ''; position: absolute; top: 0; left: var(--row-inset); right: 0; height: 1px; background: var(--rule); }
+/* foco por teclado (Tab/Shift+Tab): o scroll deixa espaço para a barra compacta (48) e o cabeçalho de
+   grupo sticky por cima, e para a tabbar por baixo (WCAG 2.4.11) — um elemento por baixo das barras
+   conta como fora de vista e o browser desloca a página */
+html {
+  scroll-padding-top: calc(env(safe-area-inset-top) + 48px + 64px * var(--text-scale));
+  scroll-padding-bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) { html { scroll-padding-bottom: 16px; } }
 @media (hover: hover) { .row:hover { background: color-mix(in srgb, var(--surface) 55%, transparent); } }
 .row:active { background: var(--surface); }
 .row .bar { align-self: stretch; margin: 3px 0; width: 3px; border-radius: 2px; background: var(--p); }
@@ -216,7 +226,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .row .main { display: grid; gap: 3px; min-width: 0; }
 .row .title {
   font-size: var(--fs-body); font-weight: 700; line-height: var(--lh-snug); color: var(--ink);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
 }
 .row.g .title { color: var(--ink-2); font-weight: 600; }
 .row .meta { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -268,8 +278,8 @@ svg.i.lg { width: 24px; height: 24px; }
 }
 .today-card .time.none { font-family: var(--font-sans); font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); padding-top: 3px; }
 .today-card .body { display: grid; gap: 2px; min-width: 0; }
-.today-card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.today-card .name { font-size: var(--fs-title); font-weight: 800; line-height: var(--lh-snug); }
+.today-card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.today-card .name { font-size: var(--fs-title); font-weight: 800; line-height: var(--lh-snug); min-width: 0; overflow-wrap: anywhere; }
 .today-card .top .money { font-size: var(--fs-title); }
 .today-card .where { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .today-card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; min-height: 34px; }
@@ -287,7 +297,7 @@ svg.i.lg { width: 24px; height: 24px; }
 .task .ic.gcal { background: var(--info-bg); color: var(--info-fg); }
 .task .ic.rcpt { background: var(--st-partial-bg); color: var(--st-partial-fg); }
 .task b { display: block; font-size: var(--fs-body); font-weight: 800; line-height: 1.25; }
-.task small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); } /* parte de linha: "desde jul 2025" nunca perde o ano */
 .task .val { font-size: var(--fs-body); font-weight: 800; font-variant-numeric: tabular-nums; }
 .task .val.late { color: var(--st-overdue-fg); }
 .task .count { min-width: 30px; height: 26px; padding: 0 9px; border-radius: 13px; background: var(--surface-sunken); display: grid; place-items: center; font-size: var(--fs-meta); font-weight: 800; }
@@ -328,6 +338,10 @@ svg.i.lg { width: 24px; height: 24px; }
 .control input, .control select, .control textarea, .control .val {
   flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: var(--fs-input); color: var(--ink); padding: 0;
 }
+/* o campo ocupa a altura toda da caixa (clicar 6 px abaixo do topo também põe o cursor) */
+.control > input:not([type="date"]):not([type="time"]), .control > textarea { align-self: stretch; text-overflow: ellipsis; }
+/* valor legível da data/hora numa linha; nunca por baixo do "Limpar" */
+.control .val { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .control input::placeholder, .control textarea::placeholder { color: var(--muted); opacity: 1; }
 .control .affix { color: var(--muted); font-weight: 700; }
 .control.area { align-items: flex-start; padding: 12px 14px; min-height: 88px; }
@@ -336,10 +350,12 @@ svg.i.lg { width: 24px; height: 24px; }
 .form-section { display: grid; gap: var(--sp-4); }
 .form-section + .form-section { padding-top: var(--sp-5); border-top: 1px solid var(--rule); }
 .form-section > h3 { font-size: var(--fs-title); font-weight: 800; }
-.linkish { color: var(--accent-text); font-weight: 800; font-size: var(--fs-meta); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; }
+.linkish { color: var(--accent-text); font-weight: 800; font-size: var(--fs-meta); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; min-height: var(--hit); }
 
 /* switch */
-.switch-row { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+.switch-row { display: flex; align-items: center; gap: 12px; min-height: 56px; position: relative; }
+/* a linha toda (56 px) é alvo do interruptor: o rótulo estica-se por baixo dele */
+.switch-row .txt label::after { content: ''; position: absolute; inset: 0; }
 .switch-row .txt { flex: 1; }
 .switch-row .txt b { display: block; font-weight: 800; }
 .switch-row .txt small { display: block; color: var(--muted); font-size: var(--fs-meta); font-weight: 600; }
@@ -380,12 +396,14 @@ dialog.sheet::backdrop { background: var(--scrim); }
 .sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 8px var(--gutter) 24px; display: grid; gap: var(--sp-5); align-content: start; }
 .sheet-body.form { gap: var(--sp-4); padding-top: 16px; }
 .sheet-foot {
-  flex: none; display: flex; gap: 10px; padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  flex: none; display: flex; flex-wrap: wrap-reverse; gap: 10px; padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--sheet-bg) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--rule);
 }
-.sheet-foot .btn { flex: 1; }
-.sheet-foot .btn.primary { flex: 1.6; }
+/* lado a lado quando cabem ([Editar] [Recebi 370 €]); quando não cabem (ecrã estreito, texto grande),
+   wrap-reverse põe a primária em cima, a toda a largura, e o "Editar" por baixo — o valor nunca é cortado */
+.sheet-foot .btn { flex: 1 1 auto; min-width: 0; white-space: normal; text-align: center; }
+.sheet-foot .btn.primary { flex: 1.6 1 auto; }
 html:has(dialog[open]) { overflow: hidden; }
 
 /* diálogo de confirmação (centrado) */
@@ -421,6 +439,7 @@ dialog.confirm .acts { display: grid; gap: 6px; margin-top: 8px; }
 .thumb .img.receipt i { display: block; width: 46px; height: 58px; background: #fff; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.12); background-image: repeating-linear-gradient(to bottom, transparent 0 9px, #d9cfc6 9px 11px); background-size: 34px 100%; background-repeat: no-repeat; background-position: 6px 8px; }
 .thumb small { font-size: var(--fs-caption); font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .thumb-add { width: 84px; height: 84px; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1.5px var(--field-border); border: 0; display: grid; place-items: center; align-content: center; gap: 2px; color: var(--accent-text); font-size: var(--fs-caption); font-weight: 800; background-image: none; outline: 1.5px dashed var(--field-border); outline-offset: -1.5px; box-shadow: none; }
+.thumb-add:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } /* o tracejado não é anel de foco */
 
 /* ---- calendário ------------------------------------------------------------------ */
 .cal { padding: 10px 10px 12px; }
