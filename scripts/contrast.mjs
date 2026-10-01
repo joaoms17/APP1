@@ -46,7 +46,7 @@ const P = [
   ['Sinal fg / bg', 'st-partial-fg', 'st-partial-bg', 4.5], ['Sinal fg / page', 'st-partial-fg', 'page', 4.5],
   ['Por receber fg / page', 'st-due-fg', 'page', 4.5], ['Por receber fg / surface', 'st-due-fg', 'surface', 4.5],
   ['Em atraso fg / bg', 'st-overdue-fg', 'st-overdue-bg', 4.5], ['Em atraso fg / page', 'st-overdue-fg', 'page', 4.5], ['Em atraso fg / surface', 'st-overdue-fg', 'surface', 4.5],
-  ['Sem recibo / page', 'warn-fg', 'page', 4.5], ['Sem recibo / surface', 'warn-fg', 'surface', 4.5],
+  ['Aviso / page', 'warn-fg', 'page', 4.5], ['Aviso / surface', 'warn-fg', 'surface', 4.5],
   ['info fg / bg', 'info-fg', 'info-bg', 4.5], ['warning fg / bg', 'warning-fg', 'warning-bg', 4.5], ['ink / warning-bg', 'ink', 'warning-bg', 4.5],
   ['critical fg / bg', 'critical-fg', 'critical-bg', 4.5],
   ['toast fg / bg', 'toast-fg', 'toast-bg', 4.5], ['toast "Anular" / bg', 'toast-action', 'toast-bg', 4.5],

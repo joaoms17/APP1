@@ -5,21 +5,21 @@ import { fmtMoney, MONTHS_ABBR } from '../../format.js'
 
 const count = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
-// "A tratar" (spec §9.10): Em atraso · Por registar do Google · Recibos por emitir.
+// "A tratar" (spec §9.10): Em atraso · Por registar do Google. Os recibos não entram: por omissão
+// os eventos não levam recibo.
 // Cada linha esconde-se a 0 e abre Receber no separador certo; tudo a 0 → "Tudo em dia".
 export default function TasksBlock() {
-  const { receivables, googlePending, receiptsToIssue, loadingPhases, gcalStatus } = useStore()
+  const { receivables, googlePending, loadingPhases, gcalStatus } = useStore()
   const late = receivables.overdue.length
   const gPast = googlePending.past.length
   const gNext = googlePending.upcoming.length
-  const rcpt = receiptsToIssue.length
 
   const link = (to) => ({
     href: routeHref(to),
     onClick: (e) => { e.preventDefault(); navigate(to) },
   })
 
-  if (!late && !gPast && !gNext && !rcpt) {
+  if (!late && !gPast && !gNext) {
     // o Google e os anexos chegam na 2.ª fase: não dizer "Tudo em dia" antes do tempo
     const waiting = loadingPhases.phase2 || gcalStatus.refreshing
     return (
@@ -48,10 +48,6 @@ export default function TasksBlock() {
       {gPast + gNext > 0 && (
         <TaskRow tone="gcal" icon="gcal" title="Por registar do Google" sub={gSub} count={gPast + gNext}
           {...link('#/receber/google')} />
-      )}
-      {rcpt > 0 && (
-        <TaskRow tone="rcpt" icon="receipt" title="Recibos por emitir" sub="Recebidos e sem recibo" count={rcpt}
-          {...link('#/receber/recibos')} />
       )}
     </Card>
   )

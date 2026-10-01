@@ -48,13 +48,13 @@ export const STATE_PHRASE = {
 }
 
 // ---------- evento ---------------------------------------------------------------
-// lead: 'date' | 'time' | 'month' · end: 'value' | 'missing' | 'recebi' | 'emitido'
+// lead: 'date' | 'time' | 'month' · end: 'value' | 'missing' | 'recebi'
 export function EventRow({
   ev, lead = 'date', blank = false, end = 'value', hideProject = false, meta, marks = true,
   flash = false, onOpen, onAction, className = '', ...rest
 }) {
   const store = useStore()
-  const { today, projectById, eventState, missing, needsReceipt, attachmentsFor, receiveRemaining, setReceipt } = store
+  const { today, projectById, eventState, missing, attachmentsFor, receiveRemaining } = store
   const p = projectById(ev.project_id)
   const t = hm(ev.start_time)
   const st = eventState(ev)
@@ -65,8 +65,7 @@ export function EventRow({
     .filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
 
   const showsMissing = end === 'missing' || end === 'recebi'
-  const noReceipt = needsReceipt(ev)
-  const receiptWord = ev.receipt_issued ? 'recibo emitido' : noReceipt ? 'sem recibo' : null
+  const receiptWord = ev.receipt_issued ? 'recibo emitido' : null
   const label = [
     ev.title, datePhrase(ev.event_date, today), t, p?.name, ev.location,
     showsMissing ? null : money(ev.value),
@@ -78,12 +77,11 @@ export function EventRow({
   const act = () => {
     if (onAction) return onAction(ev)
     if (end === 'recebi') return receiveRemaining(ev)
-    if (end === 'emitido') return setReceipt(ev, true)
   }
 
   // a 3.ª linha só existe quando há algo a assinalar (mesmas regras do StatusBadge/ReceiptMark)
   const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
-  const receiptShown = marks && (ev.receipt_issued || noReceipt) // noReceipt já exige evento realizado
+  const receiptShown = marks && !!ev.receipt_issued
   const hasTags = badgeShown || receiptShown || hasAtt
   const tags = (
     <>
@@ -93,7 +91,7 @@ export function EventRow({
     </>
   )
   // com ação de linha, o texto visível repete o nome do botão esticado: fica escondido dos leitores de ecrã
-  const withAction = end === 'recebi' || end === 'emitido'
+  const withAction = end === 'recebi'
   const cls = cx('row', withAction && 'act', ev.event_date === today && lead === 'date' && 'today', blank && 'blank', flash && 'flash', className)
   const content = (
     <>
@@ -108,16 +106,14 @@ export function EventRow({
   )
 
   if (withAction) {
-    const recebi = end === 'recebi'
     return (
       <div className={cls} {...pvOf(p?.color)} {...rest}>
         <button type="button" className="row-open" aria-label={label} onClick={open} />
         {content}
         <span className="end">
-          <span className="money" aria-hidden="true">{money(recebi ? mis : ev.value)}</span>
-          <Button variant="row" icon="check" iconTone="ok" onClick={act}
-            aria-label={recebi ? `Recebi ${money(mis)} de ${ev.title}` : `Marcar recibo de ${ev.title} como emitido`}>
-            {recebi ? 'Recebi' : 'Emitido'}
+          <span className="money" aria-hidden="true">{money(mis)}</span>
+          <Button variant="row" icon="check" iconTone="ok" onClick={act} aria-label={`Recebi ${money(mis)} de ${ev.title}`}>
+            Recebi
           </Button>
         </span>
       </div>

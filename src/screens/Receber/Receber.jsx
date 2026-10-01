@@ -5,15 +5,15 @@ import {
 } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
-import { receivedOnOf } from '../../selectors.js'
-import { MONTHS_LONG, ago, cap, fmtDM, fmtDMY, fmtMoney, fmtMonth } from '../../format.js'
+import { ago, cap, fmtMoney, fmtMonth } from '../../format.js'
 import './Receber.css'
 
 // Receber (spec §10.11): capa com o que está em atraso, a receber e sinais; separadores
-// Em atraso · Recibos · Por registar ligados à rota (#/receber/atraso|recibos|google).
+// Em atraso · Por registar ligados à rota (#/receber/atraso|google). O antigo #/receber/recibos cai
+// em Em atraso: por omissão os eventos não levam recibo, por isso não há recibos "em falta".
 
-const SUBS = ['atraso', 'recibos', 'google']
-const SUB_NAMES = { atraso: 'Em atraso', recibos: 'Recibos por emitir', google: 'Por registar do Google' }
+const SUBS = ['atraso', 'google']
+const SUB_NAMES = { atraso: 'Em atraso', google: 'Por registar do Google' }
 // "A receber ›" abre a Agenda em Procurar com Próximos + Por receber
 const UPCOMING = '#/agenda/lista?q=&quando=proximos&estado=porreceber'
 
@@ -21,7 +21,7 @@ const money = (n) => fmtMoney(n, { cents: 'auto' })
 const count = (n, one, many) => `${n} ${n === 1 ? one : many}`
 const joinMeta = (xs) => xs.filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
 
-// linha que sai ("Recebi", "Emitido"): colapsa em 200 ms e só depois grava; se voltar (Anular), pisca
+// linha que sai ("Recebi"): colapsa em 200 ms e só depois grava; se voltar (Anular), pisca
 function useRowExit(ids) {
   const { notifyError } = useStore()
   const reduce = useReducedMotion()
@@ -162,53 +162,6 @@ function Overdue() {
   )
 }
 
-// ---------- Recibos -------------------------------------------------------------------------------
-function Receipts() {
-  const { receiptsToIssue, today, projectById, paymentsByEvent, setReceipt } = useStore()
-  const { bind, exit, flash } = useRowExit(receiptsToIssue.map((e) => e.id))
-  if (!receiptsToIssue.length) {
-    return <EmptyState icon="receipt" title="Recibos em dia" text="Todos os eventos recebidos têm recibo." />
-  }
-
-  // por mês do evento, do mais recente
-  const groups = []
-  for (const ev of receiptsToIssue) {
-    const k = ev.event_date.slice(0, 7)
-    let g = groups[groups.length - 1]
-    if (!g || g.key !== k) groups.push(g = { key: k, events: [] })
-    g.events.push(ev)
-  }
-  const year = today.slice(0, 4)
-  const meta = (ev) => {
-    const on = receivedOnOf(ev, paymentsByEvent)
-    return joinMeta([
-      <b key="r">recebido a {on.slice(0, 4) === year ? fmtDM(on) : fmtDMY(on)}</b>,
-      projectById(ev.project_id)?.name,
-    ])
-  }
-
-  return (
-    <>
-      <p className="rc-sort">Recebidos e sem recibo · do mais recente</p>
-      {groups.map((g, i) => (
-        <section key={g.key} className="rc-group" aria-labelledby={`rc-${g.key}`}>
-          <GroupHeader id={`rc-${g.key}`} first={i === 0} title={cap(MONTHS_LONG[Number(g.key.slice(5, 7)) - 1])}
-            small={g.key.slice(0, 4) !== year ? g.key.slice(0, 4) : undefined}
-            summary={`${g.events.length} por emitir`} />
-          <div className="rc-list">
-            {g.events.map((ev) => (
-              <div key={ev.id} ref={bind(ev.id)} className="rc-item">
-                <EventRow ev={ev} lead="month" end="emitido" marks={false} meta={meta(ev)}
-                  className={flash.has(ev.id) ? 'flash' : ''} onAction={(e) => exit(e.id, () => setReceipt(e, true))} />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
-    </>
-  )
-}
-
 // ---------- Por registar (Google) ---------------------------------------------------------------------
 // lista de pendentes; quando atravessa vários meses, o nome do mês aparece antes de cada um
 function GoogleList({ items, today }) {
@@ -300,7 +253,7 @@ function Pending() {
 // ---------- ecrã -----------------------------------------------------------------------------------------
 export default function Receber() {
   const route = useRoute()
-  const { receivables, receiptsToIssue, googlePending, loadingPhases, gcalStatus } = useStore()
+  const { receivables, googlePending, loadingPhases, gcalStatus } = useStore()
   // separador escondido: mantém o último sub-separador visto
   const subRef = useRef('atraso')
   if (route.tab === 'receber') subRef.current = SUBS.includes(route.path[1]) ? route.path[1] : 'atraso'
@@ -309,20 +262,18 @@ export default function Receber() {
   const gCount = googlePending.past.length + googlePending.upcoming.length
   const tabs = [
     { value: 'atraso', label: 'Em atraso', count: receivables.overdue.length, countTone: 'alert' },
-    { value: 'recibos', label: 'Recibos', count: receiptsToIssue.length },
     { value: 'google', label: 'Por registar', count: googleWaiting(loadingPhases, gcalStatus) && !gCount ? undefined : gCount },
   ]
 
   return (
     <div className="rc-screen">
-      <TopBar kicker="Cobranças e recibos" title="Receber" />
+      <TopBar kicker="Cobranças" title="Receber" />
       <SyncBanner className="rc-banner" />
       <Hero />
       <Segmented role="tablist" label="O que tratar" className="rc-tabs" value={sub} options={tabs}
         onChange={(v) => navigate(`#/receber/${v}`, { replace: true })} />
       <div className="rc-panel" role="tabpanel" aria-label={SUB_NAMES[sub]}>
         {sub === 'atraso' && <Overdue />}
-        {sub === 'recibos' && <Receipts />}
         {sub === 'google' && <Pending />}
       </div>
     </div>

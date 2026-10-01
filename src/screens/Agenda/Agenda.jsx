@@ -126,7 +126,7 @@ export default function Agenda() {
 
   const news = !seenNews && view === 'lista' && (
     <Callout tone="info" title="Novidades da v2." className="ag-news">
-      Os Eventos estão aqui, na Lista. Dívidas e recibos têm o separador Receber.
+      Os Eventos estão aqui, na Lista. As dívidas têm o separador Receber.
       {desktop ? ' As definições estão no fundo da barra lateral.' : ' As definições abrem no J.'}
       <span className="ag-news-act">
         <Button variant="ghost" size="sm" onClick={() => setSeenNews(new Date().toISOString())}>Percebi</Button>

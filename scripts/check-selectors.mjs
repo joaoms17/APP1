@@ -52,7 +52,6 @@ for (const cal of F.gcal_calendars) {
 }
 const rec = S.receivablesOf(events, pbe, TODAY)
 const aging = S.agingGroups(rec.overdue, TODAY, pbe)
-const receipts = S.receiptsToIssueOf(events, pbe, TODAY)
 const gm = S.matchGoogle(events, google)
 const gp = S.googlePendingOf(gm.pending, TODAY)
 const y26 = S.yearTotals(events, F.expenses, pbe, 2026, TODAY)
@@ -75,10 +74,9 @@ check('Entre 1 e 3 meses · total', ag.d31to90?.total, 2911.90)
 check('Últimos 30 dias · eventos', ag.le30?.events.length, 6)
 check('Últimos 30 dias · total', ag.le30?.total, 1652.25)
 
-section('§F.8 · Sinais e recibos')
+section('§F.8 · Sinais')
 check('Sinais recebidos · total', rec.depositsTotal, 629)
 check('Sinais recebidos · eventos', rec.depositsCount, 4)
-check('Recibos por emitir', receipts.length, 20)
 
 section('§F.8 · Google')
 check('eventos lidos dos feeds', google.length, 7)
@@ -152,7 +150,6 @@ section('Extra · estados (spec §9.1, casos sintéticos)')
   check('legado (paid sem pagamentos) → paid', S.eventStateOf(e('leg', 300, true), pays, TODAY), 'paid')
   check('flag desatualizado: paid mas pagamentos < valor → conta a soma', [S.eventStateOf(e('flag', 300, true), pays, TODAY), S.missingOf(e('flag', 300, true), pays)], ['partial-overdue', 200])
   check('0 € no passado → paid (nada a receber)', S.eventStateOf(e('zero', 0, false), pays, TODAY), 'paid')
-  check('0 € não pede recibo', S.receiptsToIssueOf([e('zero', 0, false)], pays, TODAY).length, 0)
 }
 
 section('Extra · projetos e categorias')

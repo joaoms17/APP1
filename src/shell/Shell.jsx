@@ -46,7 +46,7 @@ const LOADING = {
   definicoes: 'A carregar as definições',
 }
 
-// scroll guardado por vista: Agenda (lista · procurar · mês), Receber (atraso · recibos · google)
+// scroll guardado por vista: Agenda (lista · procurar · mês), Receber (atraso · google)
 function scrollKey(route) {
   const { tab, path, params } = route
   if (tab === 'agenda') return `agenda/${'q' in params ? 'procurar' : path[1] || 'lista'}`

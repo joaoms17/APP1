@@ -101,13 +101,6 @@ export function agingGroups(overdue, today, pbe) {
     .filter((g) => g.events.length)
 }
 
-// recibo em falta: recebido, já realizado (≤ hoje), sem recibo e com valor (0 € não leva recibo)
-export const needsReceipt = (ev, pbe, today) =>
-  ev.event_date <= today && !ev.receipt_issued && num(ev.value) > 0 && eventStateOf(ev, pbe, today) === 'paid'
-
-// recibos por emitir, do mais recente
-export const receiptsToIssueOf = (events, pbe, today) => sortDesc(events.filter((e) => needsReceipt(e, pbe, today)))
-
 // resumo de uma lista de eventos (cabeçalhos de grupo, cartão do mês, pesquisa)
 // total = faturado; got = recebido (limitado ao valor de cada evento); missing = o que falta
 export function summaryOf(events, pbe) {

@@ -22,13 +22,9 @@ export default function StatusBadge({ ev, always = false }) {
   return always ? <Badge tone="due">Por receber</Badge> : null
 }
 
-// Recibo não é estado: ícone "Recibo emitido" (sempre que foi emitido, também em eventos futuros) ·
-// "Sem recibo" (só recebidos e já realizados) · nada
+// Recibo não é estado: por omissão os eventos não levam recibo, por isso só se assinala o que foi
+// emitido (também em eventos futuros). Nunca "Sem recibo".
 export function ReceiptMark({ ev }) {
-  const { needsReceipt } = useStore()
-  if (ev.receipt_issued) {
-    return <span className="mark ok" title="Recibo emitido"><Icon name="receipt" /><span className="sr-only">Recibo emitido</span></span>
-  }
-  if (needsReceipt(ev)) return <span className="mark warn"><Icon name="receiptOff" />Sem recibo</span>
-  return null
+  if (!ev.receipt_issued) return null
+  return <span className="mark ok" title="Recibo emitido"><Icon name="receipt" /><span className="sr-only">Recibo emitido</span></span>
 }
