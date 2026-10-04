@@ -127,4 +127,23 @@ export async function placeFromTitle(title, { skip = [], signal } = {}) {
   }
 }
 
+// ---- locais que a Joana já usou (aprendidos dos próprios eventos) ----
+// "Pátio do Sol, Fábrica da Pólvora" ensina "Pátio do Sol": um título com esse nome reutiliza o mesmo
+// local e coordenadas, antes de procurar fora. → [{ name: palavras, label, lat, lng }] (nomes mais longos primeiro)
+export function knownPlacesOf(events) {
+  const byName = new Map()
+  for (const e of events) {
+    if (e.lat == null || e.lng == null || !e.location?.trim()) continue
+    const name = wordsOf(e.location.split(',')[0]).join(' ')
+    if (name.length < 4 || byName.has(name)) continue
+    byName.set(name, { name, label: e.location.trim(), lat: Number(e.lat), lng: Number(e.lng) })
+  }
+  return [...byName.values()].sort((a, b) => b.name.length - a.name.length)
+}
+export function knownPlaceInTitle(title, known) {
+  const have = ` ${wordsOf(title).join(' ')} `
+  const k = known.find((p) => have.includes(` ${p.name} `))
+  return k ? { label: k.label, lat: k.lat, lng: k.lng } : null
+}
+
 export const hasCoords = (ev) => ev?.lat != null && ev?.lng != null
