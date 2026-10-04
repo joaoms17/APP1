@@ -1,13 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Ícone da app: calendário com nota musical, paleta "Rosé Elegante" -->
-  <rect width="512" height="512" rx="116" fill="#b45368"/>
-  <g transform="translate(64 64) scale(16)" fill="none" stroke="#faf3ef" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3.5" y="5" width="17" height="16" rx="3.5"/>
-    <path d="M3.5 10h17M8 2.8v3.4M16 2.8v3.4"/>
-    <g transform="translate(12.05 15.3) scale(0.42) translate(-11.5 -12.4)" stroke-width="4.5">
-      <path d="M9 18.5V6.2c0-.5.35-.93.84-1.02l8-1.6c.63-.13 1.16.35 1.16 1v11.4"/>
-      <circle cx="6.5" cy="18.5" r="2.6" fill="#faf3ef" stroke="none"/>
-      <circle cx="16.5" cy="16" r="2.6" fill="#faf3ef" stroke="none"/>
-    </g>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<!-- Duet: ícone do separador (mesmo desenho do ícone da app, cantos arredondados) -->
+
+<defs>
+  <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+    <stop offset="0" stop-color="#cc3563"/><stop offset="1" stop-color="#701032"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.3" cy="0.12" r="0.9">
+    <stop offset="0" stop-color="#ffd9e2" stop-opacity="0.24"/><stop offset="0.6" stop-color="#ffd9e2" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="vig" cx="0.5" cy="0.45" r="0.75">
+    <stop offset="0.65" stop-color="#2a0010" stop-opacity="0"/><stop offset="1" stop-color="#2a0010" stop-opacity="0.34"/>
+  </radialGradient>
+  <linearGradient id="gold" x1="0.1" y1="0" x2="0.7" y2="1">
+    <stop offset="0" stop-color="#fff0c4"/><stop offset="0.5" stop-color="#ecc274"/><stop offset="1" stop-color="#cf9f55"/>
+  </linearGradient>
+  <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff8f3"/><stop offset="1" stop-color="#f6e6dc"/>
+  </linearGradient>
+  <clipPath id="cl"><path d="M0 0H623.1L352.8 1024H0Z"/></clipPath><clipPath id="cr"><path d="M629.1 0H1024V1024H358.8Z"/></clipPath><filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="12"/><feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <clipPath id="round"><rect width="1024" height="1024" rx="230"/></clipPath>
+</defs>
+<g clip-path="url(#round)"><rect width="1024" height="1024" fill="url(#bg)"/>
+<rect width="1024" height="1024" fill="url(#glow)"/>
+<rect width="1024" height="1024" fill="url(#vig)"/>
+<g transform="translate(520 512) scale(0.97) translate(-512 -512)"><g filter="url(#sh)"><path d="M210.7 781.1Q210.7 779.4 212 778.4Q213.2 777.4 216.1 777L249.3 772.4Q255.1 771.6 258.8 769.1Q262.5 766.6 265 762.3Q267.5 757.9 268.7 752.5Q272.9 738 281.8 705.3Q290.7 672.6 302.7 628.2Q314.7 583.9 328.2 534.2Q341.6 484.5 354.7 435.4Q367.7 386.3 379.1 344.4Q390.5 302.6 398 273.8Q405.4 245 407.5 236.7Q410 226.4 407.1 221.6Q404.2 216.8 394.3 215.6L362.4 211.5Q359 211 358 210Q357 209 357 207.3Q357 205.7 358.2 204.8Q359.5 204 362.4 204H622.5Q677.6 204 721.7 222.2Q765.9 240.5 794.5 276.9Q823 313.4 832.2 368.1Q841.3 422.7 826.4 496.1Q813.5 561.5 783.9 614.4Q754.3 667.2 708.9 705.1Q663.5 743 603.7 763.5Q543.8 784 470.5 784H215.7Q213.2 784 212 783.4Q210.7 782.8 210.7 781.1ZM477.5 774.5Q501.1 774.5 526 760Q550.9 745.5 575.1 712.5Q599.3 679.6 621.7 624.3Q644.1 569 661.9 487.8Q678 414.5 681.8 362.3Q685.5 310.1 678.5 277.1Q671.4 244.2 655.9 228.9Q640.3 213.5 618 213.5H606.8Q590.2 213.5 577 225.8Q563.7 238 556.2 264.1Q552.9 276.1 545.5 303.6Q538 331.2 528.1 368.9Q518.1 406.6 506.9 448.8Q495.8 491.1 484.6 533.6Q473.4 576 463.9 612.7Q454.3 649.4 447.5 675.7Q440.7 702 438.2 711.9Q430.3 743.8 436.5 759.1Q442.7 774.5 464.3 774.5Z" fill="url(#cream)" clip-path="url(#cl)"/><path d="M210.7 781.1Q210.7 779.4 212 778.4Q213.2 777.4 216.1 777L249.3 772.4Q255.1 771.6 258.8 769.1Q262.5 766.6 265 762.3Q267.5 757.9 268.7 752.5Q272.9 738 281.8 705.3Q290.7 672.6 302.7 628.2Q314.7 583.9 328.2 534.2Q341.6 484.5 354.7 435.4Q367.7 386.3 379.1 344.4Q390.5 302.6 398 273.8Q405.4 245 407.5 236.7Q410 226.4 407.1 221.6Q404.2 216.8 394.3 215.6L362.4 211.5Q359 211 358 210Q357 209 357 207.3Q357 205.7 358.2 204.8Q359.5 204 362.4 204H622.5Q677.6 204 721.7 222.2Q765.9 240.5 794.5 276.9Q823 313.4 832.2 368.1Q841.3 422.7 826.4 496.1Q813.5 561.5 783.9 614.4Q754.3 667.2 708.9 705.1Q663.5 743 603.7 763.5Q543.8 784 470.5 784H215.7Q213.2 784 212 783.4Q210.7 782.8 210.7 781.1ZM477.5 774.5Q501.1 774.5 526 760Q550.9 745.5 575.1 712.5Q599.3 679.6 621.7 624.3Q644.1 569 661.9 487.8Q678 414.5 681.8 362.3Q685.5 310.1 678.5 277.1Q671.4 244.2 655.9 228.9Q640.3 213.5 618 213.5H606.8Q590.2 213.5 577 225.8Q563.7 238 556.2 264.1Q552.9 276.1 545.5 303.6Q538 331.2 528.1 368.9Q518.1 406.6 506.9 448.8Q495.8 491.1 484.6 533.6Q473.4 576 463.9 612.7Q454.3 649.4 447.5 675.7Q440.7 702 438.2 711.9Q430.3 743.8 436.5 759.1Q442.7 774.5 464.3 774.5Z" fill="url(#gold)" clip-path="url(#cr)"/></g></g></g>
 </svg>

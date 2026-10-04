@@ -35,7 +35,7 @@ export default function Sidebar({ tab, news = false }) {
   )
   return (
     <aside className="sidebar" aria-label="Navegação">
-      <div className="brand"><b>Joana</b><i aria-hidden="true" /><small>Concertos, noivas e contas.</small></div>
+      <div className="brand"><b>Duet</b><i aria-hidden="true" /><small>Do palco ao altar, tudo em dia.</small></div>
       <Button variant="primary" block icon="plus" className="new" aria-label={NEW_LABEL} onClick={openNew}>
         Novo
       </Button>

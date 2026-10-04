@@ -82,7 +82,7 @@ function FatalError({ info, onRetry }) {
   const setup = info?.text === 'Esta funcionalidade ainda não está configurada.'
   return (
     <div className="sh-fatal">
-      <header className="topbar"><div><div className="kicker">Joana</div><h1>Algo correu mal</h1></div></header>
+      <header className="topbar"><div><div className="kicker">Duet</div><h1>Algo correu mal</h1></div></header>
       <ErrorPanel title="Não foi possível carregar os teus dados."
         text={setup ? 'A base de dados ainda não está pronta. Mostra os detalhes ao João.' : 'Verifica a ligação e tenta de novo.'}
         detail={info?.detail} onRetry={onRetry} />
@@ -122,7 +122,7 @@ export default function Shell({ booting = false }) {
   useEffect(() => (booting ? undefined : enableShortcuts()), [booting])
 
   // título da janela por ecrã (também é o que os leitores de ecrã anunciam)
-  useEffect(() => { document.title = `${TAB_LABELS[tab] || 'Agenda'} · Joana` }, [tab])
+  useEffect(() => { document.title = `${TAB_LABELS[tab] || 'Agenda'} · Duet` }, [tab])
 
   // abrir Receber apaga o ponto de novidades (e sair também conta como visto)
   const markSeen = store?.markReceberSeen

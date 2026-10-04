@@ -36,7 +36,7 @@ export default function Login() {
   const pwRef = useRef(null)
 
   // fora da shell ninguém põe o título da janela
-  useEffect(() => { document.title = 'Entrar · Joana' }, [])
+  useEffect(() => { document.title = 'Entrar · Duet' }, [])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -82,9 +82,9 @@ export default function Login() {
     <main className="lg-wrap">
       <form className="lg-form" aria-labelledby="lg-title" onSubmit={submit} noValidate>
         <div className="lg-brand">
-          <h1 id="lg-title">Joana</h1>
+          <h1 id="lg-title">Duet</h1>
           <i aria-hidden="true" />
-          <p>Concertos, noivas e contas.</p>
+          <p>Do palco ao altar, tudo em dia.</p>
         </div>
         <div className="card lg-card">
           {err && <Callout tone="error">{err}</Callout>}
