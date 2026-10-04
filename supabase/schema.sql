@@ -73,7 +73,6 @@ insert into projects (name, kind, color, sort_order) values
   ('Noventamente',     'music', '#cf9c3f', 2),
   ('Banda do Algarve', 'music', '#12a89e', 3),
   ('Outros',           'music', '#cd7c5a', 4),
-  ('Oitentamente',     'music', '#9c7ed4', 5),
   ('Gospel',           'music', '#4f9f68', 6),
   ('Tune Up',          'music', '#6d8ed6', 7),
   ('Mickael',          'music', '#a49b3f', 8),
