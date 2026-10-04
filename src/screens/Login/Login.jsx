@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { db } from '../../supabase'
-import { Button, Callout, Field, IconButton, TextInput, useField } from '../../ui'
+import { Button, Callout, Field, IconButton, TextInput, Wordmark, useField } from '../../ui'
 import { isNetworkError } from '../../errors.js'
 import './Login.css'
 
-// Entrar (spec §10.1): wordmark, lema, email + password ligados aos rótulos,
+// Entrar (spec §10.1): logótipo Duet (o h1 chama-se "Duet"), lema, email + password ligados aos rótulos,
 // "Mostrar password", erro num Callout e "A entrar…" enquanto espera.
 
 const BAD_LOGIN = 'Não foi possível entrar. Verifica o email e a password.'
@@ -82,9 +82,8 @@ export default function Login() {
     <main className="lg-wrap">
       <form className="lg-form" aria-labelledby="lg-title" onSubmit={submit} noValidate>
         <div className="lg-brand">
-          <h1 id="lg-title">Duet</h1>
-          <i aria-hidden="true" />
-          <p>Do palco ao altar, tudo em dia.</p>
+          <h1 id="lg-title"><Wordmark /></h1>
+          <p>Gestão financeira para os teus sonhos</p>
         </div>
         <div className="card lg-card">
           {err && <Callout tone="error">{err}</Callout>}

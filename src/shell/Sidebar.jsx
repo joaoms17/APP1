@@ -1,4 +1,4 @@
-import { Avatar, Button, Icon, syncTime } from '../ui'
+import { Avatar, Button, Icon, Wordmark, syncTime } from '../ui'
 import { openNew, tabHref } from '../router.js'
 import { useStore } from '../store.jsx'
 import { NAV, NEW_LABEL, goTab } from './nav.js'
@@ -22,7 +22,7 @@ function GoogleState() {
   return <div className="sync"><i aria-hidden="true" />{text}</div>
 }
 
-// Sidebar do computador (≥ 1024 px, spec §3.2): wordmark, "+ Novo", navegação, Google, Definições e conta.
+// Sidebar do computador (≥ 1024 px, spec §3.2): logótipo Duet, "+ Novo", navegação, Google, Definições e conta.
 export default function Sidebar({ tab, news = false }) {
   const { name, email } = accountOf(useSession())
   const link = (id, label, icon, extra = null) => (
@@ -35,7 +35,7 @@ export default function Sidebar({ tab, news = false }) {
   )
   return (
     <aside className="sidebar" aria-label="Navegação">
-      <div className="brand"><b>Duet</b><i aria-hidden="true" /><small>Do palco ao altar, tudo em dia.</small></div>
+      <div className="brand"><Wordmark /><small>Gestão financeira para os teus sonhos</small></div>
       <Button variant="primary" block icon="plus" className="new" aria-label={NEW_LABEL} onClick={openNew}>
         Novo
       </Button>

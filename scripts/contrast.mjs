@@ -51,6 +51,9 @@ const P = [
   ['critical fg / bg', 'critical-fg', 'critical-bg', 4.5],
   ['toast fg / bg', 'toast-fg', 'toast-bg', 4.5], ['toast "Anular" / bg', 'toast-action', 'toast-bg', 4.5],
   ['ponto "novidades" / surface — UI', 'dot-new', 'surface', 3],
+  ['logótipo: palavra / page', 'brand-ink', 'page', 4.5], ['logótipo: palavra / surface (sidebar)', 'brand-ink', 'surface', 4.5],
+  ['logótipo: traços / page — UI', 'brand-ray', 'page', 3], ['logótipo: traços / surface — UI', 'brand-ray', 'surface', 3],
+  ['logótipo: traços / accent-soft (topo do Entrar) — UI', 'brand-ray', 'accent-soft', 3],
   ['surface / page (separação)', 'surface', 'page', 0], ['sheet / page (separação)', 'sheet-bg', 'page', 0], ['sunken / page', 'surface-sunken', 'page', 0],
 ]
 const rows = []; let fails = 0

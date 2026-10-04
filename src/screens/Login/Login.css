@@ -9,12 +9,15 @@
 .lg-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
 
 .lg-brand { text-align: center; padding-bottom: 10px; }
-.lg-brand h1 {
-  font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: calc(58 * var(--u));
-  font-variation-settings: "opsz" 144; letter-spacing: -0.03em; line-height: 1; color: var(--accent-text);
+/* logótipo (Wordmark): 68 px de altura no telemóvel, centrado; o h1 só segura o nome "Duet" do SVG */
+.lg-brand h1 { display: flex; justify-content: center; line-height: 0; color: var(--brand-ink); }
+.lg-brand h1 .wordmark { height: calc(68 * var(--u)); }
+/* lema como na referência: maiúsculas pequenas, espaçadas */
+.lg-brand p {
+  margin-top: 14px; padding-left: 0.22em; /* compensa o espaçamento a seguir à última letra */
+  font-size: var(--fs-caption); font-weight: 700; letter-spacing: 0.22em; line-height: 1.6;
+  text-transform: uppercase; text-wrap: balance; color: var(--ink-2);
 }
-.lg-brand i { display: block; width: 36px; height: 2px; margin: 14px auto 12px; border-radius: 1px; background: var(--gold); }
-.lg-brand p { font-size: var(--fs-body); font-weight: 600; color: var(--ink-2); }
 
 .lg-card { padding: 22px 18px; display: grid; gap: 16px; }
 .lg-pw { padding-right: 2px; }

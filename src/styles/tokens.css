@@ -72,6 +72,9 @@
   --gold: #b98a44;             /* filetes (decorativo) */
   --gold-text: #80591a;        /* kicker da data, "Sinal" */
   --focus: #9e4358;
+  /* marca: logótipo Duet (src/ui/Wordmark.jsx) — palavra beringela e traços magenta (≥ 3:1 sobre page/surface) */
+  --brand-ink: #2b1140;
+  --brand-ray: #e0219d;
 
   /* estados de pagamento — independentes do accent */
   --st-paid-fg: #2c6843;    --st-paid-bg: #e3efe5;
@@ -126,6 +129,8 @@
     --gold: #cfa96a;
     --gold-text: #e2bd7c;
     --focus: #eb9aad;
+    --brand-ink: #fbf7f2;
+    --brand-ray: #f04bb3;
 
     --st-paid-fg: #94cfa7;    --st-paid-bg: #1f3628;
     --st-partial-fg: #e8bf78; --st-partial-bg: #3c2e1b;

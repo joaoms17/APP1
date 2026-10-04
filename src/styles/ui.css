@@ -91,6 +91,10 @@ svg.i.lg { width: 24px; height: 24px; }
 
 .sidebar { display: none; }
 
+/* logótipo Duet (src/ui/Wordmark.jsx): a altura vem de quem o usa, a largura segue o viewBox */
+.wordmark { display: block; width: auto; color: var(--brand-ink); }
+.wordmark-rays { fill: var(--brand-ray); }
+
 /* ---- botões ---------------------------------------------------------- */
 .btn {
   --h: 44px;
@@ -511,9 +515,8 @@ table.tbl .x { width: 28px; color: var(--muted); }
     padding: 28px 16px 18px; background: var(--surface); border-right: 1px solid var(--line); z-index: var(--z-nav);
   }
   .sidebar .brand { padding: 0 10px 22px; }
-  .sidebar .brand b { display: block; font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 34px; color: var(--accent-text); letter-spacing: -0.02em; font-variation-settings: "opsz" 96; line-height: 1; }
-  .sidebar .brand i { display: block; width: 28px; height: 2px; background: var(--gold); border-radius: 1px; margin: 10px 0 8px; }
-  .sidebar .brand small { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); }
+  .sidebar .brand .wordmark { display: block; height: 38px; }
+  .sidebar .brand small { display: block; margin-top: 10px; font-size: var(--fs-caption); font-weight: 700; letter-spacing: 0.18em; line-height: 1.5; text-transform: uppercase; color: var(--muted); }
   .sidebar .new { margin: 0 0 14px; }
   .nav-item { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-md); color: var(--ink-2); font-weight: 700; text-decoration: none; position: relative; }
   .nav-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 800; }
