@@ -17,7 +17,7 @@
 .rc-sort {
   /* padding-bottom: a área de 44 px do botão (::before) não fica por baixo do cabeçalho de grupo seguinte */
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; padding-top: 8px; padding-bottom: 4px;
-  font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+  font-size: var(--fs-meta); font-weight: 500; color: var(--muted);
 }
 /* sem espaço (320 px, texto muito grande) o botão desce para a linha de baixo, mas fica à direita */
 .rc-sort .btn { margin-left: auto; }
@@ -33,15 +33,15 @@
   content: ''; position: absolute; top: 0; left: var(--row-inset); right: 0; height: 1px; background: var(--rule);
 }
 .rc-item.leaving { overflow: hidden; pointer-events: none; }
-.rc-screen .row .meta .age { color: var(--ink-2); font-weight: 800; }
+.rc-screen .row .meta .age { color: var(--ink-2); font-weight: 600; }
 
 /* mês por cima de um pendente do Google quando a lista atravessa meses */
-.rc-month { padding: 12px 0 0 var(--row-inset); font-size: var(--fs-caption); font-weight: 800; color: var(--muted); letter-spacing: .02em; }
+.rc-month { padding: 12px 0 0 var(--row-inset); font-size: var(--fs-caption); font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 
 /* "↻ Google atualizado às 09:12" (toque = atualizar) */
 .rc-sync {
   display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; padding: 0 4px;
-  border-radius: var(--radius-sm); font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+  border-radius: var(--radius-sm); font-size: var(--fs-meta); font-weight: 500; color: var(--muted);
 }
 .rc-sync:hover:not([disabled]) { color: var(--ink-2); }
 .rc-sync[disabled] { cursor: progress; }

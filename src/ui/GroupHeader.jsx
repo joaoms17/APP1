@@ -2,7 +2,7 @@ import { fmtMoney } from '../format.js'
 
 const money = (n) => fmtMoney(n, { cents: 'auto' })
 
-// Cabeçalho de grupo: Fraunces itálico sobre filete, sticky; resumo à direita
+// Cabeçalho de grupo: display (Outfit 600) sobre filete, sticky; resumo à direita
 // (passa para a linha de baixo quando falta espaço, nunca parte o título).
 export default function GroupHeader({ title, small, summary, first = false, action, id, className = '' }) {
   return (

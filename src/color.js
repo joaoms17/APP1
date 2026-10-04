@@ -31,8 +31,8 @@ const normHex = (hex) => {
   return /^#[0-9a-f]{6}$/.test(h) ? h : '#929292'
 }
 
-const LIGHT_SURFACE = '#fffdfb' // --surface (claro)
-const DARK_SURFACE = '#322729'  // --surface (escuro)
+const LIGHT_SURFACE = '#ffffff' // --surface (claro)
+const DARK_SURFACE = '#231630'  // --surface (escuro)
 
 // muda a luminosidade OKLab (dir +1 sobe, −1 desce) até ter o contraste mínimo com o fundo
 const untilContrast = (hex, bg, min, dir) => {

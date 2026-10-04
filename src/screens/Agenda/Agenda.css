@@ -9,13 +9,13 @@
 .ag-view-switch { margin-bottom: 6px; }
 .ag-prev {
   justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit);
-  font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); border-radius: var(--radius-sm);
+  font-size: var(--fs-meta); font-weight: 500; color: var(--ink-2); border-radius: var(--radius-sm);
 }
 .ag-prev .i { width: 16px; height: 16px; flex: none; color: var(--muted); }
 /* o texto é um só item: com texto grande parte como texto corrido ("Anteriores ·" nunca se separa) */
 .ag-prev-t { min-width: 0; }
 .ag-prev-t .nw { white-space: nowrap; }
-.ag-prev .late { color: var(--st-overdue-fg); font-weight: 800; }
+.ag-prev .late { color: var(--st-overdue-fg); font-weight: 600; }
 /* aviso do Google (layout interno no .banner base) */
 .ag-screen .ag-banner { margin: 6px 0 4px; }
 
@@ -25,8 +25,8 @@
 
 /* ---- Lista: Hoje · A tratar · resto ---------------------------------------------- */
 .ag-home { display: grid; grid-template-columns: minmax(0, 1fr); }
-.ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 600; margin: -2px 0 12px; }
-.ag-lede b { color: var(--ink); font-weight: 800; }
+.ag-lede { font-size: var(--fs-body); color: var(--ink-2); font-weight: 500; margin: -2px 0 12px; }
+.ag-lede b { color: var(--ink); font-weight: 600; }
 .ag-today-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .ag-today-g { margin-top: 6px; }
 .ag-today-empty { padding-top: 8px; }
@@ -35,7 +35,7 @@
 .ag-more { height: 1px; }
 .ag-end-note {
   display: flex; align-items: center; gap: 8px; padding: 10px 0 4px var(--row-inset);
-  font-size: var(--fs-meta); font-weight: 700; color: var(--muted);
+  font-size: var(--fs-meta); font-weight: 500; color: var(--muted);
 }
 .ag-end-note .i { width: 16px; height: 16px; flex: none; }
 
@@ -54,9 +54,9 @@
 .ag-search-bar .control .clear { color: var(--muted); }
 .ag-filters { display: grid; gap: 6px; padding-bottom: 6px; }
 .ag-result { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin: 8px 0 4px; }
-.ag-result .t { flex: 1; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); line-height: 1.35; }
-.ag-result .t b { color: var(--ink); font-weight: 800; }
-.ag-result .t .late { color: var(--st-overdue-fg); font-weight: 800; }
+.ag-result .t { flex: 1; font-size: var(--fs-meta); font-weight: 500; color: var(--ink-2); line-height: 1.35; }
+.ag-result .t b { color: var(--ink); font-weight: 600; }
+.ag-result .t .late { color: var(--st-overdue-fg); font-weight: 600; }
 .ag-search .empty { padding-top: 40px; }
 
 /* ---- Mês --------------------------------------------------------------------------- */
@@ -78,7 +78,7 @@
 .ag-cal .day:focus-visible { outline-offset: -2px; }
 .ag-cal-today {
   position: relative; height: 32px; padding: 0 12px; border-radius: 16px;
-  font-size: var(--fs-meta); font-weight: 800; color: var(--accent-text);
+  font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text);
   background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
 }
 .ag-cal-today::before { content: ''; position: absolute; inset: -6px -2px; }
@@ -90,16 +90,16 @@
 .ag-mp-year { display: flex; align-items: center; justify-content: center; gap: 20px; }
 .ag-mp-year b {
   min-width: 4ch; text-align: center; font-family: var(--font-display); font-weight: 600;
-  font-size: var(--fs-heading); font-variation-settings: "opsz" 36;
+  font-size: var(--fs-heading);
 }
 .ag-mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ag-mp-grid button {
   min-height: 48px; border-radius: var(--radius-md); background: var(--surface); color: var(--ink-2);
-  box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-body); font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--line); font-size: var(--fs-body); font-weight: 500;
 }
 .ag-mp-grid button:active { transform: scale(.98); }
-.ag-mp-grid button.sel { color: var(--ink); font-weight: 800; box-shadow: inset 0 0 0 2px var(--accent-text); }
-.ag-mp-grid button.cur { background: var(--accent); color: var(--on-accent); font-weight: 800; box-shadow: none; }
+.ag-mp-grid button.sel { color: var(--ink); font-weight: 600; box-shadow: inset 0 0 0 2px var(--accent-text); }
+.ag-mp-grid button.cur { background: var(--accent); color: var(--on-accent); font-weight: 600; box-shadow: none; }
 .ag-mp-grid button.cur.sel { box-shadow: 0 0 0 2px var(--sheet-bg), 0 0 0 4px var(--accent-text); }
 
 /* telemóvel deitado (altura ≤ 500 px): células de 36 px e o dia ao lado do calendário (MA-24) */

@@ -50,7 +50,7 @@ function useLogo(project) {
   return url
 }
 
-// cabeçalho: logotipo (se houver) + wordmark itálico + filete dourado + lema
+// cabeçalho: logotipo (se houver) + nome (display 600) + filete magenta + lema
 export function DocHead({ project, sub }) {
   const logo = useLogo(project)
   return (
@@ -63,7 +63,7 @@ export function DocHead({ project, sub }) {
   )
 }
 
-// ornamento dourado (filete com losango) — substitui o emoji da v1
+// ornamento magenta (filete com losango) — substitui o emoji da v1
 export function Ornament() {
   return (
     <svg className="doc-orn" viewBox="0 0 120 12" aria-hidden="true" focusable="false">

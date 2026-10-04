@@ -1,26 +1,31 @@
 /* =====================================================================
-   Joana v2.0 — tokens (FONTE CANÓNICA → copiar tal e qual para src/styles/tokens.css)
+   Duet — tokens. Identidade "Duet" (referência final do João): beringela muito
+   escura, violeta (ação), magenta (Cabelos/destaques), lavanda e creme.
    Claro por omissão; escuro por prefers-color-scheme.
-   Contraste verificado por src/contrast.mjs (0 falhas) — ver v2-spec.md §4.
+   Contraste verificado por scripts/contrast.mjs (0 falhas); --chart-1/--chart-2
+   validados para daltonismo com o validador da skill dataviz (claro e escuro).
    ===================================================================== */
 :root {
   color-scheme: light dark;
 
   /* ---- tipografia ---------------------------------------------------- */
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;  /* só display: h1, grupos, hero */
-  --font-sans: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Outfit: sans geométrica arredondada como a da referência, com algarismos tabulares (tnum) — a
+     Poppins, mais parecida, não os tem na Google Fonts e é ~12 % mais larga. Uma só família na UI;
+     os dois tokens ficam para que um título diferente volte a ser uma mudança de uma linha. */
+  --font-display: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;  /* h1, grupos, capa (600/700) */
+  --font-sans: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
   --text-scale: 1;                          /* Definições › Tamanho do texto: 1 · 1.125 · 1.25 */
   --u: calc(1rem / 16 * var(--text-scale)); /* 1 "px lógico" que escala */
   --fs-caption: calc(12 * var(--u));   /* badges, contadores, eixos, "qua" */
   --fs-meta:    calc(13 * var(--u));   /* metadados, ajudas, rótulos, chips */
   --fs-body:    calc(15 * var(--u));   /* corpo, títulos de linha, valores de linha */
   --fs-input:   max(16px, calc(16 * var(--u)));  /* campos: nunca < 16 px (zoom do iOS) */
-  --fs-title:   calc(17 * var(--u));   /* título de cartão/folha (sans 800), nome do evento de hoje */
-  --fs-group:   calc(22 * var(--u));   /* cabeçalho de grupo — Fraunces itálico */
+  --fs-title:   calc(17 * var(--u));   /* título de cartão/folha (600), nome do evento de hoje */
+  --fs-group:   calc(22 * var(--u));   /* cabeçalho de grupo — display 600 */
   --fs-heading: calc(20 * var(--u));   /* KPI secundário, dia no bloco de data */
-  --fs-h1:      calc(30 * var(--u));   /* título do ecrã — Fraunces */
-  --fs-display: calc(28 * var(--u));   /* título do evento no detalhe — Fraunces */
-  --fs-hero:    calc(44 * var(--u));   /* número de capa — Fraunces, cêntimos a 60 % */
+  --fs-h1:      calc(30 * var(--u));   /* título do ecrã — display 600 */
+  --fs-display: calc(28 * var(--u));   /* título do evento no detalhe — display 600 */
+  --fs-hero:    calc(44 * var(--u));   /* número de capa — display 700, cêntimos a 60 % */
   --lh-tight: 1.12; --lh-snug: 1.3; --lh-body: 1.45;
 
   /* ---- espaço (grelha de 4 pt) --------------------------------------- */
@@ -51,99 +56,109 @@
   --z-sticky: 2; --z-nav: 20; --z-sheet: 30; --z-toast: 40; --z-print: 50;
 
   /* ---- cor · claro ----------------------------------------------------- */
-  --page: #faf3ef;
-  --surface: #fffdfb;
-  --surface-sunken: #f3e8e3;   /* trilhos (segmented, progresso), fundos de ícone */
-  --seg-on: #fffdfb;           /* opção ativa do segmented */
-  --sheet-bg: #faf3ef;
-  --field-bg: #fffdfb;
-  --ink: #40292b;
-  --ink-2: #664b4e;
-  --muted: #7a5f60;            /* 5,27:1 sobre page (v1 4,35) */
-  --rule: #e6d5cf;             /* separadores de lista e filetes (decorativo) */
-  --line: #e3d0ca;             /* contorno de cartões e chips (decorativo) */
-  --field-border: #9c8380;     /* 3,47:1 sobre surface — WCAG 1.4.11 */
+  --page: #f6f1f8;             /* lavanda-creme */
+  --surface: #ffffff;          /* cartões brancos com sombra suave */
+  --surface-sunken: #efe7f6;   /* trilhos (segmented, progresso), pills inativas, fundos de ícone */
+  --sheet-bg: #f6f1f8;
+  --field-bg: #ffffff;
+  --ink: #2b1140;              /* beringela */
+  --ink-2: #4f3f63;
+  --muted: #6a5c7c;
+  --rule: #ebe3f1;             /* separadores de lista e filetes (decorativo) */
+  --line: #e4daee;             /* contorno de cartões e chips (decorativo) */
+  --field-border: #8d80a2;     /* ≥ 3:1 sobre surface/page — WCAG 1.4.11 */
 
-  --accent: #b45368;           /* PREENCHIMENTO: primário, seleção, "+" */
-  --accent-strong: #9e4358;    /* hover/pressed do primário */
-  --accent-text: #9e4358;      /* TEXTO/ÍCONE rosa: ghost, links, tab ativa, chip ativo */
-  --accent-soft: #f7dee3;      /* pill ativa, chip selecionado */
-  --on-accent: #ffffff;        /* 4,80:1 sobre accent */
-  --gold: #b98a44;             /* filetes (decorativo) */
-  --gold-text: #80591a;        /* kicker da data, "Sinal" */
-  --focus: #9e4358;
+  --accent: #7b2ff2;           /* PREENCHIMENTO violeta: primário, seleção, pill/segmented ativos, "+" */
+  --accent-strong: #6420d4;    /* hover/pressed do primário */
+  --accent-text: #6a24dc;      /* TEXTO/ÍCONE violeta: ghost, links, tab ativa */
+  --accent-soft: #eee5fd;      /* lavanda: tab ativa, botão tonal, fundos de ícone */
+  --on-accent: #ffffff;
+  --accent-2: #e0289f;         /* 2.º accent, MAGENTA (antigo --gold): filetes, anel do avatar, brilho do Entrar (decorativo) */
+  --accent-2-text: #b0157c;    /* texto magenta: kicker fora da faixa do topo (computador) */
+  --focus: #6a24dc;
   /* marca: logótipo Duet (src/ui/Wordmark.jsx) — palavra beringela e traços magenta (≥ 3:1 sobre page/surface) */
   --brand-ink: #2b1140;
   --brand-ray: #e0219d;
 
-  /* estados de pagamento — independentes do accent */
-  --st-paid-fg: #2c6843;    --st-paid-bg: #e3efe5;
-  --st-partial-fg: #7d5314; --st-partial-bg: #f7e8cf;
-  --st-due-fg: #664b4e;     --st-due-border: #b8a09c;
-  --st-overdue-fg: #a1323a; --st-overdue-bg: #fbe2e0;
-  --warn-fg: #8c4a12;                                  /* avisos */
-  --info-fg: #3f4c7a;       --info-bg: #ecedf6;
-  --warning-fg: #7a4f12;    --warning-bg: #f9ecd9;
-  --critical-fg: #a1323a;   --critical-bg: #fbe2e0;
-  --dot-new: #a1323a;                                  /* ponto "novidades" no separador */
+  /* faixa do topo (telemóvel): beringela escura com texto claro, como na referência */
+  --top-bg: #2b1140;
+  --top-ink: #ffffff;
+  --top-ink-2: #c9a6ec;        /* lavanda: kicker, "‹ voltar" */
 
-  --scrim: rgba(43, 26, 28, .46);
-  --toast-bg: #3a2a2c; --toast-fg: #fbf1ee; --toast-action: #f4b9c6;
+  /* estados de pagamento — independentes do accent */
+  --st-paid-fg: #1c6a43;    --st-paid-bg: #e2f4e9;
+  --st-partial-fg: #82500c; --st-partial-bg: #fbedd5;
+  --st-partial-mark: #b07a12;                          /* barra de "Sinal" (âmbar, ≥ 3:1 sobre surface/sunken) */
+  --st-due-fg: #4f3f63;     --st-due-border: #a99dba;
+  --st-overdue-fg: #b01f3e; --st-overdue-bg: #fde4ea;
+  --warn-fg: #8a4a08;                                  /* avisos */
+  --info-fg: #36468a;       --info-bg: #eceefb;
+  --warning-fg: #7a4e0c;    --warning-bg: #faefd9;
+  --critical-fg: #b01f3e;   --critical-bg: #fde4ea;
+  --dot-new: #b01f3e;                                  /* ponto "novidades" no separador */
+
+  --scrim: rgba(27, 10, 40, .5);
+  --toast-bg: #2b1140; --toast-fg: #f7f1fc; --toast-action: #d6b8ff;
 
   /* cor de projeto — chega sempre por style={{'--p-l': cor, '--p-d': darkMark(cor)}} */
   --wash: 9%;                                           /* lavagem do cartão de hoje */
   --ring: color-mix(in srgb, var(--ink) 55%, var(--surface)); /* anel de 1 px dos pontos: ≥ 3:1 com qualquer cor */
 
-  --elev-1: 0 1px 2px rgba(64, 41, 43, .05), 0 4px 16px rgba(64, 41, 43, .06);
-  --elev-2: 0 -10px 40px rgba(64, 41, 43, .16);
-  --elev-3: 0 24px 64px rgba(64, 41, 43, .22);
+  --elev-1: 0 1px 2px rgba(43, 17, 64, .05), 0 6px 18px rgba(43, 17, 64, .07);
+  --elev-2: 0 -10px 40px rgba(43, 17, 64, .18);
+  --elev-3: 0 24px 64px rgba(43, 17, 64, .24);
   /* cartão em hover (rato): sobe com uma sombra para baixo — a --elev-2 é das folhas que sobem de baixo
      e sujava o texto por cima do cartão */
-  --elev-hover: 0 2px 4px rgba(64, 41, 43, .06), 0 12px 28px -8px rgba(64, 41, 43, .2);
-  --elev-accent: 0 6px 16px rgba(180, 83, 104, .28);
+  --elev-hover: 0 2px 4px rgba(43, 17, 64, .06), 0 12px 28px -8px rgba(43, 17, 64, .22);
+  --elev-accent: 0 6px 16px rgba(123, 47, 242, .32);
   --tabbar-bg: color-mix(in srgb, var(--surface) 96%, transparent);
 
-  --chart-1: #b45368; --chart-2: #6d8ed6; --chart-grid: #efe2dc; --chart-avg: #8f7475;
+  /* gráficos: 1 = Penteados / ano atual (magenta), 2 = Música / ano anterior (violeta) */
+  --chart-1: #e0289f; --chart-2: #7b2ff2; --chart-grid: #eee6f4; --chart-avg: #887a9a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --page: #1a1213;
-    --surface: #322729;          /* 1,28:1 sobre page (v1 1,11) */
-    --surface-sunken: #261c1e;   /* trilho: ENTRE page e surface (nunca "buraco" mais escuro que a página) */
-    --seg-on: #45373a;
-    --sheet-bg: #2a2022;         /* folha ≠ página */
-    --field-bg: #1f1718;
-    --ink: #f6ebe8;
-    --ink-2: #d8c3bf;
-    --muted: #b29894;
-    --rule: #3d2f31;
-    --line: #4b3b3d;
-    --field-border: #8a716e;
+    --page: #130a1b;
+    --surface: #231630;
+    --surface-sunken: #1b1026;   /* trilho: ENTRE page e surface (nunca "buraco" mais escuro que a página) */
+    --sheet-bg: #1d1229;         /* folha ≠ página */
+    --field-bg: #170d21;
+    --ink: #f5effa;
+    --ink-2: #d6c9e4;
+    --muted: #ab9bc0;
+    --rule: #32233f;
+    --line: #3e2d4e;
+    --field-border: #7f6d95;
 
-    --accent: #d16d84;
-    --accent-strong: #e0849a;
-    --accent-text: #eb9aad;
-    --accent-soft: #4c3038;
-    --on-accent: #1a1213;
-    --gold: #cfa96a;
-    --gold-text: #e2bd7c;
-    --focus: #eb9aad;
+    --accent: #8549f5;
+    --accent-strong: #7a3cec;    /* o branco tem de ficar ≥ 4,5:1 também no hover */
+    --accent-text: #c3a2ff;
+    --accent-soft: #34204f;
+    --on-accent: #ffffff;
+    --accent-2: #f055b5;
+    --accent-2-text: #ff8fd3;
+    --focus: #c3a2ff;
     --brand-ink: #fbf7f2;
     --brand-ray: #f04bb3;
 
-    --st-paid-fg: #94cfa7;    --st-paid-bg: #1f3628;
-    --st-partial-fg: #e8bf78; --st-partial-bg: #3c2e1b;
-    --st-due-fg: #d8c3bf;     --st-due-border: #7d6663;
-    --st-overdue-fg: #f3a09a; --st-overdue-bg: #462225;
-    --warn-fg: #eaa86c;
-    --info-fg: #b9c3ec;       --info-bg: #262a3d;
-    --warning-fg: #eec48a;    --warning-bg: #3a2d1d;
-    --critical-fg: #f3a09a;   --critical-bg: #462225;
-    --dot-new: #f3a09a;
+    --top-bg: #1f1030;           /* funde-se mais com a página */
+    --top-ink: #f5effa;
+    --top-ink-2: #c9a6ec;
+
+    --st-paid-fg: #8fd6a9;    --st-paid-bg: #173326;
+    --st-partial-fg: #eec27a; --st-partial-bg: #3a2c18;
+    --st-partial-mark: #d9a443;
+    --st-due-fg: #d6c9e4;     --st-due-border: #6f5e85;
+    --st-overdue-fg: #ff9aae; --st-overdue-bg: #451c2c;
+    --warn-fg: #f0ad6a;
+    --info-fg: #c4c4fd;       --info-bg: #292648;   /* índigo (OKLCH h 285): entre o azul e o violeta do accent */
+    --warning-fg: #f0c98a;    --warning-bg: #382b1a;
+    --critical-fg: #ff9aae;   --critical-bg: #451c2c;
+    --dot-new: #ff9aae;
 
     --scrim: rgba(0, 0, 0, .62);
-    --toast-bg: #f6ebe8; --toast-fg: #2a1d1f; --toast-action: #8f3a4e;
+    --toast-bg: #f5effa; --toast-fg: #241532; --toast-action: #6a24dc;
 
     --wash: 13%;
 
@@ -153,7 +168,7 @@
     --elev-hover: 0 2px 4px rgba(0, 0, 0, .34), 0 12px 28px -8px rgba(0, 0, 0, .6);
     --elev-accent: 0 6px 16px rgba(0, 0, 0, .45);
 
-    --chart-1: #d16d84; --chart-2: #6f90d9; --chart-grid: #3a2d2f; --chart-avg: #a78d8a;
+    --chart-1: #e0409f; --chart-2: #8f5cff; --chart-grid: #33243f; --chart-avg: #a595b8;
   }
 }
 

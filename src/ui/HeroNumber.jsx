@@ -1,6 +1,6 @@
 import { fmtMoneyParts } from '../format.js'
 
-// Número de capa (um por ecrã): Fraunces, cêntimos a 60 %, sinal "−" em sans.
+// Número de capa (um por ecrã): Outfit 700, cêntimos a 60 %, sinal "−" em sans.
 // negative: despesas (o valor chega positivo e mostra-se com "−").
 export default function HeroNumber({ value, cents = 'auto', negative = false, tone = 'default', className = '' }) {
   const { sign, int, dec } = fmtMoneyParts(value, { cents })

@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#faf3ef" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1a1213" media="(prefers-color-scheme: dark)">
+  <!-- cor da faixa do topo (--top-bg): no iPhone a barra de estado continua a faixa beringela (iOS 15+ usa o
+       theme-color na app instalada). Sem status-bar-style black-translucent de propósito: o texto branco da
+       barra ficaria por cima de zonas claras (topo e barra lateral no iPad/computador, folhas em ecrã inteiro). -->
+  <meta name="theme-color" content="#2b1140" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1f1030" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
   <title>Duet</title>
   <meta name="description" content="Gestão financeira para os teus sonhos">
@@ -16,7 +19,8 @@
   <meta name="apple-mobile-web-app-title" content="Duet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+  <!-- Outfit: 400 corpo, 500 rótulos, 600 títulos e valores, 700 número de capa -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap">
 </head>
 <body>
   <div id="root"></div>
