@@ -1,6 +1,6 @@
 import Icon from './Icon.jsx'
 import Button from './Button.jsx'
-import StatusBadge, { ReceiptMark } from './StatusBadge.jsx'
+import StatusBadge, { Badge, ReceiptMark } from './StatusBadge.jsx'
 import { categoryIcon } from './icons.js'
 import { projectVars } from '../color.js'
 import { useStore } from '../store.jsx'
@@ -40,7 +40,7 @@ export function datePhrase(ymd, today) {
 
 // estado por extenso para os nomes acessíveis (linhas, cartão de hoje)
 export const STATE_PHRASE = {
-  novalue: () => 'sem valor',
+  novalue: () => 'valor pendente',
   paid: () => 'recebido',
   partial: (m) => `sinal recebido, falta ${m}`,
   'partial-overdue': (m) => `em atraso, falta ${m}`,
@@ -83,10 +83,12 @@ export function EventRow({
   // a 3.ª linha só existe quando há algo a assinalar (mesmas regras do StatusBadge/ReceiptMark)
   const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
   const receiptShown = marks && !!ev.receipt_issued
-  const hasTags = badgeShown || receiptShown || hasAtt
+  const locPending = marks && !ev.location?.trim()
+  const hasTags = badgeShown || receiptShown || hasAtt || locPending
   const tags = (
     <>
       {badgeShown && <StatusBadge ev={ev} />}
+      {locPending && <Badge tone="neutral">Local pendente</Badge>}
       {receiptShown && <ReceiptMark ev={ev} />}
       {hasAtt && <span className="mark"><Icon name="paperclip" /><span className="sr-only">tem anexo</span></span>}
     </>
