@@ -535,7 +535,7 @@ table.tbl .x { width: 28px; color: var(--muted); }
   }
   .sidebar .brand { padding: 0 10px 22px; }
   .sidebar .brand .wordmark { display: block; height: 38px; }
-  .sidebar .brand small { display: block; margin-top: 10px; font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.18em; line-height: 1.5; text-transform: uppercase; color: var(--muted); }
+  .sidebar .brand small { display: block; margin-top: 8px; font-size: var(--fs-meta); font-weight: 400; letter-spacing: 0; line-height: 1.4; color: var(--muted); }
   .sidebar .new { margin: 0 0 14px; }
   .nav-item { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-md); color: var(--ink-2); font-weight: 600; text-decoration: none; position: relative; }
   .nav-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
