@@ -80,7 +80,7 @@
 }
 .menu-item {
   display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px;
-  border-radius: 10px; text-align: left; font-weight: 500; color: var(--ink);
+  border-radius: 10px; text-align: left; font-weight: 600; color: var(--ink);
 }
 .menu-item .i { color: var(--ink-2); }
 .menu-item:focus-visible { background: var(--surface-sunken); }
@@ -138,7 +138,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .viewer-file { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; color: var(--ink-2); text-align: center; }
 .viewer-file svg.i { width: 64px; height: 64px; stroke-width: 1.4; color: var(--muted); }
 .viewer-file b { font-size: var(--fs-title); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-.viewer-file small { font-size: var(--fs-meta); font-weight: 500; color: var(--muted); }
+.viewer-file small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
 
 /* ---- anexos ------------------------------------------------------------------ */
 .thumb .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -170,7 +170,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .skeleton .sk:nth-child(3n + 3) { width: 64%; }
 @keyframes sk-pulse { 50% { opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .skeleton .sk { animation: none; } }
-.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 500; color: var(--muted); }
+.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
 .sync-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--st-paid-fg); flex: none; }
 .sync-note.warn i { background: var(--warning-fg); }
 /* aviso: no telemóvel o texto usa a largura toda e o "Tentar de novo" fica por baixo;
@@ -216,7 +216,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
    (≥ 1024 px) o topo continua claro, ao lado da sidebar. */
 @media (max-width: 1023.98px) {
   .topband, :not(.topband) > .topbar {
-    --lip: 18px;
+    --lip: 14px;
     position: relative; color: var(--top-ink);
     border-image: linear-gradient(var(--top-bg) 0 0) fill 0 / 0 / 0 100vmax;
   }
@@ -232,6 +232,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
     height: var(--lip); background: var(--page); border-radius: var(--lip) var(--lip) 0 0; pointer-events: none;
   }
   .topband .kicker, .topbar .kicker, .topband .back { color: var(--top-ink-2); }
+  .topband .avatar { background: color-mix(in srgb, var(--top-ink) 14%, transparent); color: var(--top-ink); }
   .topband .icon-btn, .topbar-compact .icon-btn { color: var(--top-ink); }
   .topband :focus-visible, .topbar-compact :focus-visible { outline-color: var(--top-ink); }
   .topband .avatar-btn .warn-dot { box-shadow: 0 0 0 2px var(--top-bg); }

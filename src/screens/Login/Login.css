@@ -4,10 +4,7 @@
   min-height: 100dvh; display: grid; place-items: center;
   padding: calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px);
   color: var(--top-ink);
-  background:
-    radial-gradient(90% 50% at 85% 100%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 70%),
-    radial-gradient(120% 60% at 15% 0%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
-    var(--top-bg);
+  background: var(--top-bg); /* sólido: sem brilhos nem degradês */
 }
 .lg-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
 
@@ -20,13 +17,13 @@
 .lg-brand h1 .wordmark { height: calc(68 * var(--u)); }
 /* lema como na referência: maiúsculas pequenas, espaçadas, claras sobre a beringela */
 .lg-brand p {
-  margin-top: 16px; padding-left: 0.22em; /* compensa o espaçamento a seguir à última letra */
-  font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0.22em; line-height: 1.6;
-  text-transform: uppercase; text-wrap: balance; color: var(--top-ink);
+  margin-top: 14px;
+  font-size: var(--fs-body); font-weight: 600; letter-spacing: 0; line-height: 1.45;
+  text-wrap: balance; color: var(--top-ink-2);
 }
 
 .lg-card { padding: 22px 18px; display: grid; gap: 16px; }
 .lg-pw { padding-right: 2px; }
 .lg-pw .icon-btn { margin-left: -4px; }
 
-.lg-foot { text-align: center; font-size: var(--fs-meta); font-weight: 500; color: var(--top-ink-2); }
+.lg-foot { text-align: center; font-size: var(--fs-meta); font-weight: 600; color: var(--top-ink-2); }

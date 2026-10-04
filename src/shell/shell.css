@@ -13,7 +13,7 @@
 .sh-error { display: grid; justify-items: start; gap: var(--sp-4); padding: var(--sp-2) 0 var(--sp-5); max-width: 560px; }
 .sh-error .callout { justify-self: stretch; }
 .sh-details { font-size: var(--fs-meta); color: var(--muted); }
-.sh-details summary { cursor: pointer; font-weight: 500; min-height: var(--hit); display: flex; align-items: center; gap: 6px; list-style: none; }
+.sh-details summary { cursor: pointer; font-weight: 600; min-height: var(--hit); display: flex; align-items: center; gap: 6px; list-style: none; }
 .sh-details summary::-webkit-details-marker { display: none; }
 .sh-details summary svg.i { transition: transform var(--dur-2) var(--ease-out); }
 .sh-details[open] summary svg.i { transform: rotate(180deg); }
