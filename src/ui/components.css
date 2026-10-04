@@ -28,6 +28,12 @@
 .row .end .btn { position: relative; z-index: 2; }
 /* Google por registar: "Ignorar" (não é trabalho) ao lado de "Registar" */
 .row .end .g-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+/* com dois botões a linha precisa de mais largura: no telemóvel os botões descem para baixo do título */
+@container (max-width: 34em) {
+  .row.g.act > .bar { grid-row: 1 / span 2; }
+  .row.g.act > .end { display: contents; }
+  .row.g.act > .end > .g-acts { grid-column: 3 / span 2; grid-row: 2; justify-self: start; margin-top: 2px; }
+}
 .row.x .bar { visibility: hidden; }
 .row.x .lead { padding-top: 0; }
 .dot.sm { width: 6px; height: 6px; }

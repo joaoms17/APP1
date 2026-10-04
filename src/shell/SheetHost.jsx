@@ -11,6 +11,7 @@ const ExpenseSheet = lazyWithPreload(() => import('../screens/Expenses/ExpenseSh
 const ProjectSheet = lazyWithPreload(() => import('../screens/Settings/ProjectSheet.jsx'))
 const GcalSheet = lazyWithPreload(() => import('../screens/Settings/GcalSheet.jsx'))
 const MonthPicker = lazyWithPreload(() => import('../screens/Agenda/MonthPicker.jsx'))
+const MapSheet = lazyWithPreload(() => import('../screens/Agenda/MapSheet.jsx'))
 const docs = (name) => lazyWithPreload(() => import('../screens/Documents/index.jsx').then((m) => ({ default: m[name] })))
 const QuoteSheet = docs('QuoteSheet')
 const ScheduleSheet = docs('ScheduleSheet')
@@ -35,6 +36,7 @@ const REGISTRY = {
   'projeto-novo': () => [ProjectSheet, { id: null }],
   'calendario-novo': (s) => [GcalSheet, { preset: presetOf(s.params) }], // { projeto: id }
   mes: (s) => [MonthPicker, { year: num(s.params.year), month: num(s.params.month), onPick: s.params.onPick }],
+  mapa: (s) => [MapSheet, { year: num(s.params.year), month: num(s.params.month) }],
   anexo: (s) => [AttachmentViewer, { id: s.id }],
   ...(FEATURES.docs && {
     orcamento: (s) => [QuoteSheet, { id: s.id, preset: presetOf(s.params) }],
