@@ -17,7 +17,7 @@
   .row.act > .bar { grid-row: 1 / span 2; }
   .row.act > .end { display: contents; }
   .row.act > .end > .money { grid-column: 4; grid-row: 1; justify-self: end; padding-top: 1px; }
-  .row.act > .end > .btn { grid-column: 3 / span 2; grid-row: 2; justify-self: start; margin-top: 2px; }
+  .row.act > .end > .btn, .row.act > .end > .g-acts { grid-column: 3 / span 2; grid-row: 2; justify-self: start; margin-top: 2px; }
   .row.act > .main .meta { white-space: normal; }
 }
 /* ReceivableRow/ReceiptRow: a meta é o dado da vista ("há 1 ano e 3 meses", "recebido a 24 ago ·
@@ -26,6 +26,8 @@
 .row .meta .dot { display: inline-block; width: 8px; height: 8px; margin: 0 4px 1px 2px; vertical-align: middle; }
 .row .row-open, .today-card .row-open { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .row .end .btn { position: relative; z-index: 2; }
+/* Google por registar: "Ignorar" (não é trabalho) ao lado de "Registar" */
+.row .end .g-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .row.x .bar { visibility: hidden; }
 .row.x .lead { padding-top: 0; }
 .dot.sm { width: 6px; height: 6px; }

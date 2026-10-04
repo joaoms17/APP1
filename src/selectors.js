@@ -2,9 +2,9 @@
 // com useMemo e scripts/check-selectors.mjs confirma os números das fixtures em Node.
 // Convenções: today = 'yyyy-mm-dd'; pbe = Map event_id → pagamentos (paymentsByEvent do store).
 import { addDays, daysBetween, foldText } from './format.js'
-import { matchGoogle } from './gcalMatch.js'
+import { isNotWork, matchGoogle } from './gcalMatch.js'
 
-export { matchGoogle }
+export { isNotWork, matchGoogle }
 
 const EPS = 0.005
 const num = (v) => Number(v) || 0

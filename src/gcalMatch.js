@@ -29,14 +29,19 @@ export function similarTitles(a, b) {
   return short.size > 0 && n === short.size
 }
 
+// Não é trabalho (ensaios, aulas de canto): nunca fica "por registar"
+const NOT_WORK = [/\bensaios?\b/, /\baulas? de canto\b/]
+export const isNotWork = (title) => NOT_WORK.some((re) => re.test(norm(title)))
+
 // chave estável de um evento do Google (rota s=registar:<key>)
 export const googleKey = (g) => [g.calendar_id || '', g.date, g.time || '', g.uid || g.title].join('|')
 
 const ascKey = (x) => `${x.date} ${x.time || '99:99'}`
 
 // events: eventos da app; googleEvents: [{date, time, title, location, project_id, calendar_id, uid}]
+// ignored: chaves que a Joana mandou ignorar (Set) — saem dos pendentes, tal como os que não são trabalho
 // → { pending (ordenados por data+hora, com key), byDay: Map ymd → pending[], matched: [{ g, event, by }] }
-export function matchGoogle(events, googleEvents) {
+export function matchGoogle(events, googleEvents, ignored = null) {
   const appsBy = new Map()
   for (const e of events) {
     const k = `${e.project_id}|${e.event_date}`
@@ -91,6 +96,7 @@ export function matchGoogle(events, googleEvents) {
   const out = pending
     .map((g) => (g.key ? g : { ...g, key: googleKey(g) }))
     .filter((g) => !seen.has(g.key) && seen.add(g.key))
+    .filter((g) => !isNotWork(g.title) && !ignored?.has(g.key))
     .sort((a, b) => ascKey(a).localeCompare(ascKey(b)))
   const byDay = new Map()
   for (const g of out) {

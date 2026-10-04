@@ -129,7 +129,7 @@ export function EventRow({
 
 // ---------- evento do Google por registar ----------------------------------------------
 export function GoogleRow({ g, lead = 'date', blank = false, onRegister, className = '', ...rest }) {
-  const { today, projectById } = useStore()
+  const { today, projectById, ignoreGoogle } = useStore()
   const p = projectById(g.project_id)
   const meta = [lead !== 'time' && g.time ? <b key="t">{g.time}</b> : null, p?.name, g.location]
     .filter(Boolean).reduce((acc, x, i) => (i ? [...acc, ' · ', x] : [x]), [])
@@ -146,10 +146,16 @@ export function GoogleRow({ g, lead = 'date', blank = false, onRegister, classNa
         <span className="tags"><span className="mark"><Icon name="gcal" />Google · por registar</span></span>
       </span>
       <span className="end">
-        <Button variant="row" icon="plus" iconTone="add" onClick={register}
-          aria-label={`Registar ${g.title}, ${datePhrase(g.date, today)}${g.time ? `, ${g.time}` : ''}`}>
-          Registar
-        </Button>
+        <span className="g-acts">
+          <Button variant="row" icon="eyeOff" onClick={() => ignoreGoogle(g)}
+            aria-label={`Ignorar ${g.title}, ${datePhrase(g.date, today)} — não é trabalho`}>
+            Ignorar
+          </Button>
+          <Button variant="row" icon="plus" iconTone="add" onClick={register}
+            aria-label={`Registar ${g.title}, ${datePhrase(g.date, today)}${g.time ? `, ${g.time}` : ''}`}>
+            Registar
+          </Button>
+        </span>
       </span>
     </div>
   )
