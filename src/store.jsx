@@ -100,6 +100,7 @@ export function StoreProvider({ children }) {
   const [rawGcal, setGcalCalendars] = useState([])
   const [gcalData, setGcalData] = useState({}) // calendar_id → { events, ok, at, lastOkAt, message, detail }
   const [gcalBusy, setGcalBusy] = useState(0)
+  const [gcalIgnored, setGcalIgnored] = useState(() => new Set()) // chaves do Google ignoradas (googleKey)
   const [pendingUndo, setPendingUndo] = useState(null) // {kind:'event'|'expense', row} (compatibilidade v1)
   const [hidden, setHidden] = useState(NO_HIDDEN)
   const [overrides, setOverrides] = useState({}) // event_id → campos otimistas (paid, receipt_issued…)
@@ -181,6 +182,13 @@ export function StoreProvider({ children }) {
     }
   }, [])
 
+  // eventos do Google ignorados ("não é trabalho"); sem a tabela (SQL por correr) fica vazio, sem aviso
+  const loadGcalIgnored = useCallback(async () => {
+    try {
+      setGcalIgnored(new Set(rowsOrThrow(await db.from('gcal_ignored').select('key')).map((r) => r.key)))
+    } catch { /* tabela por criar ou falha de leitura: nada ignorado à mão */ }
+  }, [])
+
   const fail = (e) => {
     setError(e?.message || String(e))
     setErrorInfo(humanError(e))
@@ -217,13 +225,13 @@ export function StoreProvider({ children }) {
     const resume = resumePending.current?.(evRows)
     setPhase1(false)
     const [ex, att, gc] = await Promise.allSettled([
-      loadExpenses(), loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null,
+      loadExpenses(), loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null, loadGcalIgnored(),
     ])
     if (ex.status === 'rejected') fail(ex.reason)
     else warnLoadFailed(att.status === 'rejected', gc.status === 'rejected')
     setPhase2(false)
     await resume
-  }, [loadPayments, loadExpenses, loadAttachments, loadGcalCalendars, loadQuotes])
+  }, [loadPayments, loadExpenses, loadAttachments, loadGcalCalendars, loadQuotes, loadGcalIgnored])
 
   useEffect(() => { load() }, [load])
 
@@ -719,6 +727,27 @@ export function StoreProvider({ children }) {
     setGcalCalendars((cs) => cs.filter((c) => c.id !== id))
   }
 
+  // "Ignorar" num evento do Google (ensaio, reunião…): sai do Por registar; Anular volta a mostrá-lo
+  const setIgnored = (key, on) => setGcalIgnored((s) => {
+    const n = new Set(s)
+    if (on) n.add(key); else n.delete(key)
+    return n
+  })
+  const ignoreGoogle = (g) => toast.undoable({
+    text: <><b>{g.title}</b> ignorado</>,
+    run: async () => {
+      const { error } = await db.from('gcal_ignored').upsert({ key: g.key, title: g.title, event_date: g.date })
+      if (error) throw error
+      setIgnored(g.key, true)
+      return g
+    },
+    undo: async () => {
+      const { error } = await db.from('gcal_ignored').delete().eq('key', g.key)
+      if (error) throw error
+      setIgnored(g.key, false)
+    },
+  })
+
   const loadProjects = useCallback(async () => {
     const { data, error } = await db.from('projects').select('*').order('sort_order')
     if (error) throw error
@@ -761,7 +790,7 @@ export function StoreProvider({ children }) {
   const missing = useCallback((ev) => S.missingOf(ev, pbe), [pbe])
   const receivables = useMemo(() => S.receivablesOf(events, pbe, today), [events, pbe, today])
   const agingGroups = useMemo(() => S.agingGroups(receivables.overdue, today, pbe), [receivables, today, pbe])
-  const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents), [events, googleEvents])
+  const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents, gcalIgnored), [events, googleEvents, gcalIgnored])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
   const projectsByUsage = useMemo(() => S.projectsByUsage(projects, events, today, lastProjectId), [projects, events, today, lastProjectId])
@@ -1069,7 +1098,7 @@ export function StoreProvider({ children }) {
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações
       recordPayment, receiveRemaining, createEvent, createExpense, updateEventFields, setReceipt, markUnpaid,
-      removePaymentDeferred, removeAttachmentDeferred, removeGcalDeferred, refreshGcal, setLastProjectId,
+      removePaymentDeferred, removeAttachmentDeferred, removeGcalDeferred, refreshGcal, setLastProjectId, ignoreGoogle,
       notify: toast.notify, notifyError: toast.notifyError, undoable: toast.undoable, humanError,
     }}>
       {children}
