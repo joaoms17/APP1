@@ -2,7 +2,7 @@ import { FEATURES } from '../../features.js'
 import { useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
-  Button, Callout, DateInput, EmptyState, Field, MoneyInput, NewKindSwitch, PendingAttachments, ProjectChips,
+  Button, Callout, DateInput, EmptyState, Field, MoneyInput, NewKindSwitch, PendingAttachments, ProjectAvatar, ProjectChips,
   Segmented, Sheet, Skeleton, Switch, TextArea, TextInput, TimeInput, confirmDialog, moneyInputValue, parseMoney,
   useFormSave,
 } from '../../ui'
@@ -10,6 +10,8 @@ import { useStore } from '../../store.jsx'
 import { getRoute, navigate, openSheet, setParams, tabHref } from '../../router.js'
 import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
+import PlaceInput from './PlaceInput.jsx'
+import { coordsFromText, geocode } from '../../geo.js'
 
 const EPS = 0.005
 // com as despesas escondidas não há a escolha Evento | Despesa: o título diz o que é
@@ -35,12 +37,15 @@ function moneyFields(gross, value) {
   }
 }
 
+// coordenadas guardadas (lat/lng) → { lat, lng } | null
+const coordsOf = (x) => (x?.lat != null && x?.lng != null ? { lat: Number(x.lat), lng: Number(x.lng) } : null)
+
 // estado inicial por modo: edit ← evento; google ← evento do Google; new ← preset (dia, cópia, ficheiros)
 function initialOf({ mode, ev, g, preset, today, defaultProject }) {
-  const base = { receipt: false, pay: 'none', payAmount: '', payDate: today, files: [] }
+  const base = { receipt: false, pay: 'none', payAmount: '', payDate: today, files: [], coords: null }
   if (mode === 'edit') {
     return {
-      ...base, project_id: ev.project_id, title: ev.title || '', event_date: ev.event_date,
+      ...base, coords: coordsOf(ev), project_id: ev.project_id, title: ev.title || '', event_date: ev.event_date,
       start_time: fmtTime(ev.start_time), location: ev.location || '', notes: ev.notes || '',
       ...moneyFields(ev.gross_value, ev.value),
     }
@@ -55,7 +60,7 @@ function initialOf({ mode, ev, g, preset, today, defaultProject }) {
   return {
     ...base, project_id: p.project_id || defaultProject, title: p.title || '', event_date: p.data || p.event_date || today,
     start_time: fmtTime(p.start_time), location: p.location || '', notes: p.notes || '',
-    files: Array.isArray(p.files) ? p.files : [],
+    files: Array.isArray(p.files) ? p.files : [], coords: coordsOf(p),
     ...moneyFields(p.gross_value, p.value),
   }
 }
@@ -114,7 +119,7 @@ function dirtyText(changes, mode) {
 function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const {
     today, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
-    createEvent, updateEventFields, setLastProjectId, notify,
+    createEvent, updateEventFields, setLastProjectId, notify, geoReady,
   } = useStore()
   // depois de gravar só fecha/navega se o formulário ainda estiver aberto; o erro sai com ele
   const { alive, fail } = useFormSave()
@@ -155,6 +160,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const legacy = !!ev?.paid && payRows.length === 0
 
   const projectName = (pid) => projectById(pid)?.name || ''
+  const fixedProject = mode === 'google' && g?.project_id ? projectById(g.project_id) : null
   const changes = changesOf(f, init, { projectName, today })
   const dirty = dirtyText(changes, mode)
 
@@ -222,6 +228,19 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       gross_value: gross ?? value,
       value,
       notes: f.notes.trim() || null,
+    }
+    // coordenadas para o mapa (só se a base de dados já tiver as colunas): a sugestão escolhida, senão
+    // um link do Google Maps, senão a melhor procura do texto — sem resultado, fica só o texto
+    if (geoReady) {
+      let c = fields.location ? f.coords || coordsFromText(fields.location) : null
+      if (fields.location && !c) {
+        setBusy(true)
+        c = await geocode(fields.location)
+        if (!alive.current) return
+        setBusy(false)
+      }
+      fields.lat = c?.lat ?? null
+      fields.lng = c?.lng ?? null
     }
 
     if (mode === 'edit') {
@@ -307,12 +326,21 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
           <Callout tone="info" title="A registar do Google Calendar.">Confirma o valor e guarda.</Callout>
         )}
 
-        <Field label="Projeto" error={errors.project_id}
-          help={mode === 'new' && lastUsed && f.project_id === lastUsed && !preset?.project_id ? 'Pré-selecionado: o último que usaste.' : null}>
-          <div ref={refs.project_id}>
-            <ProjectChips value={f.project_id} projects={options} onChange={set('project_id')} />
-          </div>
-        </Field>
+        {fixedProject ? (
+          // do Google, o projeto é o do calendário: para mudar, muda-se na fonte (calendário ↔ projeto)
+          <Field label="Projeto" help="Vem do calendário do Google. Para mudar, muda o projeto desse calendário nas Definições.">
+            <div ref={refs.project_id} className="ev-proj-fixed">
+              <ProjectAvatar project={fixedProject} /><b>{fixedProject.name}</b>
+            </div>
+          </Field>
+        ) : (
+          <Field label="Projeto" error={errors.project_id}
+            help={mode === 'new' && lastUsed && f.project_id === lastUsed && !preset?.project_id ? 'Pré-selecionado: o último que usaste.' : null}>
+            <div ref={refs.project_id}>
+              <ProjectChips value={f.project_id} projects={options} onChange={set('project_id')} />
+            </div>
+          </Field>
+        )}
 
         <Field label="Título" error={errors.title}>
           <TextInput ref={refs.title} value={f.title} onChange={set('title')} placeholder="Ex.: Noiva Madalena Reis"
@@ -328,8 +356,10 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
           </Field>
         </div>
 
-        <Field label="Local">
-          <TextInput icon="pin" value={f.location} onChange={set('location')} placeholder="Ex.: Almancil" autoComplete="off" />
+        <Field label="Local" help={!f.location.trim() ? null : f.coords ? 'Fica no mapa.'
+          : 'Escolhe uma sugestão para ficar certo no mapa (ao guardar procuro o texto).'}>
+          <PlaceInput value={f.location} coords={f.coords}
+            onChange={(location, coords) => setF((s) => ({ ...s, location, coords }))} />
         </Field>
 
         <div className="row2">

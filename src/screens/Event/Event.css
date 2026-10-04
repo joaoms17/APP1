@@ -62,3 +62,18 @@
 .ev-sub-help { font-size: var(--fs-meta); color: var(--muted); font-weight: 600; line-height: 1.4; }
 .ev-sub-help b { color: var(--ink); font-weight: 600; }
 .ev-start { justify-self: start; margin-left: -8px; }
+
+/* ---- Local com sugestões (mapa) e projeto fixo (Registar do Google) -------------- */
+.ev-place { position: relative; }
+.ev-place-list {
+  position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; right: 0; display: grid; padding: 6px;
+  border-radius: 14px; background: var(--surface); box-shadow: var(--elev-3), inset 0 0 0 1px var(--line); list-style: none; margin: 0;
+}
+.ev-place-list li {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 10px;
+  font-weight: 600; color: var(--ink); cursor: pointer;
+}
+.ev-place-list li .i { flex: none; color: var(--muted); }
+.ev-place-list li.on { background: var(--surface-sunken); }
+@media (hover: hover) { .ev-place-list li:hover { background: var(--surface-sunken); } }
+.ev-proj-fixed { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: var(--fs-body); }

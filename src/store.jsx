@@ -1011,6 +1011,14 @@ export function StoreProvider({ children }) {
     await saveEvent({ id, ...rest })
   }
 
+  // coordenadas do local (mapa): só lat/lng, sem mexer no updated_at nem recarregar tudo
+  const setEventCoords = async (ids, { lat, lng }) => {
+    if (!ids.length) return
+    const { error } = await db.from('events').update({ lat, lng }).in('id', ids)
+    if (error) throw error
+    for (const id of ids) patchEventLocal(id, { lat, lng })
+  }
+
   // Recibo emitido (Detalhe) — grava logo, com Anular
   const setReceipt = async (ev, on) => {
     const cur = liveEvent(ev)
@@ -1093,12 +1101,13 @@ export function StoreProvider({ children }) {
       // v2 — estado
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
+      geoReady: rawEvents.length > 0 && 'lat' in rawEvents[0],
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, kindSplit, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações
       recordPayment, receiveRemaining, createEvent, createExpense, updateEventFields, setReceipt, markUnpaid,
-      removePaymentDeferred, removeAttachmentDeferred, removeGcalDeferred, refreshGcal, setLastProjectId, ignoreGoogle,
+      removePaymentDeferred, removeAttachmentDeferred, removeGcalDeferred, refreshGcal, setLastProjectId, ignoreGoogle, setEventCoords,
       notify: toast.notify, notifyError: toast.notifyError, undoable: toast.undoable, humanError,
     }}>
       {children}

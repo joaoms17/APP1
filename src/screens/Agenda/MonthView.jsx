@@ -76,8 +76,13 @@ export default function MonthView({ day, active = false, flashId = null }) {
 
   return (
     <div className="ag-month-layout">
-      <CalendarGrid year={year} month={month} selected={day} today={today} evByDay={evByDay} googleByDay={googleByDay}
-        onSelect={go} onMonth={shift} onPicker={openPicker} onToday={() => go(today)} />
+      <div className="ag-cal-col">
+        <CalendarGrid year={year} month={month} selected={day} today={today} evByDay={evByDay} googleByDay={googleByDay}
+          onSelect={go} onMonth={shift} onPicker={openPicker} onToday={() => go(today)} />
+        <Button variant="ghost" size="sm" icon="pin" className="ag-map-btn" onClick={() => openSheet('mapa', { year, month })}>
+          Ver o mês no mapa
+        </Button>
+      </div>
 
       <section className="ag-day-col" aria-labelledby="ag-h-dia">
         <GroupHeader first id="ag-h-dia" title={title} small={small}
