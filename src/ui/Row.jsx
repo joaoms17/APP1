@@ -40,6 +40,7 @@ export function datePhrase(ymd, today) {
 
 // estado por extenso para os nomes acessíveis (linhas, cartão de hoje)
 export const STATE_PHRASE = {
+  novalue: () => 'sem valor',
   paid: () => 'recebido',
   partial: (m) => `sinal recebido, falta ${m}`,
   'partial-overdue': (m) => `em atraso, falta ${m}`,
@@ -122,7 +123,7 @@ export function EventRow({
   return (
     <button type="button" className={cls} {...pvOf(p?.color)} {...rest} aria-label={label} onClick={open}>
       {content}
-      <span className="end"><span className="money">{money(end === 'missing' ? mis : ev.value)}</span></span>
+      <span className="end"><span className="money">{st === 'novalue' ? '—' : money(end === 'missing' ? mis : ev.value)}</span></span>
     </button>
   )
 }
