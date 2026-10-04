@@ -482,8 +482,12 @@ dialog.confirm .acts { display: grid; gap: 6px; margin-top: 8px; }
 .day.out .num { color: var(--muted); font-weight: 400; }
 .day.today .num { color: var(--accent-text); font-weight: 600; text-decoration: underline 2px; text-underline-offset: 4px; }
 .day.sel .num { background: var(--accent); color: var(--on-accent); font-weight: 600; text-decoration: none; }
-.day .dots { display: flex; gap: 3px; height: 7px; align-items: center; }
-.day .dots .dot { width: 6px; height: 6px; }
+/* bolinhas do Mês: maiores e cheias, com um filete da própria cor misturada com a tinta (lê-se em claro e escuro,
+   mesmo com cores de projeto muito claras); as do Google por registar têm anel grosso e centro esbatido */
+.day .dots { display: flex; gap: 4px; height: 10px; align-items: center; }
+.day .dots .dot { width: 10px; height: 10px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p) 50%, var(--ink)); }
+.day .dots .dot.g { background: color-mix(in srgb, var(--p) 25%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p) 50%, var(--ink)), inset 0 0 0 3px var(--p); }
 .day .dots .more { font-size: 10px; font-weight: 600; color: var(--muted); line-height: 1; }
 .day .pills { display: none; }
 
