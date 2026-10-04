@@ -221,3 +221,8 @@
 .ag-map-pop small { color: #666; }
 .leaflet-tooltip.ag-map-n { background: none; border: 0; box-shadow: none; color: #fff; font-weight: 700; padding: 0; }
 .leaflet-tooltip.ag-map-n::before { display: none; }
+
+/* ---- legenda das cores (Mês) ---- */
+.ag-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 6px 0 0; padding: 0 8px; list-style: none;
+  font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
+.ag-legend li { display: inline-flex; align-items: center; gap: 6px; }
