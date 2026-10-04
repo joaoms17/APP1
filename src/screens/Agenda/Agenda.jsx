@@ -28,7 +28,8 @@ const VIEWS = [
 ]
 
 // campos que o Editar/Novo mudam (pagamentos e recibo não contam: não levam a lista a lado nenhum)
-const signature = (e) => [e.title, e.event_date, e.start_time, e.location, e.value, e.gross_value, e.project_id, e.notes].join('|')
+// sem o local: o varrimento dos locais (geoSweep.js) preenche-o em segundo plano e não deve mexer na Agenda
+const signature = (e) => [e.title, e.event_date, e.start_time, e.value, e.gross_value, e.project_id, e.notes].join('|')
 
 // Evento criado ou editado (ou reposto pelo Anular): quando a folha fecha, a Agenda vai até ao dia
 // dele e a linha pisca 1,2 s (spec §3.3, IA-17).

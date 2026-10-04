@@ -1012,12 +1012,30 @@ export function StoreProvider({ children }) {
   }
 
   // coordenadas do local (mapa): só lat/lng, sem mexer no updated_at nem recarregar tudo
-  const setEventCoords = async (ids, { lat, lng }) => {
+  // (patch pode trazer também o local, quando vem do título)
+  const setEventCoords = async (ids, patch) => {
     if (!ids.length) return
-    const { error } = await db.from('events').update({ lat, lng }).in('id', ids)
+    const { error } = await db.from('events').update(patch).in('id', ids)
     if (error) throw error
-    for (const id of ids) patchEventLocal(id, { lat, lng })
+    for (const id of ids) patchEventLocal(id, patch)
   }
+
+  // varrimento dos locais: uma vez por sessão, depois de tudo carregado (geoSweep.js)
+  const geoReady = rawEvents.length > 0 && 'lat' in rawEvents[0]
+  const [geoSweep, setGeoSweep] = useState({ running: false, done: 0, total: 0, found: 0 })
+  const swept = useRef(false)
+  useEffect(() => {
+    if (!geoReady || phase2 || swept.current) return
+    swept.current = true
+    let stop = false
+    import('./geoSweep.js').then(({ sweepLocations }) => sweepLocations(rawEvents, {
+      projectNames: projects.map((p) => p.name),
+      save: (ids, patch) => setEventCoords(ids, patch),
+      onProgress: (p) => !stop && setGeoSweep({ ...p, running: p.done < p.total }),
+      stopped: () => stop || !mounted.current,
+    })).catch(() => {}).finally(() => { if (!stop) setGeoSweep((s) => ({ ...s, running: false })) })
+    return () => { stop = true; swept.current = false }
+  }, [geoReady, phase2]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recibo emitido (Detalhe) — grava logo, com Anular
   const setReceipt = async (ev, on) => {
@@ -1101,7 +1119,7 @@ export function StoreProvider({ children }) {
       // v2 — estado
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
-      geoReady: rawEvents.length > 0 && 'lat' in rawEvents[0],
+      geoReady, geoSweep,
       googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, kindSplit, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,

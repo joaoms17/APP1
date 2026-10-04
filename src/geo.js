@@ -4,6 +4,9 @@
 const PHOTON = 'https://photon.komoot.io/api/'
 const BIAS = { lat: 37.1, lon: -8.2 } // Algarve
 
+// o último pedido falhou (sem rede, serviço em baixo, limite de pedidos) — não é "não existe"
+export const geoNet = { failed: false }
+
 const uniq = (xs) => xs.filter((x, i) => x && xs.indexOf(x) === i)
 
 // "Hotel Vila Joya, Albufeira" · "Rua de Santo António 12, Faro" · "Almancil, Loulé"
@@ -21,8 +24,9 @@ export async function searchPlaces(q, { signal, limit = 5 } = {}) {
   if (text.length < 3) return []
   const url = `${PHOTON}?q=${encodeURIComponent(text)}&limit=${limit}&lat=${BIAS.lat}&lon=${BIAS.lon}`
   try {
+    geoNet.failed = false
     const res = await fetch(url, { signal })
-    if (!res.ok) return []
+    if (!res.ok) { geoNet.failed = true; return [] }
     const data = await res.json()
     const seen = new Set()
     return (data.features || []).map((f) => ({
@@ -31,6 +35,7 @@ export async function searchPlaces(q, { signal, limit = 5 } = {}) {
       lat: f.geometry?.coordinates?.[1],
     })).filter((r) => r.label && Number.isFinite(r.lat) && Number.isFinite(r.lng) && !seen.has(r.label) && seen.add(r.label))
   } catch {
+    geoNet.failed = !signal?.aborted
     return []
   }
 }
@@ -38,9 +43,12 @@ export async function searchPlaces(q, { signal, limit = 5 } = {}) {
 // o melhor resultado para um texto livre (local do Google, eventos antigos); null se nada
 export async function geocode(q, { timeout = 4000 } = {}) {
   const ctl = new AbortController()
-  const t = setTimeout(() => ctl.abort(), timeout)
+  let late = false
+  const t = setTimeout(() => { late = true; ctl.abort() }, timeout)
   try {
-    return (await searchPlaces(q, { signal: ctl.signal, limit: 1 }))[0] || null
+    const r = (await searchPlaces(q, { signal: ctl.signal, limit: 1 }))[0] || null
+    if (late) geoNet.failed = true // demorou demais: não quer dizer que não exista
+    return r
   } finally {
     clearTimeout(t)
   }
@@ -80,8 +88,9 @@ export async function placeFromTitle(title, { skip = [], signal } = {}) {
   if (q.length < 3) return null
   const have = ` ${wordsOf(title).join(' ')} `
   try {
+    geoNet.failed = false
     const res = await fetch(`${PHOTON}?q=${encodeURIComponent(q)}&limit=8&osm_tag=place&bbox=${PT_BBOX}`, { signal })
-    if (!res.ok) return null
+    if (!res.ok) { geoNet.failed = true; return null }
     const data = await res.json()
     const hit = (data.features || [])
       .filter((f) => f.properties?.name && have.includes(` ${wordsOf(f.properties.name).join(' ')} `))
@@ -90,6 +99,7 @@ export async function placeFromTitle(title, { skip = [], signal } = {}) {
     const [lng, lat] = hit.geometry.coordinates
     return { label: placeLabel(hit.properties), lat, lng }
   } catch {
+    geoNet.failed = !signal?.aborted
     return null
   }
 }
