@@ -47,7 +47,8 @@ function useFlash(events, { visible, sheetOpen, view, asked }) {
     const old = prev.current
     prev.current = now
     if (!old || !shown.current) return
-    const changed = events.filter((e) => old.get(e.id) !== now.get(e.id))
+    // um evento que entrou sozinho do Google (gcal_key, novo) não faz saltar a Agenda
+    const changed = events.filter((e) => old.get(e.id) !== now.get(e.id) && !(e.gcal_key && !old.has(e.id)))
     if (changed.length === 1) setPending({ id: changed[0].id, date: changed[0].event_date })
   }, [events])
 
@@ -78,7 +79,8 @@ function useFlash(events, { visible, sheetOpen, view, asked }) {
 export default function Agenda() {
   const route = useRoute()
   const { today, events } = useStore()
-  const [pref, setPref] = useLocalPref('agenda.vista', 'lista')
+  // Mês por omissão (chave nova: quem tinha a Lista guardada passa ao Mês uma vez; depois fica a escolha)
+  const [pref, setPref] = useLocalPref('agenda.vista2', 'mes')
   const [seenNews, setSeenNews] = useLocalPref('novidades', false)
   const desktop = useMediaQuery('(min-width: 1024px)')
   const visible = route.tab === 'agenda'
@@ -95,15 +97,14 @@ export default function Agenda() {
   const lastView = useRef('#/agenda/lista')
   if (visible && !searching) lastView.current = view === 'mes' ? `#/agenda/mes/${day}` : '#/agenda/lista'
 
-  // #/agenda sem vista (ou com uma vista/dia que não existe) → a última vista usada;
-  // a vista escolhida fica memorizada
+  // #/agenda sem vista (ou com uma vista/dia que não existe) → a vista preferida (Mês por omissão);
+  // só a troca no botão Lista | Mês muda a preferência (um link para a Lista não a muda)
   useEffect(() => {
     if (visible && searching && !('q' in route.params)) { setParams({ q: '' }); return }
     if (!visible || route.sheet || searching) return
     const v = route.path[1]
     if (v !== 'mes' && v !== 'lista') navigate(pref === 'mes' ? `#/agenda/mes/${today}` : '#/agenda/lista', { replace: true })
     else if (v === 'mes' && !isDay(route.path[2])) navigate(`#/agenda/mes/${today}`, { replace: true })
-    else if (v !== pref) setPref(v)
   }, [visible, route, searching, pref, today])
 
   const flash = useFlash(events, {
@@ -113,7 +114,7 @@ export default function Agenda() {
   // voltar ao Mês reabre o último dia escolhido
   const monthDay = useRef(null)
   if (visible && view === 'mes') monthDay.current = day
-  const setView = (v) => navigate(v === 'mes' ? `#/agenda/mes/${monthDay.current || today}` : '#/agenda/lista', { replace: true })
+  const setView = (v) => setPref(v) || navigate(v === 'mes' ? `#/agenda/mes/${monthDay.current || today}` : '#/agenda/lista', { replace: true })
   const openSearch = () => navigate('#/agenda/lista?q=')
   const exitSearch = () => navigate(lastView.current, { replace: true })
 
