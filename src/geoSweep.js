@@ -5,7 +5,7 @@ import { coordsFromText, geoNet, geocode, hasCoords, placeFromTitle } from './ge
 //   · sem local → tira a localidade do título ("Ovar 90" → Ovar) e grava local + coordenadas.
 // Um pedido de cada vez, com pausa (o serviço do mapa é gratuito: sem rajadas). O que não se encontrou
 // fica guardado neste aparelho para não voltar a ser procurado em cada arranque.
-const K_MISS = 'duet.geoMiss'
+const K_MISS = 'duet.geoMiss2' // 2: com bares/hotéis no título — volta a tentar o que antes falhou
 const PAUSE_MS = 1100
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
