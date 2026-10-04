@@ -81,23 +81,46 @@ export function placeQuery(title, skip = []) {
   const no = new Set([...NOT_PLACE, ...skip.flatMap(wordsOf)])
   return wordsOf(title).filter((w) => w.length > 2 && !/\d/.test(w) && !no.has(w)).join(' ')
 }
+// para bares, hotéis, restaurantes… ("Pátio do Sol 21h"): como acima, mas com as ligações (do, da…)
+const LINKS = new Set('a o as os de da do das dos e em no na nos nas'.split(' '))
+function venueQuery(title, skip = []) {
+  const no = new Set([...NOT_PLACE, ...skip.flatMap(wordsOf)])
+  const ws = wordsOf(title).filter((w) => !/\d/.test(w) && (LINKS.has(w) || (w.length > 2 && !no.has(w))))
+  while (ws.length && LINKS.has(ws[0])) ws.shift() // sem ligações soltas no início ou no fim
+  while (ws.length && LINKS.has(ws[ws.length - 1])) ws.pop()
+  return ws.join(' ')
+}
 
-// localidade portuguesa cujo nome está no título → { label, lat, lng } | null
+const sig = (s) => wordsOf(s).filter((w) => w.length > 2)
+const inTitle = (have, name) => have.includes(` ${wordsOf(name).join(' ')} `)
+const hitOf = (f) => ({ label: placeLabel(f.properties), lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] })
+
+async function photon(params, signal) {
+  geoNet.failed = false
+  const res = await fetch(`${PHOTON}?${params}&bbox=${PT_BBOX}&lat=${BIAS.lat}&lon=${BIAS.lon}`, { signal })
+  if (!res.ok) { geoNet.failed = true; return [] }
+  return (await res.json()).features || []
+}
+
+// sítio cujo nome está no título → { label, lat, lng } | null. Primeiro um estabelecimento com nome de
+// 2+ palavras ("Pátio do Sol, Lagos"), depois uma localidade ("Ovar"). O nome tem de estar mesmo no título.
 export async function placeFromTitle(title, { skip = [], signal } = {}) {
-  const q = placeQuery(title, skip)
-  if (q.length < 3) return null
   const have = ` ${wordsOf(title).join(' ')} `
   try {
-    geoNet.failed = false
-    const res = await fetch(`${PHOTON}?q=${encodeURIComponent(q)}&limit=8&osm_tag=place&bbox=${PT_BBOX}`, { signal })
-    if (!res.ok) { geoNet.failed = true; return null }
-    const data = await res.json()
-    const hit = (data.features || [])
-      .filter((f) => f.properties?.name && have.includes(` ${wordsOf(f.properties.name).join(' ')} `))
+    const vq = venueQuery(title, skip)
+    if (sig(vq).length >= 2) {
+      const venue = (await photon(`q=${encodeURIComponent(vq)}&limit=8`, signal))
+        .find((f) => f.properties?.name && !['place', 'highway', 'boundary'].includes(f.properties.osm_key)
+          && sig(f.properties.name).length >= 2 && inTitle(have, f.properties.name))
+      if (venue) return hitOf(venue)
+      if (geoNet.failed) return null
+    }
+    const q = placeQuery(title, skip)
+    if (q.length < 3) return null
+    const town = (await photon(`q=${encodeURIComponent(q)}&limit=8&osm_tag=place`, signal))
+      .filter((f) => f.properties?.name && inTitle(have, f.properties.name))
       .sort((a, b) => (PLACE_RANK[a.properties.osm_value] ?? 9) - (PLACE_RANK[b.properties.osm_value] ?? 9))[0]
-    if (!hit) return null
-    const [lng, lat] = hit.geometry.coordinates
-    return { label: placeLabel(hit.properties), lat, lng }
+    return town ? hitOf(town) : null
   } catch {
     geoNet.failed = !signal?.aborted
     return null
