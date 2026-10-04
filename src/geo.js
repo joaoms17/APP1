@@ -55,4 +55,43 @@ export function coordsFromText(s) {
   return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null
 }
 
+// ---- local a partir do título ("Ovar 90", "Casamento em Tavira", "Noiva Almancil") ----
+const PT_BBOX = '-9.6,36.9,-6.1,42.2' // Portugal continental
+const PLACE_RANK = { city: 0, town: 1, village: 2, suburb: 3, locality: 4, hamlet: 5 }
+// palavras que nunca são o sítio (tipo de evento, ligações, nomes que se repetem nos títulos)
+const NOT_PLACE = new Set(`
+  a o as os de da do das dos e em no na nos nas com c para p por ao aos à às
+  casamento casamentos noiva noivas noivo batizado batismo aniversario festa festas jantar almoco concerto
+  concertos espetaculo show evento gig ensaio aula canto penteado penteados maquilhagem prova cabelo cabelos
+  party welcome wedding bride dj banda musica musical live acustico duo trio set sunset private privado
+`.split(/\s+/).filter(Boolean))
+const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const wordsOf = (s) => fold(s).split(/[^a-z0-9]+/).filter(Boolean)
+
+// texto do título que pode ser um sítio: sem números, ligações, tipos de evento nem nomes de projetos
+export function placeQuery(title, skip = []) {
+  const no = new Set([...NOT_PLACE, ...skip.flatMap(wordsOf)])
+  return wordsOf(title).filter((w) => w.length > 2 && !/\d/.test(w) && !no.has(w)).join(' ')
+}
+
+// localidade portuguesa cujo nome está no título → { label, lat, lng } | null
+export async function placeFromTitle(title, { skip = [], signal } = {}) {
+  const q = placeQuery(title, skip)
+  if (q.length < 3) return null
+  const have = ` ${wordsOf(title).join(' ')} `
+  try {
+    const res = await fetch(`${PHOTON}?q=${encodeURIComponent(q)}&limit=8&osm_tag=place&bbox=${PT_BBOX}`, { signal })
+    if (!res.ok) return null
+    const data = await res.json()
+    const hit = (data.features || [])
+      .filter((f) => f.properties?.name && have.includes(` ${wordsOf(f.properties.name).join(' ')} `))
+      .sort((a, b) => (PLACE_RANK[a.properties.osm_value] ?? 9) - (PLACE_RANK[b.properties.osm_value] ?? 9))[0]
+    if (!hit) return null
+    const [lng, lat] = hit.geometry.coordinates
+    return { label: placeLabel(hit.properties), lat, lng }
+  } catch {
+    return null
+  }
+}
+
 export const hasCoords = (ev) => ev?.lat != null && ev?.lng != null

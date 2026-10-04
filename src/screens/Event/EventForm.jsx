@@ -1,5 +1,5 @@
 import { FEATURES } from '../../features.js'
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
   Button, Callout, DateInput, EmptyState, Field, MoneyInput, NewKindSwitch, PendingAttachments, ProjectAvatar, ProjectChips,
@@ -11,7 +11,7 @@ import { getRoute, navigate, openSheet, setParams, tabHref } from '../../router.
 import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
 import PlaceInput from './PlaceInput.jsx'
-import { coordsFromText, geocode } from '../../geo.js'
+import { coordsFromText, geocode, placeFromTitle } from '../../geo.js'
 
 const EPS = 0.005
 // com as despesas escondidas não há a escolha Evento | Despesa: o título diz o que é
@@ -89,7 +89,7 @@ function changesOf(f, init, { projectName, today }) {
   if (f.title.trim() !== init.title.trim()) out.push(['título', change('o título', init.title.trim(), f.title.trim(), quoted)])
   if (f.event_date !== init.event_date) out.push(['data', change('a data', init.event_date, f.event_date, day)])
   if (f.start_time !== init.start_time) out.push(['hora', change('a hora', init.start_time, f.start_time)])
-  if (f.location.trim() !== init.location.trim()) out.push(['local', change('o local', init.location.trim(), f.location.trim())])
+  if (!f.autoLoc && f.location.trim() !== init.location.trim()) out.push(['local', change('o local', init.location.trim(), f.location.trim())])
   if (!sameMoney(f.gross, init.gross)) out.push(['valor', change('o valor bruto', init.gross, f.gross, eur)])
   if (!sameMoney(f.net, init.net)) out.push(['valor líquido', change('o valor líquido', init.net, f.net, eur)])
   if (f.pay !== init.pay) {
@@ -118,7 +118,7 @@ function dirtyText(changes, mode) {
 // paid/paid_at (os pagamentos vivem no Detalhe; no Novo viram linhas de payments).
 function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const {
-    today, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
+    today, projects, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
     createEvent, updateEventFields, setLastProjectId, notify, geoReady,
   } = useStore()
   // depois de gravar só fecha/navega se o formulário ainda estiver aberto; o erro sai com ele
@@ -158,6 +158,22 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const payRows = ev ? paymentsByEvent.get(ev.id) || [] : []
   const got = ev ? paidAmount(ev) : 0
   const legacy = !!ev?.paid && payRows.length === 0
+
+  // Local vazio num evento novo ou do Google: o título costuma dizer onde é ("Ovar 90") — pré-preenche
+  // (e volta a tentar enquanto o título muda, até a Joana escrever ela o local)
+  const projectNames = useMemo(() => projects.map((p) => p.name), [projects])
+  useEffect(() => {
+    if (mode === 'edit' || (f.location.trim() && !f.autoLoc)) return
+    const ctl = new AbortController()
+    const t = setTimeout(async () => {
+      const r = await placeFromTitle(f.title, { skip: projectNames, signal: ctl.signal })
+      if (ctl.signal.aborted) return
+      setF((s) => (s.location.trim() && !s.autoLoc ? s
+        : r ? { ...s, location: r.label, coords: { lat: r.lat, lng: r.lng }, autoLoc: true }
+        : s.autoLoc ? { ...s, location: '', coords: null, autoLoc: false } : s))
+    }, 500)
+    return () => { clearTimeout(t); ctl.abort() }
+  }, [f.title]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const projectName = (pid) => projectById(pid)?.name || ''
   const fixedProject = mode === 'google' && g?.project_id ? projectById(g.project_id) : null
@@ -356,10 +372,10 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
           </Field>
         </div>
 
-        <Field label="Local" help={!f.location.trim() ? null : f.coords ? 'Fica no mapa.'
+        <Field label="Local" help={!f.location.trim() ? null : f.autoLoc ? 'Tirado do título — confirma ou muda.' : f.coords ? 'Fica no mapa.'
           : 'Escolhe uma sugestão para ficar certo no mapa (ao guardar procuro o texto).'}>
           <PlaceInput value={f.location} coords={f.coords}
-            onChange={(location, coords) => setF((s) => ({ ...s, location, coords }))} />
+            onChange={(location, coords) => setF((s) => ({ ...s, location, coords, autoLoc: false }))} />
         </Field>
 
         <div className="row2">
