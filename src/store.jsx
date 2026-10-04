@@ -527,6 +527,12 @@ export function StoreProvider({ children }) {
   // apaga o registo (se falhar, lança: o toast repõe a linha e avisa) e depois os anexos órfãos
   const finalizeUndo = useCallback(async (p) => {
     if (!p) return
+    // um evento que veio do Google, apagado, passa a ignorado (senão voltava a entrar sozinho)
+    const key = p.kind === 'event' ? (p.row.gcal_key || live.current.rawEvents.find((e) => e.id === p.row.id)?.gcal_key) : null
+    if (key) {
+      await db.from('gcal_ignored').upsert({ key, event_date: key.split('|')[1] || null }).then(() => {}, () => {})
+      setGcalIgnored((s) => new Set(s).add(key))
+    }
     const { error } = await db.from(p.kind === 'event' ? 'events' : 'expenses').delete().eq('id', p.row.id)
     if (error) throw error
     try {
@@ -798,9 +804,21 @@ export function StoreProvider({ children }) {
   const missing = useCallback((ev) => S.missingOf(ev, pbe), [pbe])
   const receivables = useMemo(() => S.receivablesOf(events, pbe, today), [events, pbe, today])
   const agingGroups = useMemo(() => S.agingGroups(receivables.overdue, today, pbe), [receivables, today, pbe])
-  const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents, gcalIgnored), [events, googleEvents, gcalIgnored])
+  // eventos que vieram do Google (gcal_key): o evento do Google correspondente nunca volta a ficar por registar
+  const gcalLinkReady = rawEvents.length > 0 && 'gcal_key' in rawEvents[0]
+  const gcalSkip = useMemo(() => {
+    const s = new Set(gcalIgnored)
+    for (const e of rawEvents) if (e.gcal_key) s.add(e.gcal_key)
+    return s
+  }, [gcalIgnored, rawEvents])
+  const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents, gcalSkip), [events, googleEvents, gcalSkip])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
+  // eventos com o valor por pôr (vindos do Google ou não): os que já aconteceram primeiro
+  const valuePending = useMemo(() => {
+    const evs = eventsAsc.filter((e) => S.noValueOf(e, pbe))
+    return { past: evs.filter((e) => e.event_date < today).reverse(), upcoming: evs.filter((e) => e.event_date >= today) }
+  }, [eventsAsc, pbe, today])
   const projectsByUsage = useMemo(() => S.projectsByUsage(projects, events, today, lastProjectId), [projects, events, today, lastProjectId])
   const projectOptions = useCallback((currentId) => S.projectsByUsage(projects, events, today, lastProjectId, currentId),
     [projects, events, today, lastProjectId])
@@ -1031,9 +1049,33 @@ export function StoreProvider({ children }) {
   // varrimento dos locais: uma vez por sessão, depois de tudo carregado (geoSweep.js)
   const geoReady = rawEvents.length > 0 && 'lat' in rawEvents[0]
   const [geoSweep, setGeoSweep] = useState({ running: false, done: 0, total: 0, found: 0 })
+  // Google → agenda, sem "Registar": cada evento do Google que ainda não está na app entra sozinho, sem valor
+  // (fica "Valor pendente"). gcal_key liga-o ao Google: nunca entra duas vezes (índice único) e, se for
+  // apagado, passa a ignorado. Sem a coluna (SQL por correr), fica o "Registar" de antes.
+  const [gcalImported, setGcalImported] = useState(false)
+  const importTried = useRef(new Set())
+  useEffect(() => {
+    if (!googleSettled || !gcalLinkReady) return
+    const todo = googleMatch.pending.filter((g) => !importTried.current.has(g.key))
+    if (!todo.length) { setGcalImported(true); return }
+    todo.forEach((g) => importTried.current.add(g.key))
+    const rows = todo.map((g) => ({
+      project_id: g.project_id, title: g.title, event_date: g.date, start_time: g.time || null,
+      location: g.location?.trim() || null, value: 0, gross_value: null, paid: false, paid_at: null,
+      receipt_issued: false, notes: null, gcal_key: g.key, updated_at: nowIso(),
+    }))
+    db.from('events').upsert(rows, { onConflict: 'gcal_key', ignoreDuplicates: true }).select()
+      .then(({ data, error }) => {
+        if (error) throw error
+        if (data?.length) putEventsLocal(...data)
+      })
+      .catch(() => { /* fica como "por registar" até à próxima vez */ })
+      .finally(() => setGcalImported(true))
+  }, [googleSettled, gcalLinkReady, googleMatch]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const swept = useRef(false)
   useEffect(() => {
-    if (!geoReady || phase2 || !googleSettled || swept.current) return
+    if (!geoReady || phase2 || !googleSettled || (gcalLinkReady && !gcalImported) || swept.current) return
     swept.current = true
     let stop = false
     // evento da app ↔ evento do Google do mesmo projeto e dia: o local (ou o título) do Google ajuda
@@ -1046,7 +1088,7 @@ export function StoreProvider({ children }) {
       stopped: () => stop || !mounted.current,
     })).catch(() => {}).finally(() => { if (!stop) setGeoSweep((s) => ({ ...s, running: false })) })
     return () => { stop = true; swept.current = false }
-  }, [geoReady, phase2, googleSettled]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [geoReady, phase2, googleSettled, gcalImported]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recibo emitido (Detalhe) — grava logo, com Anular
   const setReceipt = async (ev, on) => {
@@ -1131,7 +1173,7 @@ export function StoreProvider({ children }) {
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
       geoReady, geoSweep,
-      googlePending, googleByDay, googleMatch, findGoogle, projectsByUsage, projectOptions, lastProjectId,
+      googlePending, googleByDay, googleMatch, valuePending, gcalLinkReady, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, kindSplit, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações

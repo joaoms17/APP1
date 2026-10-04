@@ -15,7 +15,7 @@ export default function StatusBadge({ ev, always = false }) {
   const { eventState, missing, today } = useStore()
   const st = eventState(ev)
   const mis = missing(ev)
-  if (st === 'novalue') return <Badge tone="neutral">Sem valor</Badge>
+  if (st === 'novalue') return <Badge tone="neutral">Valor pendente</Badge>
   if (st === 'paid') return always || ev.event_date >= today ? <Badge tone="paid" icon="check">Recebido</Badge> : null
   if (st === 'partial') return <Badge tone="partial">Sinal · falta {money(mis)}</Badge>
   if (st === 'partial-overdue') return <Badge tone="overdue">Em atraso · falta {money(mis)}</Badge>
