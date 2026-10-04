@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { Button, EmptyState, GroupHeader, Icon, eventsSummary } from '../../ui'
 import { useStore } from '../../store.jsx'
+import { projectVars } from '../../color.js'
 import { navigate, openSheet } from '../../router.js'
 import { addDays, cap, fmtDay, relDay, WEEKDAYS_DAY, weekdayOf } from '../../format.js'
 import CalendarGrid from './CalendarGrid.jsx'
@@ -12,7 +13,7 @@ const isEditable = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SE
 // Agenda › Mês (spec §10.5): calendário + o dia selecionado (hora à esquerda) + "A seguir · próximos 7 dias".
 // O dia vive na rota (#/agenda/mes/<ymd>); mudar de mês seleciona o dia 1 (ou hoje, no mês atual).
 export default function MonthView({ day, active = false, flashId = null }) {
-  const { today, eventsAsc, googleByDay, missing } = useStore()
+  const { today, eventsAsc, googleByDay, missing, projects } = useStore()
   const year = Number(day.slice(0, 4))
   const month = Number(day.slice(5, 7))
 
@@ -52,6 +53,16 @@ export default function MonthView({ day, active = false, flashId = null }) {
     return m
   }, [eventsAsc])
 
+  // legenda das cores: os projetos com eventos neste mês (pela ordem dos projetos) + o Google por registar
+  const legend = useMemo(() => {
+    const ym = `${year}-${pad(month)}`
+    const ids = new Set()
+    let google = false
+    for (const [d, evs] of evByDay) if (d.startsWith(ym)) evs.forEach((e) => ids.add(e.project_id))
+    for (const [d, gs] of googleByDay) if (d.startsWith(ym) && gs.length) { google = true; gs.forEach((g) => ids.add(g.project_id)) }
+    return { projects: projects.filter((p) => ids.has(p.id)), google }
+  }, [year, month, evByDay, googleByDay, projects])
+
   const dayItems = mergeItems(evByDay.get(day) || [], googleByDay.get(day) || [])
   const nextItems = useMemo(() => {
     const evs = []
@@ -79,6 +90,14 @@ export default function MonthView({ day, active = false, flashId = null }) {
       <div className="ag-cal-col">
         <CalendarGrid year={year} month={month} selected={day} today={today} evByDay={evByDay} googleByDay={googleByDay}
           onSelect={go} onMonth={shift} onPicker={openPicker} onToday={() => go(today)} />
+        {legend.projects.length > 0 && (
+          <ul className="ag-legend" aria-label="Cores dos projetos">
+            {legend.projects.map((p) => (
+              <li key={p.id}><span className="dot" data-p="" style={projectVars(p.color)} aria-hidden="true" />{p.name}</li>
+            ))}
+            {legend.google && <li><span className="dot g" data-p="" style={projectVars('#929292')} aria-hidden="true" />Google por registar</li>}
+          </ul>
+        )}
         <Button variant="ghost" size="sm" icon="pin" className="ag-map-btn" onClick={() => openSheet('mapa', { year, month })}>
           Ver o mês no mapa
         </Button>
