@@ -693,9 +693,17 @@ export function StoreProvider({ children }) {
     return fetchCalendars(gcalRef.current.cals)
   }, [fetchCalendars, loadGcalCalendars])
 
-  const googleEvents = useMemo(() => gcalCalendars.flatMap((cal) =>
+  // todo o feed (desde 2023) só para os locais dos eventos antigos; por registar só os últimos 3 meses
+  const googleAll = useMemo(() => gcalCalendars.flatMap((cal) =>
     (gcalData[cal.id]?.events || []).map((e) => ({ ...e, project_id: cal.project_id, calendar_id: cal.id }))),
   [gcalCalendars, gcalData])
+  const googleFrom = useMemo(() => {
+    const d = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 4, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  }, [today])
+  const googleEvents = useMemo(() => googleAll.filter((g) => g.date >= googleFrom), [googleAll, googleFrom])
+  // o Google já respondeu (bem ou mal) para todos os calendários ligados
+  const googleSettled = !phase2 && gcalCalendars.every((c) => gcalData[c.id])
 
   const gcalStatus = useMemo(() => {
     const byCalendar = {}
@@ -1025,17 +1033,20 @@ export function StoreProvider({ children }) {
   const [geoSweep, setGeoSweep] = useState({ running: false, done: 0, total: 0, found: 0 })
   const swept = useRef(false)
   useEffect(() => {
-    if (!geoReady || phase2 || swept.current) return
+    if (!geoReady || phase2 || !googleSettled || swept.current) return
     swept.current = true
     let stop = false
+    // evento da app ↔ evento do Google do mesmo projeto e dia: o local (ou o título) do Google ajuda
+    const hints = new Map(S.matchGoogle(rawEvents, googleAll).matched.map((m) => [m.event.id, m.g]))
     import('./geoSweep.js').then(({ sweepLocations }) => sweepLocations(rawEvents, {
+      hints,
       projectNames: projects.map((p) => p.name),
       save: (ids, patch) => setEventCoords(ids, patch),
       onProgress: (p) => !stop && setGeoSweep({ ...p, running: p.done < p.total }),
       stopped: () => stop || !mounted.current,
     })).catch(() => {}).finally(() => { if (!stop) setGeoSweep((s) => ({ ...s, running: false })) })
     return () => { stop = true; swept.current = false }
-  }, [geoReady, phase2]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [geoReady, phase2, googleSettled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recibo emitido (Detalhe) — grava logo, com Anular
   const setReceipt = async (ev, on) => {

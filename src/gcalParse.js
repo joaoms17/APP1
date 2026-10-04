@@ -13,7 +13,9 @@ export function parseGoogleIcs(text, now = new Date()) {
     try { ICAL.TimezoneService.register(tz) } catch { /* já registado */ }
   }
 
-  const start = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+  // desde 2023: o histórico só serve para dar o local aos eventos antigos (o store mostra por registar
+  // apenas os dos últimos 3 meses)
+  const start = new Date(Math.min(new Date(2023, 0, 1), new Date(now.getFullYear(), now.getMonth() - 3, 1)))
   const end = new Date(now.getFullYear(), now.getMonth() + 13, 1)
   const out = []
   const push = (jsDate, ev, isDate) => {

@@ -16,42 +16,68 @@ function saveMiss(set) {
   try { localStorage.setItem(K_MISS, JSON.stringify([...set].slice(-2000))) } catch { /* sem armazenamento */ }
 }
 
-// o que há para procurar: [{ key, ids, kind: 'local'|'titulo', text }] (eventos mais recentes primeiro)
-export function sweepPlan(events, miss = loadMiss()) {
+// o que há para procurar: [{ key, ids, tries }] (eventos mais recentes primeiro). tries = o que tentar,
+// por ordem: { local } procura um local escrito; { titulo } tira a localidade de um título.
+// Sem local, primeiro o evento do Google do mesmo dia e projeto (hints: id → g): o local dele, depois o
+// título dele; por fim o título do próprio evento.
+export function sweepPlan(events, hints = new Map(), miss = loadMiss()) {
   const groups = new Map()
   for (const e of events) {
     if (hasCoords(e)) continue
     const loc = e.location?.trim()
-    const key = loc ? `L:${loc}` : e.title?.trim() ? `T:${e.title.trim()}` : null
-    if (!key || miss.has(key)) continue
-    if (!groups.has(key)) groups.set(key, { key, ids: [], kind: loc ? 'local' : 'titulo', text: loc || e.title.trim() })
+    const g = loc ? null : hints.get(e.id)
+    const tries = loc ? [{ local: loc }]
+      : [g?.location?.trim() && { local: g.location.trim() }, g?.title && { titulo: g.title }, e.title?.trim() && { titulo: e.title.trim() }]
+        .filter(Boolean)
+    if (!tries.length) continue
+    const key = tries.map((t) => (t.local ? `L:${t.local}` : `T:${t.titulo}`)).join(' / ')
+    if (miss.has(key)) continue
+    if (!groups.has(key)) groups.set(key, { key, ids: [], tries, hasLoc: !!loc })
     groups.get(key).ids.push(e.id)
   }
   return [...groups.values()]
 }
 
+// um local escrito → { lat, lng, location? } (o nome arrumado só quando o texto era um link)
+async function locate(text) {
+  const c = coordsFromText(text)
+  if (c) return { ...c, quick: true }
+  const r = await geocode(text)
+  return r ? { lat: r.lat, lng: r.lng, label: r.label } : null
+}
+
 // save(ids, { lat, lng, location? }) grava; onProgress({ done, total, found }); stopped() pára entre pedidos
-export async function sweepLocations(events, { projectNames = [], save, onProgress, stopped = () => false }) {
+export async function sweepLocations(events, { hints, projectNames = [], save, onProgress, stopped = () => false }) {
   const miss = loadMiss()
-  const plan = sweepPlan(events, miss)
+  const plan = sweepPlan(events, hints, miss)
   let found = 0
   onProgress?.({ done: 0, total: plan.length, found })
   for (let i = 0; i < plan.length; i++) {
     if (stopped()) return
     const g = plan[i]
     let patch = null
-    const fromLink = g.kind === 'local' ? coordsFromText(g.text) : null
-    if (fromLink) patch = fromLink
-    else if (g.kind === 'local') patch = await geocode(g.text)
-    else {
-      const r = await placeFromTitle(g.text, { skip: projectNames })
-      if (r) patch = { lat: r.lat, lng: r.lng, location: r.label }
+    let netFail = false
+    let quick = true
+    for (const t of g.tries) {
+      if (t.local) {
+        const r = await locate(t.local)
+        quick = quick && !!r?.quick
+        // o local escrito fica como está; vindo do Google, fica o texto do Google (ou o nome, se era um link)
+        if (r) patch = { lat: r.lat, lng: r.lng, ...(g.hasLoc ? {} : { location: /^https?:/i.test(t.local) && r.label ? r.label : t.local }) }
+      } else {
+        quick = false
+        const r = await placeFromTitle(t.titulo, { skip: projectNames })
+        if (r) patch = { lat: r.lat, lng: r.lng, location: r.label }
+      }
+      if (patch) break
+      if (geoNet.failed) { netFail = true; break }
+      if (!quick) await wait(PAUSE_MS)
     }
     if (stopped()) return
-    if (!patch && geoNet.failed) return // sem rede ou serviço em baixo: tenta-se na próxima sessão
+    if (netFail) return // sem rede ou serviço em baixo: tenta-se na próxima sessão
     if (patch) {
       try {
-        await save(g.ids, { lat: patch.lat, lng: patch.lng, ...(patch.location ? { location: patch.location } : {}) })
+        await save(g.ids, patch)
         found += g.ids.length
       } catch { /* fica para a próxima sessão */ }
     } else {
@@ -59,6 +85,6 @@ export async function sweepLocations(events, { projectNames = [], save, onProgre
       saveMiss(miss)
     }
     onProgress?.({ done: i + 1, total: plan.length, found })
-    if (!fromLink) await wait(PAUSE_MS)
+    if (!quick) await wait(PAUSE_MS)
   }
 }
