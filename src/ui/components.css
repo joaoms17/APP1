@@ -34,7 +34,7 @@
 .today-card { isolation: isolate; }
 .today-card .foot { flex-wrap: wrap; row-gap: 6px; } /* texto grande: o "Recebi" passa para baixo do estado */
 .today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
-.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: var(--radius-lg); }
 .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
 .today-card.compact .time:not(.none) { font-size: calc(20 * var(--u)); }
 .today-card.compact .foot { margin-top: 4px; }
@@ -80,7 +80,7 @@
 }
 .menu-item {
   display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 12px;
-  border-radius: 10px; text-align: left; font-weight: 700; color: var(--ink);
+  border-radius: 10px; text-align: left; font-weight: 600; color: var(--ink);
 }
 .menu-item .i { color: var(--ink-2); }
 .menu-item:focus-visible { background: var(--surface-sunken); }
@@ -137,7 +137,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .viewer-stage img { display: block; max-width: 100%; max-height: calc(var(--vvh, 100dvh) - 170px); object-fit: contain; border-radius: var(--radius-xs); }
 .viewer-file { display: grid; justify-items: center; gap: 10px; padding: 48px 16px; color: var(--ink-2); text-align: center; }
 .viewer-file svg.i { width: 64px; height: 64px; stroke-width: 1.4; color: var(--muted); }
-.viewer-file b { font-size: var(--fs-title); font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+.viewer-file b { font-size: var(--fs-title); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .viewer-file small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
 
 /* ---- anexos ------------------------------------------------------------------ */
@@ -170,7 +170,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .skeleton .sk:nth-child(3n + 3) { width: 64%; }
 @keyframes sk-pulse { 50% { opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .skeleton .sk { animation: none; } }
-.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
+.sync-note { display: flex; align-items: center; gap: 8px; padding: 10px 4px; font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
 .sync-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--st-paid-fg); flex: none; }
 .sync-note.warn i { background: var(--warning-fg); }
 /* aviso: no telemóvel o texto usa a largura toda e o "Tentar de novo" fica por baixo;
@@ -197,7 +197,7 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 8px;
   height: var(--compact-h); padding: env(safe-area-inset-top) calc(var(--gutter) - 6px) 0 var(--gutter);
   background: var(--tabbar-bg); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 800;
+  border-bottom: 1px solid var(--rule); font-size: var(--fs-title); font-weight: 600;
   opacity: 0; transform: translateY(-100%); pointer-events: none;
   transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
 }
@@ -207,6 +207,45 @@ dialog.sheet.full[open] { animation-name: ui-fade; }
 .topbar-compact.on { opacity: 1; transform: none; pointer-events: auto; }
 /* com a barra compacta visível, os cabeçalhos de grupo colam por baixo dela */
 :root:has(.topbar-compact.on) .group-head { top: var(--compact-h); }
+
+/* ---- faixa do topo (telemóvel e tablet): beringela escura com texto claro, como na referência ----
+   .topband = "‹ voltar" + cabeçalho (TopBar); o esqueleto e o erro fatal usam um .topbar solto.
+   O fundo sai da coluna até às bordas do ecrã por border-image (pinta fora da caixa sem mexer no layout
+   nem criar scroll horizontal); a aba ::after, da cor da página e com os cantos de cima arredondados,
+   faz o conteúdo parecer subir por cima da faixa. A barra compacta fica da mesma cor. No computador
+   (≥ 1024 px) o topo continua claro, ao lado da sidebar. */
+@media (max-width: 1023.98px) {
+  .topband, :not(.topband) > .topbar {
+    --lip: 14px;
+    position: relative; color: var(--top-ink);
+    border-image: linear-gradient(var(--top-bg) 0 0) fill 0 / 0 / 0 100vmax;
+  }
+  .topband { display: flow-root; padding-bottom: var(--lip); }
+  .topband > .topbar { padding-bottom: var(--sp-3); }
+  :not(.topband) > .topbar { padding-bottom: calc(var(--sp-3) + var(--lip)); }
+  /* a aba vai de bordo a bordo do ecrã (no tablet a coluna tem 720 px e sobrava faixa dos lados):
+     (100% − 100vw) / 2 é a distância da coluna centrada a cada bordo — no telemóvel dá −gutter.
+     A .shell corta o que passar do ecrã (overflow-x: clip), por isso uma barra de scroll clássica
+     (100vw conta com ela) nunca cria scroll horizontal. */
+  .topband::after, :not(.topband) > .topbar::after {
+    content: ''; position: absolute; left: calc((100% - 100vw) / 2); right: calc((100% - 100vw) / 2); bottom: -1px;
+    height: var(--lip); background: var(--page); border-radius: var(--lip) var(--lip) 0 0; pointer-events: none;
+  }
+  .topband .kicker, .topbar .kicker, .topband .back { color: var(--top-ink-2); }
+  .topband .avatar { background: color-mix(in srgb, var(--top-ink) 14%, transparent); color: var(--top-ink); }
+  .topband .icon-btn, .topbar-compact .icon-btn { color: var(--top-ink); }
+  .topband :focus-visible, .topbar-compact :focus-visible { outline-color: var(--top-ink); }
+  .topband .avatar-btn .warn-dot { box-shadow: 0 0 0 2px var(--top-bg); }
+  .topbar .sh-sk { background: color-mix(in srgb, var(--top-ink) 16%, transparent); }
+  /* opaca: com transparência via-se o texto da lista a passar por trás do título */
+  .topbar-compact {
+    background: var(--top-bg); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--top-ink);
+    border-bottom-color: color-mix(in srgb, var(--top-ink) 10%, transparent);
+  }
+}
+@media (max-width: 1023.98px) and (hover: hover) {
+  .topband .icon-btn:hover, .topbar-compact .icon-btn:hover, .topband .back:hover { background: color-mix(in srgb, var(--top-ink) 12%, transparent); }
+}
 @media (min-width: 1024px) {
   .back { display: none; }
   .topbar-compact { left: var(--sidebar-w); }

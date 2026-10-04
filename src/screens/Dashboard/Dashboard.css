@@ -6,8 +6,8 @@
 /* seletor ‹ 2026 › na TopBar */
 .db-yearsel { display: inline-flex; align-items: center; }
 .db-yearsel b {
-  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-heading);
-  min-width: 56px; text-align: center; font-variation-settings: "opsz" 36;
+  font-family: var(--font-display); font-weight: 800; font-size: var(--fs-heading);
+  min-width: 56px; text-align: center;
 }
 /* ecrãs estreitos (320 px com texto muito grande): as setas encostam ao ano, sem perder os 44 px de toque */
 @media (max-width: 359px) {
@@ -20,10 +20,10 @@
 .db-wait { padding: 16px 14px; }
 
 /* capa: Saldo líquido */
-.db-hero { background: linear-gradient(160deg, color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), var(--surface) 60%); }
+.db-hero { background: var(--surface); }
 .db-hero .label {
-  font-family: var(--font-display); font-style: italic; font-size: var(--fs-title); font-weight: 600;
-  color: var(--ink);
+  font-family: var(--font-display); font-size: var(--fs-meta); font-weight: 600;
+  color: var(--muted);
 }
 .db-hero .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .db-hero .sub { line-height: 1.4; }
@@ -44,12 +44,12 @@
 .db-kindstat dt { font-size: var(--fs-caption); }
 .db-kindstat dd { margin: 0; }
 .db-kindstat .v { font-weight: 800; font-size: calc(18 * var(--u)); font-variant-numeric: tabular-nums; color: var(--ink); }
-.db-kindstat .v small { font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+.db-kindstat .v small { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 .db-kindstat .s { font-size: var(--fs-meta); color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.db-kindstat .delta { white-space: normal; height: auto; min-height: 24px; }
+.db-kindstat .delta { white-space: normal; text-wrap: balance; height: auto; min-height: 24px; }
 .db-facts {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-  margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule);
+  margin-top: 28px; padding-top: 18px; border-top: .5px solid var(--line);
 }
 
 /* Receita líquida | Despesas — colunas iguais, que não crescem com o valor (R1-61) */
@@ -71,17 +71,17 @@
 }
 .db-link:active { transform: scale(.99); }
 .db-link .txt { display: grid; gap: 2px; }
-.db-link .k { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); }
+.db-link .k { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 .db-link .v { font-size: calc(22 * var(--u)); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .db-link .v.late { color: var(--st-overdue-fg); }
-.db-link .s { font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
-.db-link .go { font-size: var(--fs-meta); font-weight: 800; color: var(--accent-text); }
+.db-link .s { font-size: var(--fs-caption); font-weight: 400; color: var(--muted); }
+.db-link .go { font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text); }
 .db-link .chev { color: var(--ink-2); }
 @media (hover: hover) { .db-link:hover .go { text-decoration: underline; text-underline-offset: 3px; } }
 
 /* cartões de gráficos */
 .db-chart { padding: 16px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-content: start; min-width: 0; }
-.db-chart h2, .db-tbl h2 { font-size: var(--fs-title); font-weight: 800; }
+.db-chart h2, .db-tbl h2 { font-size: var(--fs-title); font-weight: 600; }
 .db-chart .note { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); line-height: 1.45; }
 /* cada valor da faixa é um bloco inteiro (só se parte entre valores); um valor mais largo do que a
    faixa — nome de projeto muito comprido — parte-se por dentro em vez de alargar o cartão (R1-62) */
@@ -99,10 +99,10 @@
 .db-screen .legend i.db-cavg { --c: var(--chart-avg); }
 .db-screen .legend i.db-cp { --c: var(--p); }
 /* texto dos eixos e rótulo da média (os ticks do SVG ficam a 11 px) */
-.db-plot .recharts-cartesian-axis-tick-value, .db-tick { fill: var(--muted); font-size: 11px; font-weight: 700; }
-.db-tick.cur { fill: var(--ink); font-weight: 800; }
+.db-plot .recharts-cartesian-axis-tick-value, .db-tick { fill: var(--muted); font-size: 11px; font-weight: 600; }
+.db-tick.cur { fill: var(--ink); font-weight: 600; }
 .db-avg {
-  fill: var(--ink-2); font-size: 11px; font-weight: 800;
+  fill: var(--ink-2); font-size: 11px; font-weight: 600;
   paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round;
 }
 
@@ -117,7 +117,7 @@
 .db-tbl tr.db-m th { position: relative; padding: 0; }
 .db-mbtn {
   display: flex; align-items: center; width: 100%; min-height: var(--hit); padding: 0 6px;
-  font-weight: 700; color: var(--ink); text-align: left;
+  font-weight: 600; color: var(--ink); text-align: left;
 }
 .db-mbtn::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 100vw; width: 100cqw; border-radius: var(--radius-sm); }
 .db-mbtn:focus-visible { outline: none; }
@@ -130,8 +130,8 @@
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0;
   padding: 10px 12px; border-radius: 10px; background: var(--surface-sunken);
 }
-.db-tbl .db-det dt { font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
-.db-tbl .db-det dd { margin: 0; font-size: var(--fs-meta); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.db-tbl .db-det dt { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
+.db-tbl .db-det dd { margin: 0; font-size: var(--fs-meta); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 359px) { .db-tbl .db-det dl { grid-template-columns: 1fr 1fr; } }
 @media (hover: hover) { .db-tbl tr.db-m:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); } }
 

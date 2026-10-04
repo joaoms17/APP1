@@ -22,7 +22,7 @@ const PRESETS = [
   ['#4f9f68', 'Verde'], ['#6d8ed6', 'Azul'], ['#a49b3f', 'Oliva'], ['#c263ac', 'Magenta'],
 ]
 const COLOR_NAME = Object.fromEntries(PRESETS)
-const LIGHT_SURFACE = '#fffdfb' // --surface claro: o aviso da cor livre compara com o fundo claro
+const LIGHT_SURFACE = '#ffffff' // --surface claro: o aviso da cor livre compara com o fundo claro
 const KIND = { music: 'Música', hair: 'Cabelos' }
 
 const money = (n) => fmtMoney(n, { cents: 'never' })

@@ -4,7 +4,7 @@ import { useStore } from '../store.jsx'
 import { navigate } from '../router.js'
 import './components.css'
 
-// Monograma "J" (36 px, anel dourado).
+// Monograma "J" (36 px, anel magenta --accent-2).
 export function Avatar({ size = 'md', className = '' }) {
   return <span className={['avatar', size === 'lg' && 'lg', className].filter(Boolean).join(' ')} aria-hidden="true">J</span>
 }
@@ -22,7 +22,8 @@ export function AvatarButton({ onClick }) {
   )
 }
 
-// Barra de topo do ecrã: kicker dourado + h1 Fraunces + ações + "J".
+// Barra de topo do ecrã: kicker + h1 (Outfit 600) + ações + "J". No telemóvel, o "‹ voltar" e o cabeçalho
+// vivem numa faixa beringela escura (.topband) com o conteúdo a subir por cima, como na referência.
 // back={{ label: 'Agenda', to: '#/agenda' }} (ou { label, onClick }) mostra "‹ Agenda" por cima.
 // Ao passar o título, aparece uma barra compacta com o título e as mesmas ações (spec §9.15: a câmara
 // e a lupa continuam a 1 toque com a lista em scroll). Escondida, fica inerte (fora do Tab).
@@ -38,16 +39,18 @@ export default function TopBar({ kicker, title, actions, back, avatar = true, cl
   }, [])
   return (
     <>
-      {back && (back.to
-        ? <a className="btn quiet back" href={back.to} onClick={back.onClick}><Icon name="chevL" />{back.label}</a>
-        : <button type="button" className="btn quiet back" onClick={back.onClick}><Icon name="chevL" />{back.label}</button>)}
-      <header className={`topbar ${className}`.trim()}>
-        <div>
-          {kicker && <div className="kicker">{kicker}</div>}
-          <h1 ref={h1}>{title}</h1>
-        </div>
-        {(actions || avatar) && <div className="actions">{actions}{avatar && <AvatarButton />}</div>}
-      </header>
+      <div className="topband">
+        {back && (back.to
+          ? <a className="btn quiet back" href={back.to} onClick={back.onClick}><Icon name="chevL" />{back.label}</a>
+          : <button type="button" className="btn quiet back" onClick={back.onClick}><Icon name="chevL" />{back.label}</button>)}
+        <header className={`topbar ${className}`.trim()}>
+          <div>
+            {kicker && <div className="kicker">{kicker}</div>}
+            <h1 ref={h1}>{title}</h1>
+          </div>
+          {(actions || avatar) && <div className="actions">{actions}{avatar && <AvatarButton />}</div>}
+        </header>
+      </div>
       <div className={`topbar-compact${compact ? ' on' : ''}`} inert={compact ? undefined : ''}>
         <span className="t" aria-hidden="true">{title}</span>
         {/* só existem enquanto a barra está à vista (o cabeçalho tem as originais; sem duplicados no topo) */}

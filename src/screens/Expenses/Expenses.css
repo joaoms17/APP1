@@ -12,7 +12,7 @@
   display: grid; justify-items: end; text-align: right; padding-bottom: 2px; margin-left: auto;
   font-size: var(--fs-meta); font-weight: 600; color: var(--muted); line-height: 1.5; white-space: nowrap;
 }
-.ex-hero .side b { color: var(--ink); font-weight: 800; }
+.ex-hero .side b { color: var(--ink); font-weight: 600; }
 
 .ex-cats { margin-top: 14px; }
 
@@ -36,11 +36,11 @@
 .ex-shot:hover { background: color-mix(in srgb, var(--accent-soft) 35%, var(--surface)); }
 .ex-shot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ex-shot .ic { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; }
-.ex-shot b { display: block; font-size: var(--fs-title); font-weight: 800; }
+.ex-shot b { display: block; font-size: var(--fs-title); font-weight: 600; }
 .ex-shot small { display: block; margin-top: 2px; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
 .ex-shot-alt { justify-self: center; margin-top: -6px; }
 .ex-att { display: grid; gap: 8px; }
-.ex-att > .label { font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+.ex-att > .label { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 .ex-delete { justify-self: start; margin-left: -8px; }
 
 @media (min-width: 1024px) {

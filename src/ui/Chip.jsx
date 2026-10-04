@@ -4,7 +4,7 @@ import { useFieldGroup } from './Field.jsx'
 import { projectVars } from '../color.js'
 import { useStore } from '../store.jsx'
 
-// Chips. Selecionado = --accent-soft + --accent-text + ícone check (a mesma linguagem em todo o lado).
+// Chips. Selecionado = violeta cheio (--accent + --on-accent) + ícone check (a mesma linguagem em todo o lado).
 // Dentro de ChipGroup são rádios (aria-checked); soltos ou em ChipRow são alternadores (aria-pressed).
 const GroupCtx = createContext(null)
 

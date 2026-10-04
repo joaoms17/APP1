@@ -1,5 +1,6 @@
 // Componentes partilhados da v2 (plano §F.3) — importar daqui: import { Button, Sheet } from '../../ui'
 export { default as Icon } from './Icon.jsx'
+export { default as Wordmark } from './Wordmark.jsx'
 export { ICONS, categoryIcon } from './icons.js'
 export { default as Button } from './Button.jsx'
 export { default as IconButton } from './IconButton.jsx'

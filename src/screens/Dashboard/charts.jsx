@@ -71,7 +71,8 @@ function useAxisWidth() {
     return () => { on = false }
   }, [fontsReady])
   return useCallback((ticks) => {
-    const font = `700 11px ${getComputedStyle(document.body).fontFamily}`
+    // o mesmo peso dos ticks no CSS (.recharts-cartesian-axis-tick-value: 500 11px)
+    const font = `500 11px ${getComputedStyle(document.body).fontFamily}`
     const w = Math.max(...ticks.ticks.map((v) => textWidth(fmtMoneyCompact(v), font)))
     return Math.max(46, Math.ceil(w) + 9)
   }, [fontsReady]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -301,15 +302,16 @@ function BalanceCard({ t, month, onPick, colors, height, animate, axisWidth }) {
 
 // ---------- Penteados vs música (lado a lado) --------------------------------
 // Cabelos (tipo 'hair') contra os projetos de música: barra de partilha do ano, um resumo por tipo
-// (total, parte, eventos, média por evento, variação) e as barras mês a mês. Rosa = penteados,
-// azul = música (o par --chart-1/--chart-2, validado para daltonismo nos dois modos).
+// (total, parte, eventos, média por evento, variação) e as barras mês a mês. Magenta = penteados,
+// violeta = música (o par --chart-1/--chart-2, validado para daltonismo nos dois modos).
 const shareOf = (x) => `${Math.round(x * 100)} %`
 function KindCard({ t, split, month, onPick, colors, height, animate, axisWidth }) {
   const titleId = useId()
   const [hair, music] = split
   const kinds = [[hair, 'db-c1'], [music, 'db-c2']]
   const prevYear = t.year - 1
-  const vs = t.ytd ? `vs ${prevYear} até ${fmtDM(t.ytd.until)}` : `vs ${prevYear}`
+  // chip curto ("+35 % vs 2025" nunca parte); no ano corrente, "até 30 set" fica por baixo, em letra pequena
+  const until = t.ytd ? `até ${fmtDM(t.ytd.until)}` : null
   const data = useMemo(() => IDX.map((i) => ({ i, hair: hair.byMonth[i], music: music.byMonth[i] })), [hair, music])
   const ticks = niceTicks(Math.max(...hair.byMonth, ...music.byMonth))
   const any = hair.net + music.net > EPS
@@ -331,7 +333,12 @@ function KindCard({ t, split, month, onPick, colors, height, animate, axisWidth 
             <dd className="s">
               {k.count} {k.count === 1 ? 'evento' : 'eventos'}{k.avg != null && <> · média {eur(k.avg)}</>}
             </dd>
-            {k.delta != null && <dd><Delta value={k.delta} suffix={vs} /></dd>}
+            {k.delta != null && (
+              <dd className="db-delta">
+                <Delta value={k.delta} suffix={`vs ${prevYear}`} />
+                {until && <small className="db-delta-note">{until}</small>}
+              </dd>
+            )}
           </div>
         ))}
       </dl>

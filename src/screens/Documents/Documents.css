@@ -6,7 +6,7 @@
 
 /* ---- secções em Definições ------------------------------------------------ */
 .doc-card { padding-top: 4px; }
-.doc-card-title { padding: 10px 16px 2px; font-size: var(--fs-meta); font-weight: 800; color: var(--ink-2); }
+.doc-card-title { padding: 10px 16px 2px; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 .doc-card .srow small .badge { margin-left: 4px; vertical-align: 1px; }
 .doc-card .skeleton { padding: 8px 16px; }
 
@@ -17,7 +17,7 @@
   min-height: 60px; padding: 6px 6px 6px 16px; position: relative;
 }
 .doc-price + .doc-price::after { content: ''; position: absolute; top: 0; left: 16px; right: 14px; height: 1px; background: var(--rule); }
-.doc-price b { font-weight: 700; overflow-wrap: anywhere; }
+.doc-price b { font-weight: 600; overflow-wrap: anywhere; }
 .doc-price > *, .doc-inline > *, .doc-line > * { min-width: 0; } /* os campos encolhem com a coluna */
 .doc-price-in { min-height: 44px; padding: 0 10px; }
 .doc-price-in input { text-align: right; }
@@ -27,19 +27,19 @@
 
 /* ---- folhas ----------------------------------------------------------------- */
 .doc-sheet .group-head { background: var(--sheet-bg); }
-.doc-sheet-title { font-size: var(--fs-title); font-weight: 800; outline: none; }
+.doc-sheet-title { font-size: var(--fs-title); font-weight: 600; outline: none; }
 .doc-hint { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); line-height: 1.4; }
-.doc-state { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); }
+.doc-state { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 
 /* serviços com stepper de 44 px */
 .doc-svcs { display: grid; }
 .doc-svc { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; position: relative; }
 .doc-svc + .doc-svc::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--rule); }
 .doc-svc > span:first-child { min-width: 0; }
-.doc-svc b { display: block; font-weight: 700; }
+.doc-svc b { display: block; font-weight: 600; }
 .doc-svc small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
 .doc-stepper { display: inline-flex; align-items: center; gap: 4px; flex: none; }
-.doc-stepper output { min-width: 28px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.doc-stepper output { min-width: 28px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .doc-stepper .icon-btn[aria-disabled="true"] { opacity: .45; cursor: default; }
 @media (hover: hover) { .doc-stepper .icon-btn[aria-disabled="true"]:hover { background: var(--surface); } }
 .doc-total { justify-content: space-between; }
@@ -47,7 +47,7 @@
 
 /* cronograma: Hora | Quem · Serviço | lixo */
 .doc-ev { display: grid; gap: 2px; }
-.doc-ev b { font-size: var(--fs-title); font-weight: 800; }
+.doc-ev b { font-size: var(--fs-title); font-weight: 600; }
 .doc-ev small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
 .doc-lines { display: grid; gap: 12px; }
 .doc-line { display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; grid-template-areas: "t w x" "s s x"; gap: 8px; align-items: center; }
@@ -83,24 +83,24 @@
 .doc-head { text-align: center; margin-bottom: 18px; }
 .doc-logo { display: block; max-width: 140px; max-height: 72px; margin: 0 auto 12px; object-fit: contain; }
 .doc-brand {
-  font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 38px; line-height: 1;
-  font-variation-settings: "opsz" 144; letter-spacing: -0.02em; color: var(--accent-text);
+  font-family: var(--font-display); font-weight: 600; font-size: 38px; line-height: 1;
+  letter-spacing: -0.02em; color: var(--accent-text);
 }
-.doc-hairline { width: 36px; height: 2px; margin: 10px auto 8px; border-radius: 1px; background: var(--gold); }
+.doc-hairline { width: 36px; height: 2px; margin: 10px auto 8px; border-radius: 1px; background: var(--accent-2); }
 .doc-sub { color: var(--muted); font-size: 13px; font-weight: 600; }
-.doc-title { font-family: var(--font-display); font-weight: 600; font-size: 24px; font-variation-settings: "opsz" 72; text-align: center; margin: 18px 0 12px; }
+.doc-title { font-family: var(--font-display); font-weight: 600; font-size: 24px; text-align: center; margin: 18px 0 12px; }
 .doc-meta { text-align: center; font-size: 14px; color: var(--ink-2); margin-bottom: 20px; }
-.doc-meta b { color: var(--ink); font-weight: 800; }
+.doc-meta b { color: var(--ink); font-weight: 600; }
 .doc-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
 .doc-table th, .doc-table td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--rule); }
-.doc-table th { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.doc-table th { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .doc-table .num { text-align: right; white-space: nowrap; }
-.doc-table .doc-time { font-weight: 800; white-space: nowrap; }
-.doc-table .doc-total td { font-weight: 800; font-size: 16px; border-top: 2px solid var(--line); border-bottom: 0; padding-top: 12px; }
+.doc-table .doc-time { font-weight: 600; white-space: nowrap; }
+.doc-table .doc-total td { font-weight: 600; font-size: 16px; border-top: 2px solid var(--line); border-bottom: 0; padding-top: 12px; }
 .doc-notes { margin-top: 16px; font-size: 13.5px; color: var(--ink-2); white-space: pre-line; }
 .doc-foot { margin-top: 28px; text-align: center; font-size: 13px; color: var(--muted); }
-.doc-orn { display: block; width: 120px; height: 12px; margin: 10px auto 0; fill: none; stroke: var(--gold); stroke-width: 1.2; }
-.doc-orn .fill { fill: var(--gold); stroke: none; }
+.doc-orn { display: block; width: 120px; height: 12px; margin: 10px auto 0; fill: none; stroke: var(--accent-2); stroke-width: 1.2; }
+.doc-orn .fill { fill: var(--accent-2); stroke: none; }
 
 @media (max-width: 480px) {
   .doc-page { margin: 0; border-radius: 0; box-shadow: none; padding: 24px 18px 40px; }

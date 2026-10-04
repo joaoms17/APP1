@@ -29,19 +29,19 @@ const WASH = { light: 0.09, dark: 0.13 }
 const P = [
   // [nome, fg, bg, mínimo]  (mínimo 0 = só informativo)
   ['ink / page', 'ink', 'page', 4.5], ['ink / surface', 'ink', 'surface', 4.5], ['ink / sheet', 'ink', 'sheet-bg', 4.5],
-  ['ink-2 / page', 'ink-2', 'page', 4.5], ['ink-2 / surface', 'ink-2', 'surface', 4.5], ['ink-2 / sunken', 'ink-2', 'surface-sunken', 4.5], ['ink-2 / seg-on', 'ink-2', 'seg-on', 4.5],
+  ['ink-2 / page', 'ink-2', 'page', 4.5], ['ink-2 / surface', 'ink-2', 'surface', 4.5], ['ink-2 / sunken', 'ink-2', 'surface-sunken', 4.5],
   ['muted / page', 'muted', 'page', 4.5], ['muted / surface', 'muted', 'surface', 4.5], ['muted / sheet', 'muted', 'sheet-bg', 4.5], ['muted / sunken', 'muted', 'surface-sunken', 4.5],
   ['accent-text / page', 'accent-text', 'page', 4.5], ['accent-text / surface', 'accent-text', 'surface', 4.5],
   ['accent-text / accent-soft (tab/chip ativos)', 'accent-text', 'accent-soft', 4.5], ['accent-text / sheet', 'accent-text', 'sheet-bg', 4.5],
-  ['accent-text / seg-on', 'accent-text', 'seg-on', 4.5],
-  // contagens (.n) na opção ativa: usam ink-2 (seg-on) e accent-text (chip ativo); muted ali falha no escuro
-  ['muted / seg-on — PROIBIDO em texto (.n ativa usa ink-2)', 'muted', 'seg-on', 0],
-  ['muted / accent-soft — PROIBIDO em texto (.n do chip ativo usa accent-text)', 'muted', 'accent-soft', 0],
+  // contagens (.n) na opção ativa (segmentado e chip de filtro em violeta cheio): usam on-accent, nunca muted
+  ['on-accent / accent (.n na opção ativa)', 'on-accent', 'accent', 4.5],
+  ['muted / accent — PROIBIDO em texto (.n ativa usa on-accent)', 'muted', 'accent', 0],
+  ['muted / accent-soft — PROIBIDO em texto', 'muted', 'accent-soft', 0],
   ['on-accent / accent (primário)', 'on-accent', 'accent', 4.5], ['on-accent / accent-strong', 'on-accent', 'accent-strong', 4.5],
   ['accent / page — UI', 'accent', 'page', 3], ['accent / surface — UI', 'accent', 'surface', 3],
   ['field-border / surface — UI', 'field-border', 'surface', 3], ['field-border / field-bg — UI', 'field-border', 'field-bg', 3],
   ['field-border / page — UI', 'field-border', 'page', 3], ['field-border / sheet — UI', 'field-border', 'sheet-bg', 3],
-  ['gold-text / page (kicker)', 'gold-text', 'page', 4.5], ['gold-text / surface', 'gold-text', 'surface', 4.5],
+  ['accent-2-text (magenta) / page (kicker)', 'accent-2-text', 'page', 4.5], ['accent-2-text / surface', 'accent-2-text', 'surface', 4.5],
   ['Recebido fg / bg', 'st-paid-fg', 'st-paid-bg', 4.5], ['Recebido fg / surface', 'st-paid-fg', 'surface', 4.5], ['Recebido fg / page', 'st-paid-fg', 'page', 4.5],
   ['Sinal fg / bg', 'st-partial-fg', 'st-partial-bg', 4.5], ['Sinal fg / page', 'st-partial-fg', 'page', 4.5],
   ['Por receber fg / page', 'st-due-fg', 'page', 4.5], ['Por receber fg / surface', 'st-due-fg', 'surface', 4.5],
@@ -51,6 +51,22 @@ const P = [
   ['critical fg / bg', 'critical-fg', 'critical-bg', 4.5],
   ['toast fg / bg', 'toast-fg', 'toast-bg', 4.5], ['toast "Anular" / bg', 'toast-action', 'toast-bg', 4.5],
   ['ponto "novidades" / surface — UI', 'dot-new', 'surface', 3],
+  ['logótipo: palavra / page', 'brand-ink', 'page', 4.5], ['logótipo: palavra / surface (sidebar)', 'brand-ink', 'surface', 4.5],
+  ['logótipo: traços / page — UI', 'brand-ray', 'page', 3], ['logótipo: traços / surface — UI', 'brand-ray', 'surface', 3],
+  ['logótipo: traços / top-bg (Entrar) — UI', 'brand-ray', 'top-bg', 3], ['logótipo: palavra / top-bg (Entrar: --brand-ink = --top-ink)', 'top-ink', 'top-bg', 4.5],
+  // faixa do topo (telemóvel): título, kicker/voltar, ícones; segmented/chip ativos = violeta cheio
+  ['top-ink / top-bg (h1, ícones)', 'top-ink', 'top-bg', 4.5], ['top-ink-2 / top-bg (kicker, voltar)', 'top-ink-2', 'top-bg', 4.5],
+  ['accent-2 (magenta: anel do avatar) / top-bg — UI', 'accent-2', 'top-bg', 3],
+  ['accent / surface-sunken (pill ativa no trilho) — UI', 'accent', 'surface-sunken', 3],
+  ['ink / surface-sunken (pill inativa)', 'ink', 'surface-sunken', 4.5],
+  ['ink / seg-on (opção ativa do segmentado)', 'ink', 'seg-on', 4.5], ['ink-2 / seg-on (.n na opção ativa)', 'ink-2', 'seg-on', 4.5], ['ink-2 / seg-track (opção inativa)', 'ink-2', 'seg-track', 4.5], ['muted / seg-track (.n inativa)', 'muted', 'seg-track', 4.5],
+  ['accent-2 (magenta decorativo) / surface — UI', 'accent-2', 'surface', 3],
+  ['chart-1 / surface — UI', 'chart-1', 'surface', 3], ['chart-2 / surface — UI', 'chart-2', 'surface', 3],
+  ['top-ink-2 / top-bg (lema e rodapé do Entrar)', 'top-ink-2', 'top-bg', 4.5],
+  ['accent-text (contorno do chip escolhido no formulário) / accent-soft — UI', 'accent-text', 'accent-soft', 3],
+  ['barra "Sinal" / surface — UI', 'st-partial-mark', 'surface', 3], ['barra "Sinal" / sunken — UI', 'st-partial-mark', 'surface-sunken', 3],
+  ['info fg / surface (etiqueta Google)', 'info-fg', 'surface', 4.5],
+  ['faixa do topo / page (separação)', 'top-bg', 'page', 0], ['faixa do topo / surface (separação)', 'top-bg', 'surface', 0],
   ['surface / page (separação)', 'surface', 'page', 0], ['sheet / page (separação)', 'sheet-bg', 'page', 0], ['sunken / page', 'surface-sunken', 'page', 0],
 ]
 const rows = []; let fails = 0

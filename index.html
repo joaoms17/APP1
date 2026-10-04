@@ -3,17 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#faf3ef" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1a1213" media="(prefers-color-scheme: dark)">
+  <!-- cor da faixa do topo (--top-bg): no iPhone a barra de estado continua a faixa beringela (iOS 15+ usa o
+       theme-color na app instalada). Sem status-bar-style black-translucent de propósito: o texto branco da
+       barra ficaria por cima de zonas claras (topo e barra lateral no iPad/computador, folhas em ecrã inteiro). -->
+  <meta name="theme-color" content="#2b1140" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1f1030" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
-  <title>Joana — Agenda &amp; Finanças</title>
+  <title>Duet</title>
+  <meta name="description" content="Gestão financeira para os teus sonhos">
+  <meta name="application-name" content="Duet">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="apple-mobile-web-app-title" content="Joana">
+  <meta name="apple-mobile-web-app-title" content="Duet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Nunito+Sans:wght@400;600;700;800&display=swap">
+  <!-- Nunito: fallback da ui-rounded (SF Pro Rounded no iPhone) — 400 corpo, 600 rótulos, 700 valores, 800 títulos -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
 </head>
 <body>
   <div id="root"></div>

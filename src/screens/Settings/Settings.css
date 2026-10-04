@@ -6,28 +6,28 @@
 .st-body { display: grid; gap: 22px; padding-bottom: 8px; }
 .st-pad { padding: 4px 16px; }
 
-/* secções: título Fraunces itálico + nota à direita */
+/* secções: título display (800) + nota à direita */
 .st-sec { display: grid; gap: 8px; scroll-margin-top: calc(env(safe-area-inset-top) + 56px); }
 .st-sec > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; padding: 0 4px; }
 .st-sec > header h2 {
-  font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: var(--fs-group);
-  font-variation-settings: "opsz" 48; letter-spacing: -0.01em;
+  font-family: var(--font-display); font-weight: 800; font-size: var(--fs-heading);
+  letter-spacing: -0.01em;
 }
-.st-sec > header small { font-size: var(--fs-meta); font-weight: 700; color: var(--muted); }
+.st-sec > header small { font-size: var(--fs-meta); font-weight: 400; color: var(--muted); }
 
 /* conta */
 .st-acct { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
 .st-acct > span:last-child { min-width: 0; }
-.st-acct b { display: block; font-size: var(--fs-title); font-weight: 800; }
-.st-acct small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); overflow-wrap: anywhere; }
+.st-acct b { display: block; font-size: var(--fs-title); font-weight: 700; }
+.st-acct small { display: block; font-size: var(--fs-meta); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
 
 /* linhas */
 .st-screen .srow:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
 .st-screen .card > .srow:first-child { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 .st-screen .card > .srow:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-.st-screen .srow .v small { display: block; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
+.st-screen .srow .v small { display: block; font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
 .st-screen .srow small .badge { margin-left: 2px; vertical-align: 1px; }
-.st-gtag { display: inline-flex; align-items: center; gap: 3px; vertical-align: bottom; color: var(--info-fg); font-weight: 800; white-space: nowrap; }
+.st-gtag { display: inline-flex; align-items: center; gap: 3px; vertical-align: bottom; color: var(--info-fg); font-weight: 600; white-space: nowrap; }
 .st-gtag svg.i { width: 14px; height: 14px; }
 .st-add b { color: var(--accent-text); }
 .st-add .s-ic { background: var(--accent-soft); color: var(--accent-text); }
@@ -41,31 +41,31 @@
 .st-cal > .p-avatar { margin-top: 4px; }
 .st-cal > span { display: grid; gap: 2px; padding: 4px 0; min-width: 0; }
 .st-cal .st-url { overflow-wrap: anywhere; }
-.st-ok { color: var(--st-paid-fg); font-weight: 800; }
-.st-wait { color: var(--muted); font-weight: 700; }
+.st-ok { color: var(--st-paid-fg); font-weight: 600; }
+.st-wait { color: var(--muted); font-weight: 600; }
 .st-cal .st-state { display: flex; align-items: center; gap: 6px; }
 .st-cal .st-state.st-ok { color: var(--st-paid-fg); }
 .st-state i { width: 7px; height: 7px; border-radius: 50%; flex: none; background: currentColor; }
 .st-fail { display: grid; justify-items: start; gap: 2px; }
-.st-fail small { display: flex; align-items: center; gap: 5px; color: var(--warning-fg); font-weight: 700; }
-.st-fail small b { font-weight: 800; }
+.st-fail small { display: flex; align-items: center; gap: 5px; color: var(--warning-fg); font-weight: 600; }
+.st-fail small b { font-weight: 600; }
 .st-fail .st-why { color: var(--muted); font-weight: 600; }
 .st-fail .btn { margin-left: -8px; }
 
 details.st-ical { padding: 0 4px; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); line-height: 1.45; }
 details.st-ical summary {
   display: flex; align-items: center; gap: 6px; min-height: var(--hit); cursor: pointer; list-style: none;
-  color: var(--accent-text); font-weight: 800;
+  color: var(--accent-text); font-weight: 600;
 }
 details.st-ical summary::-webkit-details-marker { display: none; }
 details.st-ical summary .chev { transition: transform var(--dur-2) var(--ease-out); }
 details.st-ical[open] summary .chev { transform: rotate(180deg); }
 details.st-ical p { padding: 0 0 4px 22px; }
-details.st-ical b { font-weight: 800; color: var(--ink); }
+details.st-ical b { font-weight: 600; color: var(--ink); }
 
 /* rodapé */
-.st-ver { display: grid; justify-items: center; gap: 8px; padding: 8px 0; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }
-.st-ver i { width: 24px; height: 2px; border-radius: 1px; background: var(--gold); }
+.st-ver { display: grid; justify-items: center; gap: 8px; padding: 8px 0; font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
+.st-ver i { width: 24px; height: 2px; border-radius: 1px; background: var(--accent-2); }
 
 /* Tamanho do texto */
 .st-text { display: grid; gap: 12px; }
@@ -85,11 +85,11 @@ details.st-ical b { font-weight: 800; color: var(--ink); }
 .st-swatch.free.on { background: var(--p); color: #fff; box-shadow: 0 0 0 2px var(--sheet-bg), 0 0 0 4px var(--ink); }
 .st-swatch.free input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
 .st-swatch.free:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
-.st-warn { display: flex; gap: 6px; align-items: flex-start; color: var(--warning-fg); font-weight: 700; }
+.st-warn { display: flex; gap: 6px; align-items: flex-start; color: var(--warning-fg); font-weight: 600; }
 .st-warn svg.i { margin-top: 1px; }
 
 .st-stepper { display: inline-flex; align-items: center; gap: 4px; }
-.st-stepper output { min-width: 28px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.st-stepper output { min-width: 28px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .st-stepper .icon-btn[aria-disabled="true"] { opacity: .45; cursor: default; }
 @media (hover: hover) { .st-stepper .icon-btn[aria-disabled="true"]:hover { background: var(--surface); } }
 
@@ -99,14 +99,14 @@ details.st-ical b { font-weight: 800; color: var(--ink); }
   background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted);
 }
 .st-logo-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.st-logo-box.none { background: var(--surface-sunken); font-weight: 800; font-size: var(--fs-title); }
+.st-logo-box.none { background: var(--surface-sunken); font-weight: 600; font-size: var(--fs-title); }
 
 .st-mini { display: grid; gap: 2px; }
-.st-mini .it { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: var(--fs-meta); font-weight: 700; color: var(--ink-2); overflow-wrap: anywhere; }
+.st-mini .it { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); overflow-wrap: anywhere; }
 .st-mini .it svg.i { color: var(--muted); }
 .st-mini .it.none { color: var(--muted); font-weight: 600; }
 .st-sheet .linkish { justify-self: start; }
-.st-sheet .linkish .money { font-weight: 800; }
+.st-sheet .linkish .money { font-weight: 600; }
 
 /* folha Ligar calendário */
 .st-sheet .sh-error { padding: 0; }
