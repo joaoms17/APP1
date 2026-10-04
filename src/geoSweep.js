@@ -1,4 +1,4 @@
-import { coordsFromText, geoNet, geocode, hasCoords, placeFromTitle } from './geo.js'
+import { coordsFromText, geoNet, geocode, hasCoords, knownPlaceInTitle, knownPlacesOf, placeFromTitle } from './geo.js'
 
 // Varrimento dos locais (corre sozinho depois de a app abrir, uma vez por sessão):
 //   · com local mas sem coordenadas → procura o local;
@@ -20,7 +20,7 @@ function saveMiss(set) {
 // por ordem: { local } procura um local escrito; { titulo } tira a localidade de um título.
 // Sem local, primeiro o evento do Google do mesmo dia e projeto (hints: id → g): o local dele, depois o
 // título dele; por fim o título do próprio evento.
-export function sweepPlan(events, hints = new Map(), miss = loadMiss()) {
+export function sweepPlan(events, hints = new Map(), miss = loadMiss(), known = []) {
   const groups = new Map()
   for (const e of events) {
     if (hasCoords(e)) continue
@@ -31,7 +31,8 @@ export function sweepPlan(events, hints = new Map(), miss = loadMiss()) {
         .filter(Boolean)
     if (!tries.length) continue
     const key = tries.map((t) => (t.local ? `L:${t.local}` : `T:${t.titulo}`)).join(' / ')
-    if (miss.has(key)) continue
+    // já falhou antes — a não ser que entretanto haja um local conhecido com esse nome
+    if (miss.has(key) && !tries.some((t) => t.titulo && knownPlaceInTitle(t.titulo, known))) continue
     if (!groups.has(key)) groups.set(key, { key, ids: [], tries, hasLoc: !!loc })
     groups.get(key).ids.push(e.id)
   }
@@ -49,7 +50,8 @@ async function locate(text) {
 // save(ids, { lat, lng, location? }) grava; onProgress({ done, total, found }); stopped() pára entre pedidos
 export async function sweepLocations(events, { hints, projectNames = [], save, onProgress, stopped = () => false }) {
   const miss = loadMiss()
-  const plan = sweepPlan(events, hints, miss)
+  const known = knownPlacesOf(events) // locais que a Joana já escolheu valem mais do que a procura
+  const plan = sweepPlan(events, hints, miss, known)
   let found = 0
   onProgress?.({ done: 0, total: plan.length, found })
   for (let i = 0; i < plan.length; i++) {
@@ -65,6 +67,8 @@ export async function sweepLocations(events, { hints, projectNames = [], save, o
         // o local escrito fica como está; vindo do Google, fica o texto do Google (ou o nome, se era um link)
         if (r) patch = { lat: r.lat, lng: r.lng, ...(g.hasLoc ? {} : { location: /^https?:/i.test(t.local) && r.label ? r.label : t.local }) }
       } else {
+        const k = knownPlaceInTitle(t.titulo, known)
+        if (k) { patch = { lat: k.lat, lng: k.lng, location: k.label }; break }
         quick = false
         const r = await placeFromTitle(t.titulo, { skip: projectNames })
         if (r) patch = { lat: r.lat, lng: r.lng, location: r.label }

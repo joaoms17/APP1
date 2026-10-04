@@ -11,7 +11,7 @@ import { getRoute, navigate, openSheet, setParams, tabHref } from '../../router.
 import { fmtDM, fmtDMY, fmtTime } from '../../format.js'
 import { money, payDayFormat } from './PaymentBlock.jsx'
 import PlaceInput from './PlaceInput.jsx'
-import { coordsFromText, geocode, placeFromTitle } from '../../geo.js'
+import { coordsFromText, geocode, knownPlaceInTitle, knownPlacesOf, placeFromTitle } from '../../geo.js'
 
 const EPS = 0.005
 // com as despesas escondidas não há a escolha Evento | Despesa: o título diz o que é
@@ -119,7 +119,7 @@ function dirtyText(changes, mode) {
 function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const {
     today, projects, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
-    createEvent, updateEventFields, setLastProjectId, notify, geoReady,
+    createEvent, updateEventFields, setLastProjectId, notify, notifyError, geoReady, events: allEvents, setEventCoords,
   } = useStore()
   // depois de gravar só fecha/navega se o formulário ainda estiver aberto; o erro sai com ele
   const { alive, fail } = useFormSave()
@@ -162,11 +162,12 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   // Local vazio num evento novo ou do Google: o título costuma dizer onde é ("Ovar 90") — pré-preenche
   // (e volta a tentar enquanto o título muda, até a Joana escrever ela o local)
   const projectNames = useMemo(() => projects.map((p) => p.name), [projects])
+  const known = useMemo(() => knownPlacesOf(allEvents), [allEvents])
   useEffect(() => {
     if (mode === 'edit' || (f.location.trim() && !f.autoLoc)) return
     const ctl = new AbortController()
     const t = setTimeout(async () => {
-      const r = await placeFromTitle(f.title, { skip: projectNames, signal: ctl.signal })
+      const r = knownPlaceInTitle(f.title, known) || await placeFromTitle(f.title, { skip: projectNames, signal: ctl.signal })
       if (ctl.signal.aborted) return
       setF((s) => (s.location.trim() && !s.autoLoc ? s
         : r ? { ...s, location: r.label, coords: { lat: r.lat, lng: r.lng }, autoLoc: true }
@@ -280,7 +281,25 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
         fail(ex, () => submitRef.current?.())
         return
       }
-      notify({ text: 'Evento guardado', action: { label: 'Ver', run: () => openSheet('evento', id) } })
+      // local corrigido: os outros eventos com o mesmo local antigo podem ir atrás (um toque)
+      const oldLoc = init.location.trim()
+      const same = oldLoc && fields.location && fields.location !== oldLoc && fields.lat != null
+        ? allEvents.filter((e) => e.id !== id && e.location?.trim() === oldLoc).map((e) => e.id) : []
+      if (same.length) {
+        const patch = { location: fields.location, lat: fields.lat, lng: fields.lng }
+        notify({
+          text: <>Local guardado. Há mais {same.length} {same.length === 1 ? 'evento' : 'eventos'} em <b>{oldLoc}</b>.</>,
+          duration: 12000,
+          action: {
+            label: `Mudar ${same.length === 1 ? 'esse' : `os ${same.length}`}`,
+            run: () => setEventCoords(same, patch)
+              .then(() => notify({ text: <>{same.length} {same.length === 1 ? 'evento passou' : 'eventos passaram'} para <b>{fields.location}</b></> }))
+              .catch((ex) => notifyError(ex)),
+          },
+        })
+      } else {
+        notify({ text: 'Evento guardado', action: { label: 'Ver', run: () => openSheet('evento', id) } })
+      }
       finish(id, fields.event_date)
       return
     }
