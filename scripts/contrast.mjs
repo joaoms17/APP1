@@ -94,6 +94,11 @@ for (const [mode, t] of [['light', light], ['dark', dark]]) {
   for (const c of PROJ) { const pc = mode === 'dark' ? darkMark(c) : c; worstRing = Math.min(worstRing, Math.max(cr(pc, t.surface), cr(ring, t.surface))) }
   rows.push({ mode, n: 'marcador de projeto c/ anel / surface (pior caso)', v: worstRing, ok: worstRing >= 3 ? 'OK' : 'FALHA', min: 3 })
   if (worstRing < 3) fails++
+  // bolinhas do Mês: filete = cor do projeto misturada a 50 % com a tinta — a cor OU o filete têm de dar ≥ 3:1
+  let worstEdge = 99
+  for (const c of PROJ) { const pc = mode === 'dark' ? darkMark(c) : c; worstEdge = Math.min(worstEdge, Math.max(cr(pc, t.surface), cr(mix(pc, t.ink, 0.5), t.surface))) }
+  rows.push({ mode, n: 'bolinha do Mês c/ filete / surface (pior caso)', v: worstEdge, ok: worstEdge >= 3 ? 'OK' : 'FALHA', min: 3 })
+  if (worstEdge < 3) fails++
 }
 if (process.argv[2] === '--md') {
   console.log('| Par | Claro | Escuro | Mín. |\n|---|---|---|---|')

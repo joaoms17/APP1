@@ -107,7 +107,8 @@
   .ag-month-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .ag-cal .day { height: 36px; padding-top: 2px; gap: 1px; }
   .ag-cal .day .num { height: 24px; width: 28px; }
-  .ag-cal .day .dots { height: 6px; }
+  .ag-cal .day .dots { height: 8px; }
+  .ag-cal .day .dots .dot { width: 8px; height: 8px; }
 }
 
 /* =====================================================================
