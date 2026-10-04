@@ -159,7 +159,11 @@ function start() {
   if (started || !HAS_WINDOW) return
   started = true
   let hash = normHash(location.hash)
-  if (!location.hash || location.hash === '#' || location.hash === '#/') hash = normHash(readLS() || '#/agenda')
+  if (!location.hash || location.hash === '#' || location.hash === '#/') {
+    hash = normHash(readLS() || '#/agenda')
+    // ao abrir, a Agenda abre na vista preferida (Mês por omissão), não na última vista/dia guardados
+    if (/^#\/agenda(\/(lista|mes)(\/[\d-]+)?)?$/.test(hash)) hash = '#/agenda'
+  }
   // as folhas nunca são repostas ao abrir a app
   const r = parse(hash)
   hash = withoutSheet(r)
