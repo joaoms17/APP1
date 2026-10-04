@@ -103,7 +103,7 @@ export default function EventDetail({ id, onClose }) {
 
   const menu = [
     { label: 'Duplicar evento', icon: 'copy', onSelect: duplicate },
-    { label: 'Registar pagamento extra', icon: 'plus', hidden: !paidAll || legacy || adding, onSelect: () => setAdding(true) },
+    { label: 'Registar pagamento extra', icon: 'plus', hidden: !paidAll || legacy || adding || !(Number(ev.value) > 0), onSelect: () => setAdding(true) },
     { label: 'Cronograma do dia', icon: 'clockList', hidden: !FEATURES.docs, onSelect: () => openSheet('cronograma', ev.id) },
     { label: 'Orçamento', icon: 'file', hidden: !FEATURES.docs, onSelect: openQuote },
     { label: 'Apagar evento', icon: 'trash', danger: true, onSelect: remove },

@@ -35,11 +35,15 @@ export const paidAmountOf = (ev, pbe) => {
 
 export const missingOf = (ev, pbe) => Math.max(0, num(ev.value) - paidAmountOf(ev, pbe))
 
-// 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
+// sem valor ainda (0 €, sem pagamentos nem marcado como recebido): não é "Recebido" — falta pôr o valor
+export const noValueOf = (ev, pbe) => num(ev.value) <= EPS && !ev.paid && !(pbe?.get(ev.id)?.length)
+
+// 'novalue' | 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
 // Recebido = não falta nada (spec §9.1). O flag paid só conta sem pagamentos (legado, via
 // paidAmountOf): com pagamentos manda a soma, mesmo que o flag tenha ficado desatualizado.
 // Um evento de 0 € não tem nada a receber (nunca fica "Em atraso").
 export const eventStateOf = (ev, pbe, today) => {
+  if (noValueOf(ev, pbe)) return 'novalue'
   const got = paidAmountOf(ev, pbe)
   const total = num(ev.value)
   if (got >= total - EPS) return 'paid'

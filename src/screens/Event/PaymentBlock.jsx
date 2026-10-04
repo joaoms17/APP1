@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, DateInput, Field, HeroNumber, Icon, IconButton, MoneyInput, Progress, confirmDialog, parseMoney } from '../../ui'
 import { useStore } from '../../store.jsx'
+import { openSheet } from '../../router.js'
 import { fmtDM, fmtDMY, fmtDayShort, fmtMoney } from '../../format.js'
 
 const EPS = 0.005
@@ -107,6 +108,23 @@ export default function PaymentBlock({ ev, adding, onAdding, onDraft }) {
   const paidAll = miss <= EPS
   const legacy = !!ev.paid && ps.length === 0 && total > 0
   const pct = total > 0 ? Math.min(100, Math.round((got / total) * 100)) : 100
+
+  // sem valor ainda: nada a receber nem "Recebido" — só o convite para pôr o valor
+  if (total <= EPS && ps.length === 0 && !ev.paid) {
+    return (
+      <div ref={cardRef} className="card ev-pay" tabIndex={-1}>
+        <div className="ev-pay-top">
+          <div>
+            <div className="k">Sem valor</div>
+            <p className="help">Ainda não tem valor, por isso não conta como recebido nem por receber.</p>
+          </div>
+        </div>
+        <div className="ev-pay-add">
+          <Button variant="ghost" icon="pencil" onClick={() => openSheet('evento-editar', ev.id)}>Pôr o valor</Button>
+        </div>
+      </div>
+    )
+  }
 
   // 1.º de vários (ou parcial) = sinal; o resto são pagamentos
   const labelOf = (i) => (i === 0 && (ps.length > 1 || !paidAll) ? 'Sinal' : 'Pagamento')

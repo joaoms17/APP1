@@ -47,7 +47,8 @@ function initialOf({ mode, ev, g, preset, today, defaultProject }) {
     return {
       ...base, coords: coordsOf(ev), project_id: ev.project_id, title: ev.title || '', event_date: ev.event_date,
       start_time: fmtTime(ev.start_time), location: ev.location || '', notes: ev.notes || '',
-      ...moneyFields(ev.gross_value, ev.value),
+      // sem valor (0 €, nada recebido): o campo fica vazio, não "0"
+      ...(Number(ev.value) || ev.paid ? moneyFields(ev.gross_value, ev.value) : { gross: '', net: '' }),
     }
   }
   if (mode === 'google') {
@@ -242,7 +243,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       event_date: f.event_date,
       start_time: f.start_time || null,
       location: f.location.trim() || null,
-      gross_value: gross ?? value,
+      gross_value: gross ?? (Number.isFinite(net) ? net : null), // vazio = valor por definir
       value,
       notes: f.notes.trim() || null,
     }
@@ -473,6 +474,7 @@ function PaymentNote({ ev, got, value, legacy, payments }) {
   const miss = Math.max(0, value - got)
   let head
   if (legacy) head = 'Pagamento: marcado como recebido, sem pagamentos registados.'
+  else if (got <= EPS && !(value > EPS)) head = 'Pagamento: ainda sem valor — escreve-o quando souberes.'
   else if (got <= EPS) head = `Pagamento: nada recebido · falta ${money(miss)}.`
   else if (value < got - EPS) head = `Pagamento: já recebeste ${money(got)}, mais do que o valor novo (${money(value)}).`
   else if (miss <= EPS) head = `Pagamento: tudo recebido (${money(got)}).`
