@@ -59,6 +59,7 @@ const P = [
   ['accent-2 (magenta: anel do avatar) / top-bg — UI', 'accent-2', 'top-bg', 3],
   ['accent / surface-sunken (pill ativa no trilho) — UI', 'accent', 'surface-sunken', 3],
   ['ink / surface-sunken (pill inativa)', 'ink', 'surface-sunken', 4.5],
+  ['ink / seg-on (opção ativa do segmentado)', 'ink', 'seg-on', 4.5], ['ink-2 / seg-on (.n na opção ativa)', 'ink-2', 'seg-on', 4.5], ['ink-2 / seg-track (opção inativa)', 'ink-2', 'seg-track', 4.5], ['muted / seg-track (.n inativa)', 'muted', 'seg-track', 4.5],
   ['accent-2 (magenta decorativo) / surface — UI', 'accent-2', 'surface', 3],
   ['chart-1 / surface — UI', 'chart-1', 'surface', 3], ['chart-2 / surface — UI', 'chart-2', 'surface', 3],
   ['top-ink-2 / top-bg (lema e rodapé do Entrar)', 'top-ink-2', 'top-bg', 4.5],

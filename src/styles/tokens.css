@@ -57,7 +57,9 @@
   /* ---- cor · claro ----------------------------------------------------- */
   --page: #f6f3f0;             /* lavanda-creme */
   --surface: #ffffff;          /* cartões brancos com sombra suave */
-  --surface-sunken: #eeeaed;   /* trilhos (segmented, progresso), pills inativas, fundos de ícone */
+  --surface-sunken: #eeeaed;
+  --seg-track: #e9e4e8;        /* trilho do segmentado (iOS) */
+  --seg-on: #ffffff;           /* polegar do segmentado */   /* trilhos (segmented, progresso), pills inativas, fundos de ícone */
   --sheet-bg: #f6f3f0;
   --field-bg: #ffffff;
   --ink: #241a29;              /* beringela */
@@ -120,7 +122,9 @@
   :root {
     --page: #120c14;
     --surface: #1f1823;
-    --surface-sunken: #19131c;   /* trilho: ENTRE page e surface (nunca "buraco" mais escuro que a página) */
+    --surface-sunken: #19131c;
+    --seg-track: #241d28;
+    --seg-on: #3d3442;   /* trilho: ENTRE page e surface (nunca "buraco" mais escuro que a página) */
     --sheet-bg: #1c1520;         /* folha ≠ página */
     --field-bg: #150f18;
     --ink: #f4eff5;

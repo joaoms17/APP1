@@ -41,7 +41,7 @@
 
 /* cartão de hoje (variantes compact/flash e ação por cima do botão esticado no CSS base) */
 .ag-screen .today-card { cursor: pointer; }
-.ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: var(--radius-lg); }
 .ag-tc-state { display: inline-flex; min-width: 0; }
 
 /* cartão do mês (só no computador, na coluna lateral) */
@@ -174,7 +174,7 @@
    ===================================================================== */
 @media (hover: hover) {
   .ag-prev:hover { color: var(--ink); }
-  .ag-screen .today-card:hover { box-shadow: var(--elev-hover), inset 0 0 0 1px color-mix(in srgb, var(--p) 30%, var(--line)); }
+  .ag-screen .today-card:hover { box-shadow: var(--elev-hover); }
   .ag-cal .cal-title:hover { background: var(--surface-sunken); }
   .ag-cal .day:hover .num { background: var(--surface-sunken); }
   .ag-cal .day.sel:hover .num { background: var(--accent); }

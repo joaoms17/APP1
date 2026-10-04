@@ -34,7 +34,7 @@
 .today-card { isolation: isolate; }
 .today-card .foot { flex-wrap: wrap; row-gap: 6px; } /* texto grande: o "Recebi" passa para baixo do estado */
 .today-card .foot .btn { position: relative; z-index: 2; margin-left: auto; }
-.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: 18px; }
+.today-card .row-open:focus-visible { outline-offset: 3px; border-radius: var(--radius-lg); }
 .today-card.compact { padding-top: 10px; padding-bottom: 8px; }
 .today-card.compact .time:not(.none) { font-size: calc(20 * var(--u)); }
 .today-card.compact .foot { margin-top: 4px; }
