@@ -335,12 +335,12 @@ html {
 /* KPI / hero */
 .hero { padding: 18px 18px 16px; position: relative; overflow: hidden; }
 .hero .label { display: flex; align-items: center; gap: 6px; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
-.hero .rule { width: 32px; height: 2px; border-radius: 1px; background: var(--accent-2); margin: 10px 0 12px; }
+.hero .rule { display: block; height: 0; margin: 8px 0 6px; } /* sem filete decorativo: só o espaço */
 .hero .sub { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); margin-top: 8px; }
 .hero .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
 .kpi { display: grid; gap: 2px; text-align: left; color: inherit; }
 .kpi .k { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
-.kpi .v { font-size: var(--fs-heading); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.kpi .v { font-size: var(--fs-heading); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .kpi .s { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
 .delta { display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 9px 0 6px; border-radius: 12px; font-size: var(--fs-caption); font-weight: 600; }
 .delta .i { width: 15px; height: 15px; stroke-width: 2.4; }

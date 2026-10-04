@@ -6,7 +6,7 @@
 /* seletor ‹ 2026 › na TopBar */
 .db-yearsel { display: inline-flex; align-items: center; }
 .db-yearsel b {
-  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-heading);
+  font-family: var(--font-display); font-weight: 800; font-size: var(--fs-heading);
   min-width: 56px; text-align: center;
 }
 /* ecrãs estreitos (320 px com texto muito grande): as setas encostam ao ano, sem perder os 44 px de toque */
@@ -20,16 +20,16 @@
 .db-wait { padding: 16px 14px; }
 
 /* capa: Saldo líquido */
-.db-hero { background: linear-gradient(160deg, color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), var(--surface) 60%); }
+.db-hero { background: var(--surface); }
 .db-hero .label {
-  font-family: var(--font-display); font-size: var(--fs-title); font-weight: 600;
-  color: var(--ink);
+  font-family: var(--font-display); font-size: var(--fs-meta); font-weight: 600;
+  color: var(--muted);
 }
 .db-hero .row1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .db-hero .sub { line-height: 1.4; }
 /* ano corrente: comparação até ao mesmo dia + ano completo em letra pequena */
 .db-compare { display: grid; gap: 2px; margin: 10px 0 2px; font-size: var(--fs-meta); color: var(--ink-2); line-height: 1.4; }
-.db-compare b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.db-compare b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
 .db-compare small { font-size: var(--fs-caption); color: var(--muted); }
 .db-delta { display: grid; justify-items: start; gap: 3px; }
 .db-delta-note { font-size: var(--fs-caption); color: var(--muted); line-height: 1.35; }
@@ -43,13 +43,13 @@
 .db-kindstat { display: grid; gap: 3px; align-content: start; justify-items: start; min-width: 0; }
 .db-kindstat dt { font-size: var(--fs-caption); }
 .db-kindstat dd { margin: 0; }
-.db-kindstat .v { font-weight: 600; font-size: calc(18 * var(--u)); font-variant-numeric: tabular-nums; color: var(--ink); }
+.db-kindstat .v { font-weight: 800; font-size: calc(18 * var(--u)); font-variant-numeric: tabular-nums; color: var(--ink); }
 .db-kindstat .v small { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
 .db-kindstat .s { font-size: var(--fs-meta); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .db-kindstat .delta { white-space: normal; text-wrap: balance; height: auto; min-height: 24px; }
 .db-facts {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-  margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule);
+  margin-top: 28px; padding-top: 18px; border-top: .5px solid var(--line);
 }
 
 /* Receita líquida | Despesas — colunas iguais, que não crescem com o valor (R1-61) */
@@ -71,10 +71,10 @@
 }
 .db-link:active { transform: scale(.99); }
 .db-link .txt { display: grid; gap: 2px; }
-.db-link .k { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
-.db-link .v { font-size: calc(22 * var(--u)); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.db-link .k { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
+.db-link .v { font-size: calc(22 * var(--u)); font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .db-link .v.late { color: var(--st-overdue-fg); }
-.db-link .s { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
+.db-link .s { font-size: var(--fs-caption); font-weight: 400; color: var(--muted); }
 .db-link .go { font-size: var(--fs-meta); font-weight: 600; color: var(--accent-text); }
 .db-link .chev { color: var(--ink-2); }
 @media (hover: hover) { .db-link:hover .go { text-decoration: underline; text-underline-offset: 3px; } }

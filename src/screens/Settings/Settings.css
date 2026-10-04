@@ -10,16 +10,16 @@
 .st-sec { display: grid; gap: 8px; scroll-margin-top: calc(env(safe-area-inset-top) + 56px); }
 .st-sec > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; padding: 0 4px; }
 .st-sec > header h2 {
-  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-group);
+  font-family: var(--font-display); font-weight: 800; font-size: var(--fs-heading);
   letter-spacing: -0.01em;
 }
-.st-sec > header small { font-size: var(--fs-meta); font-weight: 600; color: var(--muted); }
+.st-sec > header small { font-size: var(--fs-meta); font-weight: 400; color: var(--muted); }
 
 /* conta */
 .st-acct { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
 .st-acct > span:last-child { min-width: 0; }
-.st-acct b { display: block; font-size: var(--fs-title); font-weight: 600; }
-.st-acct small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--muted); overflow-wrap: anywhere; }
+.st-acct b { display: block; font-size: var(--fs-title); font-weight: 700; }
+.st-acct small { display: block; font-size: var(--fs-meta); font-weight: 400; color: var(--muted); overflow-wrap: anywhere; }
 
 /* linhas */
 .st-screen .srow:hover { background: color-mix(in srgb, var(--surface-sunken) 55%, transparent); }
