@@ -206,7 +206,22 @@ const googleWaiting = (loadingPhases, gcalStatus) =>
 
 // Por completar: eventos com o valor por pôr (os do Google entram sozinhos, sem valor) e, se ainda houver,
 // eventos do Google por registar (sem o SQL do gcal_key, ou à espera da próxima atualização)
-function ValuePending() {
+// eventos que vieram do Google e já não estão lá (apagados no Google): Apagar ou Manter no detalhe
+function GoogleGone() {
+  const { eventsAsc, gcalGone } = useStore()
+  const gone = eventsAsc.filter((e) => gcalGone.has(e.id))
+  if (!gone.length) return null
+  return (
+    <section className="rc-group" aria-labelledby="rc-v-gone">
+      <GroupHeader id="rc-v-gone" first title="Já não estão no Google" small={String(gone.length)} />
+      <div className="rc-list">
+        {gone.map((ev) => <div key={ev.id} className="rc-item"><EventRow ev={ev} lead="date" /></div>)}
+      </div>
+    </section>
+  )
+}
+
+function ValuePending({ first = true }) {
   const { valuePending } = useStore()
   const { past, upcoming } = valuePending
   if (!past.length && !upcoming.length) return null
@@ -219,13 +234,13 @@ function ValuePending() {
     <>
       {past.length > 0 && (
         <section className="rc-group" aria-labelledby="rc-v-past">
-          <GroupHeader id="rc-v-past" first title="Valor pendente" small={`${past.length} já ${past.length === 1 ? 'aconteceu' : 'aconteceram'}`} />
+          <GroupHeader id="rc-v-past" first={first} title="Valor pendente" small={`${past.length} já ${past.length === 1 ? 'aconteceu' : 'aconteceram'}`} />
           {list(past)}
         </section>
       )}
       {upcoming.length > 0 && (
         <section className="rc-group" aria-labelledby="rc-v-next">
-          <GroupHeader id="rc-v-next" first={!past.length} title="Próximos sem valor" small={String(upcoming.length)} />
+          <GroupHeader id="rc-v-next" first={first && !past.length} title="Próximos sem valor" small={String(upcoming.length)} />
           {list(upcoming)}
         </section>
       )}
@@ -234,13 +249,13 @@ function ValuePending() {
 }
 
 function Pending() {
-  const { googlePending, gcalCalendars, gcalStatus, loadingPhases, today, valuePending } = useStore()
+  const { googlePending, gcalCalendars, gcalStatus, loadingPhases, today, valuePending, gcalGone } = useStore()
   const { past, upcoming } = googlePending
   const waiting = googleWaiting(loadingPhases, gcalStatus)
-  const values = valuePending.past.length + valuePending.upcoming.length
+  const values = valuePending.past.length + valuePending.upcoming.length + gcalGone.size
 
   if (!past.length && !upcoming.length && values) {
-    return <><ValuePending />{gcalCalendars.length > 0 && <GoogleSync />}</>
+    return <><GoogleGone /><ValuePending first={!gcalGone.size} />{gcalCalendars.length > 0 && <GoogleSync />}</>
   }
   if (!past.length && !upcoming.length) {
     if (waiting) return <Skeleton lines={3} label="A ver o Google Calendar" />
@@ -261,7 +276,8 @@ function Pending() {
 
   return (
     <>
-      <ValuePending />
+      <GoogleGone />
+      <ValuePending first={!gcalGone.size} />
       {past.length > 0 && (
         <>
           <Callout tone="warning" title={past.length === 1 ? 'Já aconteceu e não está registado.' : 'Já aconteceram e não estão registados.'}>
@@ -287,13 +303,13 @@ function Pending() {
 // ---------- ecrã -----------------------------------------------------------------------------------------
 export default function Receber() {
   const route = useRoute()
-  const { receivables, googlePending, valuePending, loadingPhases, gcalStatus } = useStore()
+  const { receivables, googlePending, valuePending, gcalGone, loadingPhases, gcalStatus } = useStore()
   // separador escondido: mantém o último sub-separador visto
   const subRef = useRef('atraso')
   if (route.tab === 'receber') subRef.current = SUBS.includes(route.path[1]) ? route.path[1] : 'atraso'
   const sub = subRef.current
 
-  const gCount = googlePending.past.length + googlePending.upcoming.length + valuePending.past.length + valuePending.upcoming.length
+  const gCount = googlePending.past.length + googlePending.upcoming.length + valuePending.past.length + valuePending.upcoming.length + gcalGone.size
   const tabs = [
     { value: 'atraso', label: 'Em atraso', count: receivables.overdue.length, countTone: 'alert' },
     { value: 'google', label: 'Por completar', count: googleWaiting(loadingPhases, gcalStatus) && !gCount ? undefined : gCount },

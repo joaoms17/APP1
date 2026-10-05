@@ -74,7 +74,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
       <span className="body">
         <span className="top" {...hide}>
           <span className="name">{ev.title}</span>
-          <span className="money">{money(ev.value)}</span>
+          <span className="money">{st === 'novalue' ? '—' : money(ev.value)}</span>
         </span>
         {where && <span className="where" {...hide}>{where}</span>}
         <span className="foot">

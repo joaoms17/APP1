@@ -247,23 +247,40 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       value,
       notes: f.notes.trim() || null,
     }
-    // coordenadas para o mapa (só se a base de dados já tiver as colunas): a sugestão escolhida, senão
-    // um link do Google Maps, senão a melhor procura do texto — sem resultado, fica só o texto
+    // coordenadas para o mapa (só se a base de dados já tiver as colunas): a sugestão escolhida ou um link
+    // do Google Maps ficam logo; um local escrito à mão é procurado DEPOIS de gravar — o Guardar nunca
+    // espera pela rede (fechar a folha durante a procura perdia o evento)
+    let lookup = null
     if (geoReady) {
-      let c = fields.location ? f.coords || coordsFromText(fields.location) : null
-      if (fields.location && !c) {
-        setBusy(true)
-        c = await geocode(fields.location)
-        if (!alive.current) return
-        setBusy(false)
-      }
+      const c = fields.location ? f.coords || coordsFromText(fields.location) : null
       fields.lat = c?.lat ?? null
       fields.lng = c?.lng ?? null
+      if (fields.location && !c) lookup = fields.location
+    }
+    const findLater = (eventId) => {
+      if (!lookup || !eventId) return
+      geocode(lookup).then((r) => r && setEventCoords([eventId], { lat: r.lat, lng: r.lng })).catch(() => {})
     }
 
     if (mode === 'edit') {
+      // só vai o que mudou: o que outro aparelho mudou entretanto noutro campo não é reposto
+      const moneyChanged = f.gross !== init.gross || f.net !== init.net
+      const locChanged = f.location.trim() !== init.location.trim()
+        || JSON.stringify(f.coords || null) !== JSON.stringify(init.coords || null)
+      const patch = {}
+      if (f.project_id !== init.project_id) patch.project_id = fields.project_id
+      if (f.title.trim() !== init.title.trim()) patch.title = fields.title
+      if (f.event_date !== init.event_date) patch.event_date = fields.event_date
+      if ((f.start_time || '') !== (init.start_time || '')) patch.start_time = fields.start_time
+      if (f.notes.trim() !== init.notes.trim()) patch.notes = fields.notes
+      if (moneyChanged) { patch.gross_value = fields.gross_value; patch.value = fields.value }
+      if (locChanged) {
+        patch.location = fields.location
+        if (geoReady) { patch.lat = fields.lat; patch.lng = fields.lng }
+      }
+      if (!Object.keys(patch).length) { finish(id, fields.event_date); return }
       // baixar o valor para menos do que já foi recebido pede confirmação (IA-02)
-      if (!legacy && got > EPS && value < got - EPS) {
+      if (moneyChanged && !legacy && got > EPS && value < got - EPS) {
         const ok = await confirmDialog({
           title: `Baixar o valor para ${money(value)}?`,
           text: `Já recebeste ${money(got)} deste evento.`,
@@ -276,24 +293,25 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       }
       setBusy(true)
       try {
-        await updateEventFields(id, fields)
+        await updateEventFields(id, patch)
       } catch (ex) {
         setBusy(false)
         fail(ex, () => submitRef.current?.())
         return
       }
+      if (locChanged) findLater(id)
       // local corrigido: os outros eventos com o mesmo local antigo podem ir atrás (um toque)
       const oldLoc = init.location.trim()
-      const same = oldLoc && fields.location && fields.location !== oldLoc && fields.lat != null
+      const same = oldLoc && fields.location && fields.location !== oldLoc
         ? allEvents.filter((e) => e.id !== id && e.location?.trim() === oldLoc).map((e) => e.id) : []
       if (same.length) {
-        const patch = { location: fields.location, lat: fields.lat, lng: fields.lng }
+        const locPatch = geoReady ? { location: fields.location, lat: fields.lat, lng: fields.lng } : { location: fields.location }
         notify({
           text: <>Local guardado. Há mais {same.length} {same.length === 1 ? 'evento' : 'eventos'} em <b>{oldLoc}</b>.</>,
           duration: 12000,
           action: {
             label: `Mudar ${same.length === 1 ? 'esse' : `os ${same.length}`}`,
-            run: () => setEventCoords(same, patch)
+            run: () => setEventCoords(same, locPatch)
               .then(() => notify({ text: <>{same.length} {same.length === 1 ? 'evento passou' : 'eventos passaram'} para <b>{fields.location}</b></> }))
               .catch((ex) => notifyError(ex)),
           },
@@ -318,6 +336,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       return
     }
     setLastProjectId(fields.project_id)
+    findLater(newId)
     finish(newId, fields.event_date)
   }
   submitRef.current = submit

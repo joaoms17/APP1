@@ -105,3 +105,42 @@ export function matchGoogle(events, googleEvents, ignored = null) {
   }
   return { pending: out, byDay, matched }
 }
+
+// Eventos que vieram do Google (gcal_key) e já não estão no feed com essa chave. A chave inclui o dia e a
+// hora, por isso uma mudança de dia/hora no Google aparece como "chave nova" + "chave antiga em falta":
+//   moves — o mesmo evento do Google (mesmo calendário e uid) ainda está no feed, numa só ocorrência
+//           que nenhum evento da app usa: o evento da app vai atrás (data, hora e chave novas);
+//   gone  — não há para onde ir: "Já não está no Google" (a Joana escolhe Apagar ou Manter).
+// Só se olha para calendários lidos sem erro (okCalendars), para nunca tomar uma falha de rede por um apagão.
+// events: eventos da app (com gcal_key); feed: [{ calendar_id, date, time, uid, title }] de todo o feed;
+// from: só ocorrências a partir deste dia contam como destino (as de séries antigas nunca foram importadas);
+// skip: chaves ignoradas pela Joana (nunca são destino)
+export function gcalSyncPlan(events, feed, okCalendars, { from = '', skip = null } = {}) {
+  const feedKeys = new Set()
+  const byUid = new Map() // calendar|uid → ocorrências
+  for (const g of feed) {
+    const key = googleKey(g)
+    feedKeys.add(key)
+    if (!g.uid) continue
+    const k = `${g.calendar_id}|${g.uid}`
+    if (!byUid.has(k)) byUid.set(k, [])
+    byUid.get(k).push({ ...g, key })
+  }
+  const linked = new Set(events.map((e) => e.gcal_key).filter(Boolean))
+  const moves = []
+  const gone = []
+  for (const e of events) {
+    if (!e.gcal_key || feedKeys.has(e.gcal_key)) continue
+    const [cal, , , uid] = e.gcal_key.split('|')
+    if (!okCalendars.has(cal)) continue
+    const free = uid
+      ? (byUid.get(`${cal}|${uid}`) || []).filter((g) => !linked.has(g.key) && g.date >= from && !skip?.has(g.key) && !isNotWork(g.title))
+      : []
+    // uma só ocorrência livre desse evento do Google: foi para lá; nenhuma ou várias: desapareceu (a Joana decide)
+    if (free.length === 1) {
+      moves.push({ event: e, to: free[0] })
+      linked.add(free[0].key)
+    } else gone.push(e)
+  }
+  return { moves, gone }
+}

@@ -115,6 +115,7 @@ export default function AgendaList({ flash = null, news = null }) {
   const todayEvs = useMemo(() => eventsAsc.filter((e) => e.event_date === today), [eventsAsc, today])
   const todayGoogle = useMemo(() => pending.filter((g) => g.date === today), [pending, today])
   const todayMissing = todayEvs.reduce((a, e) => a + missing(e), 0)
+  const todayNoValue = todayEvs.filter((e) => !(Number(e.value) > 0.005) && !e.paid).length // valor pendente: não é "recebido"
 
   const plan = useMemo(() => {
     const between = (from, to) => mergeItems(
@@ -180,8 +181,8 @@ export default function AgendaList({ flash = null, news = null }) {
           <>
             <p className="ag-lede">
               {nEvents(todayEvs.length)} · {todayMissing > 0.005
-                ? <><b>{money(todayMissing)}</b> ainda por receber.</>
-                : 'tudo recebido.'}
+                ? <><b>{money(todayMissing)}</b> ainda por receber{todayNoValue ? ` · ${todayNoValue} sem valor` : ''}.</>
+                : todayNoValue ? `${todayNoValue} sem valor.` : 'tudo recebido.'}
             </p>
             <div className="ag-today-list">
               {todayEvs.map((ev) => (

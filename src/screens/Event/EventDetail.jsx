@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import {
-  Attachments, Button, Card, Dot, EmptyState, Icon, Sheet, Skeleton, StatusBadge, Switch, confirmDialog, discardText, parseMoney,
+  Attachments, Button, Callout, Card, Dot, EmptyState, Icon, Sheet, Skeleton, StatusBadge, Switch, confirmDialog, discardText, parseMoney,
   useTapSettle,
 } from '../../ui'
 import { useStore } from '../../store.jsx'
@@ -16,7 +16,7 @@ const EPS = 0.005
 export default function EventDetail({ id, onClose }) {
   const {
     eventById, projectById, missing, receiveRemaining, setReceipt, deleteEvent,
-    attachmentsFor, paymentsByEvent, loadingPhases, loadFailures, quotes, today,
+    attachmentsFor, paymentsByEvent, loadingPhases, loadFailures, quotes, today, gcalGone, keepGcalGone, notifyError,
   } = useStore()
   const titleId = useId()
   const payId = useId()
@@ -136,6 +136,17 @@ export default function EventDetail({ id, onClose }) {
           {ev.location && <span><Icon name="pin" />{ev.location}</span>}
         </div>
       </div>
+
+      {gcalGone?.has(ev.id) && (
+        // apagado (ou mudado de forma que não dá para seguir) no Google: a Joana decide
+        <Callout tone="warning" title="Já não está no Google Calendar.">
+          Foi apagado ou mudado no Google e não dá para saber para onde foi.
+          <span className="ev-gone-acts">
+            <Button size="sm" variant="danger" icon="trash" onClick={remove}>Apagar</Button>
+            <Button size="sm" variant="secondary" onClick={() => keepGcalGone(ev).catch(notifyError)}>Manter</Button>
+          </span>
+        </Callout>
+      )}
 
       <section className="ev-sec" aria-labelledby={payId}>
         <div className="ev-sec-head"><h3 id={payId}>Pagamento</h3><StatusBadge ev={ev} always /></div>
