@@ -4,7 +4,7 @@ import { fetchGoogleEvents } from './gcal'
 import { compressImage } from './img'
 import { FEATURES } from './features.js'
 import { todayYMD, toYMD, fmtMoney, fmtDM } from './format.js'
-import { gcalSyncPlan, gidOf, gidOfKey, legacyKey } from './gcalMatch.js'
+import { gcalSyncPlan, googleKey, legacyKey, skipByKeys } from './gcalMatch.js'
 import * as S from './selectors.js'
 import { humanError, userError, isSetupError } from './errors.js'
 import { useToast, detailsAction } from './ui/Toast.jsx'
@@ -792,6 +792,7 @@ export function StoreProvider({ children }) {
       Promise.allSettled([
         loadProjects(),
         loadPayments(),
+        loadGcalCalendars(),
         Promise.all([
           db.from('events').select('*').order('event_date', { ascending: false }),
           db.from('gcal_ignored').select('key').then((r) => r, () => ({ data: null })),
@@ -804,7 +805,7 @@ export function StoreProvider({ children }) {
     }
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
-  }, [loadProjects, loadEvents, loadPayments])
+  }, [loadProjects, loadEvents, loadPayments, loadGcalCalendars])
 
   const saveProject = async (p) => {
     const { data, error } = p.id
@@ -846,12 +847,8 @@ export function StoreProvider({ children }) {
   const gcalLinkReady = rawEvents.length > 0 && 'gcal_key' in rawEvents[0]
   // fora do "por registar": chaves ignoradas e ligadas, pela chave e pela identidade (gid) — um evento ligado
   // ou ignorado continua de fora mesmo depois de mudar de dia/hora no Google
-  const gcalSkip = useMemo(() => {
-    const keys = new Set(gcalIgnored)
-    const gids = new Set([...gcalIgnored].map(gidOfKey))
-    for (const e of rawEvents) if (e.gcal_key) { keys.add(e.gcal_key); gids.add(gidOfKey(e.gcal_key)) }
-    return (g) => keys.has(g.key) || keys.has(legacyKey(g)) || gids.has(gidOf(g))
-  }, [gcalIgnored, rawEvents])
+  const gcalSkip = useMemo(() => skipByKeys([...gcalIgnored, ...rawEvents.map((e) => e.gcal_key).filter(Boolean)]),
+    [gcalIgnored, rawEvents])
   const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents, gcalSkip), [events, googleEvents, gcalSkip])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
@@ -875,7 +872,7 @@ export function StoreProvider({ children }) {
   const expenseById = useCallback((id) => expenses.find((x) => x.id === id) || null, [expenses])
   const attachmentById = useCallback((id) => attachments.find((a) => a.id === id) || null, [attachments])
   const findGoogle = useCallback((key) => googleMatch.pending.find((g) => g.key === key)
-    || googleEvents.find((g) => g.key === key || `${g.calendar_id || ''}|${g.date}|${g.time || ''}|${g.uid || g.title}` === key) || null,
+    || googleEvents.find((g) => g.key === key || googleKey(g) === key || legacyKey(g) === key) || null,
   [googleMatch, googleEvents])
 
   const markReceberSeen = useCallback(() => {
@@ -1177,14 +1174,14 @@ export function StoreProvider({ children }) {
       try {
         if (await writeIfKey(e.id, e.gcal_key, { gcal_key: to.key })) patchEventLocal(e.id, { gcal_key: to.key })
         else stale = true
-      } catch { /* tenta na próxima sessão */ }
+      } catch (ex) { if (ex?.code === '23505') stale = true } // outro evento já tem essa chave: reler
     }
     const done = []
     for (const { event: e, to } of moves) {
       const patch = { event_date: to.date, start_time: to.time || null, gcal_key: to.key, updated_at: nowIso() }
       try {
         if (await writeIfKey(e.id, e.gcal_key, patch)) { patchEventLocal(e.id, patch); done.push({ e, to }) } else stale = true
-      } catch { /* tenta na próxima sessão */ }
+      } catch (ex) { if (ex?.code === '23505') stale = true } // outro evento já tem essa chave: reler
     }
     if (stale) await reloadAfterWrite(loadEvents)
     if (done.length === 1) {
@@ -1210,20 +1207,32 @@ export function StoreProvider({ children }) {
     else { await reloadAfterWrite(loadEvents); toast.notify({ text: 'Este evento mudou noutro aparelho entretanto.', icon: 'alert' }) }
   }
   // "Manter" um evento que já não está no Google: deixa de estar ligado ao Google (fica como evento da app)
+  // A ocorrência do Google fica ignorada: se uma leitura atrasada do feed ainda a trouxer, não entra outra vez.
+  const keeping = useRef(new Set())
   const keepGcalGone = async (ev) => {
-    if (!(await writeIfKey(ev.id, ev.gcal_key, { gcal_key: null, updated_at: nowIso() }))) {
-      await reloadAfterWrite(loadEvents)
-      toast.notify({ text: 'Este evento mudou noutro aparelho entretanto.', icon: 'alert' })
-      return
+    const key = ev.gcal_key
+    if (!key || keeping.current.has(ev.id)) return
+    keeping.current.add(ev.id)
+    try {
+      if (!(await writeIfKey(ev.id, key, { gcal_key: null, updated_at: nowIso() }))) {
+        await reloadAfterWrite(loadEvents)
+        toast.notify({ text: 'Este evento mudou noutro aparelho entretanto.', icon: 'alert' })
+        return
+      }
+      setIgnored(key, true)
+      patchEventLocal(ev.id, { gcal_key: null })
+      toast.notify({ text: <><b>{ev.title}</b> fica na agenda</>, icon: 'checkCircle' })
+      await db.from('gcal_ignored').upsert({ key, title: ev.title, event_date: ev.event_date }).then(() => {}, () => {})
+    } finally {
+      keeping.current.delete(ev.id)
     }
-    patchEventLocal(ev.id, { gcal_key: null })
-    toast.notify({ text: <><b>{ev.title}</b> fica na agenda</>, icon: 'checkCircle' })
   }
 
   useEffect(() => {
     if (!googleSettled || !gcalLinkReady) return
     // primeiro acertar os eventos ligados (mudanças de dia/hora, chaves antigas); depois importar os novos
-    const sig = (m) => `${m.event.id}|${m.event.gcal_key}>${m.to.key}`
+    // cada leitura nova do calendário pode voltar a tentar o que falhou na anterior
+    const sig = (m) => `${m.event.id}|${m.event.gcal_key}>${m.to.key}@${gcalOk.get(m.to.calendar_id) || ''}`
     const moves = gcalPlan.moves.filter((m) => !gcalTried.current.has(sig(m)))
     const relink = gcalPlan.relink.filter((m) => !gcalTried.current.has(sig(m)))
     if (moves.length || relink.length) {
@@ -1234,16 +1243,23 @@ export function StoreProvider({ children }) {
     const todo = googleMatch.pending.filter((g) => !importTried.current.has(g.key))
     if (!todo.length) { setGcalImported(true); return }
     todo.forEach((g) => importTried.current.add(g.key))
-    // antes de gravar, relê os ignorados da base de dados (pela chave e pela identidade): um evento apagado
-    // ou ignorado noutro aparelho não volta a entrar
-    db.from('gcal_ignored').select('key').then(({ data, error }) => {
-      if (error) return importGoogleRows(todo)
-      const keys = (data || []).map((r) => r.key)
-      const set = new Set(keys)
-      const gids = new Set(keys.map(gidOfKey))
-      if (keys.length) setGcalIgnored((s) => new Set([...s, ...keys]))
-      return importGoogleRows(todo.filter((g) => !set.has(g.key) && !set.has(legacyKey(g)) && !gids.has(gidOf(g))))
-    }, () => importGoogleRows(todo)).finally(() => setGcalImported(true))
+    // antes de gravar, relê da base de dados os ignorados e as chaves ligadas (pela chave e pela identidade): um
+    // evento apagado, ignorado, importado ou mudado noutro aparelho não entra duas vezes
+    const local = new Set(rawEvents.map((e) => e.gcal_key).filter(Boolean))
+    const retry = () => todo.forEach((g) => importTried.current.delete(g.key))
+    Promise.all([
+      db.from('gcal_ignored').select('key').then((r) => r, () => ({ data: null })),
+      db.from('events').select('gcal_key').not('gcal_key', 'is', null),
+    ]).then(async ([ig, ev]) => {
+      if (ev.error) return retry() // sem saber o que já está ligado não se importa: fica para a próxima
+      const ignored = (ig.data || []).map((r) => r.key)
+      const linked = (ev.data || []).map((r) => r.gcal_key).filter(Boolean)
+      if (ignored.length) setGcalIgnored((s) => new Set([...s, ...ignored]))
+      // ligados noutro aparelho: trazê-los antes de importar (uma releitura depois apagaria os importados agora)
+      if (linked.some((k) => !local.has(k))) await reloadAfterWrite(loadEvents)
+      const skip = skipByKeys([...gcalIgnored, ...ignored, ...local, ...linked])
+      return importGoogleRows(todo.filter((g) => !skip(g)))
+    }, retry).finally(() => setGcalImported(true))
   }, [googleSettled, gcalLinkReady, googleMatch, gcalPlan, gcalTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const importGoogleRows = async (todo) => {
@@ -1256,6 +1272,8 @@ export function StoreProvider({ children }) {
     const { data, error } = await db.from('events').upsert(rows, { onConflict: 'gcal_key', ignoreDuplicates: true }).select()
     if (error) return // fica como "por registar" até à próxima vez
     if (data?.length) putEventsLocal(...data)
+    // alguns já existiam (importados noutro aparelho entretanto): trazê-los
+    if ((data?.length || 0) < rows.length) await reloadAfterWrite(loadEvents)
   }
 
   const swept = useRef(false)

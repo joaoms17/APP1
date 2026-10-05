@@ -17,6 +17,8 @@ const lisbonOf = (d) => {
 // Carregado só por import() dinâmico a partir de gcal.js (ical.js fica fora do chunk inicial).
 export function parseGoogleIcs(text, now = new Date()) {
   const comp = new ICAL.Component(ICAL.parse(text))
+  // os fusos de um feed não ficam para o seguinte (o registo do ical.js é global)
+  try { ICAL.TimezoneService.reset() } catch { /* versão sem reset */ }
   for (const tz of comp.getAllSubcomponents('vtimezone')) {
     try { ICAL.TimezoneService.register(tz) } catch { /* já registado */ }
   }
@@ -56,10 +58,18 @@ export function parseGoogleIcs(text, now = new Date()) {
   const masters = new Set(vevents
     .filter((v) => v.hasProperty('rrule') && !v.hasProperty('recurrence-id'))
     .map((v) => v.getFirstPropertyValue('uid')))
+  const cancelled = (c) => String(c?.getFirstPropertyValue?.('status') || '').toUpperCase() === 'CANCELLED'
   for (const v of vevents) {
-    if (v.hasProperty('recurrence-id') && masters.has(v.getFirstPropertyValue('uid'))) continue
+    const uid = v.getFirstPropertyValue('uid')
+    if (v.hasProperty('recurrence-id') && masters.has(uid)) continue
+    if (cancelled(v)) continue // cancelado no Google: não está (o evento ligado fica "Já não está no Google")
     let ev
-    try { ev = new ICAL.Event(v) } catch { continue }
+    try {
+      // cada série só com as SUAS exceções (sem isto o ical.js junta exceções de outros eventos à mesma hora)
+      ev = v.hasProperty('rrule')
+        ? new ICAL.Event(v, { exceptions: vevents.filter((x) => x.hasProperty('recurrence-id') && x.getFirstPropertyValue('uid') === uid) })
+        : new ICAL.Event(v)
+    } catch { continue }
     try {
       if (ev.isRecurring()) {
         const it = ev.iterator()
@@ -69,6 +79,7 @@ export function parseGoogleIcs(text, now = new Date()) {
           if (occ >= end) break
           try {
             const det = ev.getOccurrenceDetails(next)
+            if (cancelled(det.item.component)) continue // ocorrência cancelada
             push(det.startDate, { uid: ev.uid, summary: det.item.summary, location: det.item.location }, next)
           } catch {
             push(next, ev, next)
