@@ -26,12 +26,23 @@ export function parseGoogleIcs(text, now = new Date()) {
   const start = new Date(Math.min(new Date(2023, 0, 1), new Date(now.getFullYear(), now.getMonth() - 3, 1)))
   const end = new Date(now.getFullYear(), now.getMonth() + 13, 1)
   const out = []
-  const push = (jsDate, ev, isDate) => {
-    if (jsDate < start || jsDate >= end) return
-    // dia inteiro: a data do próprio evento (toJSDate dá a meia-noite local desse dia)
-    const at = isDate ? { date: ymdOf(jsDate), time: null } : lisbonOf(jsDate)
+  // ICAL.Time → { date, time }: dia inteiro e horas "flutuantes" (sem fuso) valem como estão escritas;
+  // horas com fuso passam para a hora de Portugal
+  const partsOf = (t) => {
+    const date = `${t.year}-${pad(t.month)}-${pad(t.day)}`
+    if (t.isDate) return { date, time: null }
+    if (!t.zone || t.zone.tzid === 'floating') return { date, time: `${pad(t.hour)}:${pad(t.minute)}` }
+    return lisbonOf(t.toJSDate())
+  }
+  // t = início real; recur = início ORIGINAL da ocorrência numa série (RECURRENCE-ID): a data dele
+  // identifica a ocorrência mesmo depois de ela mudar de dia ou de hora no Google
+  const push = (t, ev, recur = null) => {
+    const js = t.toJSDate()
+    if (js < start || js >= end) return
+    const at = partsOf(t)
     out.push({
       uid: ev.uid || null,
+      recur: recur ? partsOf(recur).date : null,
       date: at.date,
       time: at.time,
       title: ev.summary || '(sem título)',
@@ -56,16 +67,17 @@ export function parseGoogleIcs(text, now = new Date()) {
         while ((next = it.next()) && guard++ < 1000) {
           const occ = next.toJSDate()
           if (occ >= end) break
-          if (occ < start) continue
           try {
             const det = ev.getOccurrenceDetails(next)
-            push(det.startDate.toJSDate(), { uid: ev.uid, summary: det.item.summary, location: det.item.location }, det.startDate.isDate)
+            push(det.startDate, { uid: ev.uid, summary: det.item.summary, location: det.item.location }, next)
           } catch {
-            push(occ, ev, ev.startDate?.isDate)
+            push(next, ev, next)
           }
         }
       } else if (ev.startDate) {
-        push(ev.startDate.toJSDate(), ev, ev.startDate.isDate)
+        // ocorrência solta de uma série cujo mestre não veio no feed: identifica-se pelo RECURRENCE-ID
+        const rid = v.getFirstPropertyValue('recurrence-id')
+        push(ev.startDate, ev, rid || null)
       }
     } catch { /* evento malformado — ignorar */ }
   }

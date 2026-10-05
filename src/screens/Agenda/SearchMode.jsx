@@ -134,7 +134,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
             {` ${whenText}`}
             {n > noValue && <>{' · '}{money(s.total, 'never')}{' · '}
               {s.missing > 0.005 ? <span className="late">falta {money(s.missing)}</span> : 'tudo recebido'}</>}
-            {noValue > 0 && ` · ${noValue} sem valor`}
+            {noValue > 0 && estado !== 'semvalor' && ` · ${noValue} sem valor`}
             {result.gs.length > 0 && ` · ${result.gs.length} por registar`}
           </p>
           <Button variant="ghost" size="sm" onClick={clearAll}>Limpar</Button>

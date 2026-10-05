@@ -48,7 +48,8 @@ export default function TasksBlock() {
           value={fmtMoney(receivables.overdueTotal, { cents: 'auto' })} {...link('#/receber/atraso')} />
       )}
       {gone > 0 && (
-        <TaskRow tone="late" icon="gcal" title="Já não estão no Google" sub="apagados no Google · Apagar ou Manter"
+        <TaskRow tone="late" icon="gcal" title={gone === 1 ? 'Já não está no Google' : 'Já não estão no Google'}
+          sub="apagado ou mudado no Google · Apagar ou Manter"
           count={gone} {...link('#/receber/google')} />
       )}
       {vPast > 0 && (

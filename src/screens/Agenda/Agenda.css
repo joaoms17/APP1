@@ -42,7 +42,7 @@
 /* cartão de hoje (variantes compact/flash e ação por cima do botão esticado no CSS base) */
 .ag-screen .today-card { cursor: pointer; }
 .ag-screen .today-card:focus-visible { outline-offset: 3px; border-radius: var(--radius-lg); }
-.ag-tc-state { display: inline-flex; min-width: 0; }
+.ag-tc-state { display: inline-flex; flex-wrap: wrap; gap: 6px; min-width: 0; } /* "Já não está no Google" parte para baixo, nunca empurra o "Recebi" para fora */
 
 /* cartão do mês (só no computador, na coluna lateral) */
 .ag-month-card { margin-top: 8px; }
