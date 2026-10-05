@@ -5,6 +5,7 @@ import { navigate, openSheet, routeHref, useRoute } from '../../router.js'
 import { MONTHS_LONG, fmtDM, fmtMoney, fmtPct } from '../../format.js'
 import { Boundary, lazyWithPreload } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
+import { ForecastCard, ProjectsCard } from './Projects.jsx'
 import { FEATURES } from '../../features.js'
 import './Dashboard.css'
 
@@ -161,7 +162,7 @@ function ChartsError({ retry }) {
 
 export default function Dashboard() {
   const route = useRoute()
-  const { today, projects, yearTotals, kindSplit, loadingPhases } = useStore()
+  const { today, projects, yearTotals, kindSplit, projectStats, forecast, loadingPhases } = useStore()
   const desktop = useMediaQuery('(min-width: 1024px)')
   const thisYear = Number(today.slice(0, 4))
   const curMonth = Number(today.slice(5, 7)) - 1
@@ -182,6 +183,8 @@ export default function Dashboard() {
   const waiting = !!loadingPhases?.phase2
   const t = useMemo(() => (waiting ? null : yearTotals(year)), [waiting, yearTotals, year])
   const split = useMemo(() => (waiting ? null : kindSplit(year)), [waiting, kindSplit, year])
+  const stats = useMemo(() => (waiting ? null : projectStats(year)), [waiting, projectStats, year])
+  const fc = useMemo(() => (waiting || year < thisYear ? null : forecast(year)), [waiting, forecast, year, thisYear])
 
   let body
   if (!t) {
@@ -202,6 +205,8 @@ export default function Dashboard() {
         <Hero t={t} thisYear={thisYear} desktop={desktop} />
         {FEATURES.expenses && <Kpis t={t} />}
         <OverdueTile t={t} lateCount={t.overdueYearCount} />
+        {fc && <ForecastCard f={fc} thisYear={thisYear} curMonth={curMonth} />}
+        {stats?.length > 0 && <ProjectsCard stats={stats} year={year} thisYear={thisYear} today={today} />}
         <Boundary resetKey={year} fallback={(error, retry) => <ChartsError retry={retry} />}>
           <Suspense fallback={<ChartsFallback />}>
             <DashCharts t={t} split={split} projects={projects} month={month} onPick={onPick} thisYear={thisYear} curMonth={curMonth} />
