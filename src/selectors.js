@@ -292,3 +292,69 @@ export function yearTotals(events, expenses, pbe, year, today) {
     byMonth, byProject,
   }
 }
+
+// ---------- por projeto e previsão (Painel) ----------------------------------
+// média por evento de cada projeto: eventos com valor nos últimos 12 meses até hoje; sem nenhum,
+// todos os eventos com valor. → Map project_id → { avg, n } (só projetos com pelo menos um valor)
+export function projectAverages(events, today) {
+  const from = `${yearOf(today) - 1}${today.slice(4)}`
+  const recent = new Map()
+  const all = new Map()
+  const add = (m, e) => { const s = m.get(e.project_id) || { sum: 0, n: 0 }; s.sum += num(e.value); s.n++; m.set(e.project_id, s) }
+  for (const e of events) {
+    if (num(e.value) <= EPS) continue
+    add(all, e)
+    if (e.event_date >= from && e.event_date <= today) add(recent, e)
+  }
+  const out = new Map()
+  for (const [pid, s] of all) {
+    const r = recent.get(pid)
+    const use = r && r.n > 0 ? r : s
+    out.set(pid, { avg: cents(use.sum / use.n), n: use.n, recent: !!(r && r.n > 0) })
+  }
+  return out
+}
+
+// números de cada projeto num ano (+ o ano anterior, até ao mesmo dia no ano corrente)
+// → [{ project_id, count, total, avg, prevTotal, delta }] ordenado pelo total
+export function projectStatsOf(events, year, today) {
+  const ty = yearOf(today)
+  const limitPrev = year === ty ? `${year - 1}${today.slice(4)}` : `${year - 1}-12-31`
+  const m = new Map()
+  const get = (pid) => m.get(pid) || m.set(pid, { project_id: pid, count: 0, total: 0, valued: 0, pending: 0, prevTotal: 0 }).get(pid)
+  for (const e of events) {
+    const y = yearOf(e.event_date)
+    if (y === year) {
+      const s = get(e.project_id)
+      s.count++
+      if (num(e.value) > EPS) { s.total += num(e.value); s.valued++ } else if (!e.paid) s.pending++
+    } else if (y === year - 1 && e.event_date <= limitPrev) get(e.project_id).prevTotal += num(e.value)
+  }
+  const pct = (a, b) => (b > EPS ? Math.round(((a - b) / b) * 100) : null)
+  return [...m.values()]
+    .filter((s) => s.count > 0)
+    .map((s) => ({ ...s, total: cents(s.total), prevTotal: cents(s.prevTotal), avg: s.valued ? cents(s.total / s.valued) : null, delta: pct(s.total, s.prevTotal) }))
+    .sort((a, b) => b.total - a.total || b.count - a.count)
+}
+
+// previsão de um ano: o que já tem valor + os eventos sem valor estimados pela média do projeto.
+// → { done, booked, estimated, estimatedCount, unknownCount, total, byMonth: [{ done, booked, estimated }] }
+//   done = eventos até hoje com valor · booked = eventos futuros com valor · estimated = sem valor × média
+export function forecastOf(events, year, today, averages) {
+  const byMonth = Array.from({ length: 12 }, () => ({ done: 0, booked: 0, estimated: 0, count: 0 }))
+  let estimatedCount = 0, unknownCount = 0
+  for (const e of events) {
+    if (yearOf(e.event_date) !== year) continue
+    const mo = byMonth[monthOf(e.event_date)]
+    mo.count++
+    const v = num(e.value)
+    if (v > EPS) { if (e.event_date <= today) mo.done += v; else mo.booked += v; continue }
+    if (e.paid) continue // 0 € marcado como recebido: é mesmo 0
+    const a = averages.get(e.project_id)
+    if (a) { mo.estimated += a.avg; estimatedCount++ } else unknownCount++
+  }
+  for (const mo of byMonth) { mo.done = cents(mo.done); mo.booked = cents(mo.booked); mo.estimated = cents(mo.estimated); mo.total = cents(mo.done + mo.booked + mo.estimated) }
+  const sum = (k) => cents(byMonth.reduce((s, mo) => s + mo[k], 0))
+  const done = sum('done'), booked = sum('booked'), estimated = sum('estimated')
+  return { year, done, booked, estimated, estimatedCount, unknownCount, total: cents(done + booked + estimated), byMonth }
+}
