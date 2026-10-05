@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, StatusBadge, STATE_PHRASE, useTapSettle } from '../../ui'
+import { Badge, Button, StatusBadge, STATE_PHRASE, useTapSettle } from '../../ui'
 import { useStore } from '../../store.jsx'
 import { openSheet } from '../../router.js'
 import { projectVars } from '../../color.js'
@@ -24,7 +24,8 @@ export function useClock() {
 // da cor do projeto, estado sempre visível e "Recebi X €" só depois de o evento começar.
 // Com ação, o cartão é um <div> com um botão esticado por baixo (nunca botões dentro de botões).
 export default function TodayCard({ ev, compact = false, now, flash = false, className = '' }) {
-  const { today, projectById, eventState, missing, receiveRemaining, notifyError } = useStore()
+  const { today, projectById, eventState, missing, receiveRemaining, notifyError, gcalGone } = useStore()
+  const gone = !!gcalGone?.has(ev.id) // já não está no Google
   const p = projectById(ev.project_id)
   const t = hm(ev.start_time)
   const st = eventState(ev)
@@ -33,7 +34,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
   const canReceive = mis > 0.005 && started
   const note = !compact && ev.notes ? String(ev.notes).split('\n')[0].trim() : ''
   const where = [p?.name, ev.location, note].filter(Boolean).join(' · ')
-  const label = [ev.title, 'hoje', t || 'sem hora', p?.name, ev.location, money(ev.value), STATE_PHRASE[st](money(mis))]
+  const label = [ev.title, 'hoje', t || 'sem hora', p?.name, ev.location, money(ev.value), STATE_PHRASE[st](money(mis)), gone && 'já não está no Google']
     .filter(Boolean).join(', ')
 
   // o "Recebi" sai quando fica tudo recebido e o cartão inteiro passa a abrir o Detalhe: o 2.º toque de um
@@ -78,7 +79,7 @@ export default function TodayCard({ ev, compact = false, now, flash = false, cla
         </span>
         {where && <span className="where" {...hide}>{where}</span>}
         <span className="foot">
-          <span className="ag-tc-state" {...hide}><StatusBadge ev={ev} always /></span>
+          <span className="ag-tc-state" {...hide}><StatusBadge ev={ev} always />{gone && <Badge tone="overdue" icon="gcal">Já não está no Google</Badge>}</span>
           {canReceive && (
             <Button ref={recebi} variant="row" icon="check" iconTone="ok" onClick={receive}
               aria-label={`Recebi ${money(mis)} de ${ev.title}`}>

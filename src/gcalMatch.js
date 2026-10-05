@@ -108,16 +108,19 @@ export function matchGoogle(events, googleEvents, ignored = null) {
 
 // Eventos que vieram do Google (gcal_key) e já não estão no feed com essa chave. A chave inclui o dia e a
 // hora, por isso uma mudança de dia/hora no Google aparece como "chave nova" + "chave antiga em falta":
-//   moves — o mesmo evento do Google (mesmo calendário e uid) ainda está no feed, numa só ocorrência
-//           que nenhum evento da app usa: o evento da app vai atrás (data, hora e chave novas);
+//   moves — o evento da app vai atrás (data, hora e chave novas), mantendo valor, pagamentos, local e notas:
+//           · evento simples (o uid tem uma só ocorrência no feed): para essa ocorrência;
+//           · série (várias ocorrências): só para a ocorrência do MESMO dia (mudou a hora). Mudanças de dia
+//             numa série não dão para seguir com segurança;
 //   gone  — não há para onde ir: "Já não está no Google" (a Joana escolhe Apagar ou Manter).
-// Só se olha para calendários lidos sem erro (okCalendars), para nunca tomar uma falha de rede por um apagão.
-// events: eventos da app (com gcal_key); feed: [{ calendar_id, date, time, uid, title }] de todo o feed;
-// from: só ocorrências a partir deste dia contam como destino (as de séries antigas nunca foram importadas);
-// skip: chaves ignoradas pela Joana (nunca são destino)
-export function gcalSyncPlan(events, feed, okCalendars, { from = '', skip = null } = {}) {
+// Nunca mexe com base num feed mais antigo do que o próprio evento: okCalendars é Map calendário → hora
+// da última leitura sem erro, e um evento gravado depois disso (ex.: importado noutro aparelho com um feed
+// mais novo) espera pela próxima leitura. Calendários com erro ficam de fora (uma falha não é um apagão).
+// events: eventos da app (com gcal_key e updated_at); feed: [{ calendar_id, date, time, uid, title }] de todo
+// o feed; skip: chaves ignoradas pela Joana (nunca são destino)
+export function gcalSyncPlan(events, feed, okCalendars, { skip = null } = {}) {
   const feedKeys = new Set()
-  const byUid = new Map() // calendar|uid → ocorrências
+  const byUid = new Map() // calendário|uid → ocorrências
   for (const g of feed) {
     const key = googleKey(g)
     feedKeys.add(key)
@@ -131,15 +134,17 @@ export function gcalSyncPlan(events, feed, okCalendars, { from = '', skip = null
   const gone = []
   for (const e of events) {
     if (!e.gcal_key || feedKeys.has(e.gcal_key)) continue
-    const [cal, , , uid] = e.gcal_key.split('|')
-    if (!okCalendars.has(cal)) continue
-    const free = uid
-      ? (byUid.get(`${cal}|${uid}`) || []).filter((g) => !linked.has(g.key) && g.date >= from && !skip?.has(g.key) && !isNotWork(g.title))
-      : []
-    // uma só ocorrência livre desse evento do Google: foi para lá; nenhuma ou várias: desapareceu (a Joana decide)
-    if (free.length === 1) {
-      moves.push({ event: e, to: free[0] })
-      linked.add(free[0].key)
+    const [cal, date, , uid] = e.gcal_key.split('|')
+    const readAt = okCalendars.get(cal)
+    if (!readAt) continue
+    if (e.updated_at && e.updated_at > readAt) continue // o feed é mais antigo do que o evento: espera
+    const all = uid ? byUid.get(`${cal}|${uid}`) || [] : []
+    const usable = (g) => !linked.has(g.key) && !skip?.has(g.key) && !isNotWork(g.title)
+    const to = all.length === 1 ? (usable(all[0]) ? all[0] : null)
+      : all.filter((g) => g.date === date && usable(g)).length === 1 ? all.find((g) => g.date === date && usable(g)) : null
+    if (to) {
+      moves.push({ event: e, to })
+      linked.add(to.key)
     } else gone.push(e)
   }
   return { moves, gone }

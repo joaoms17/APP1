@@ -9,18 +9,19 @@ const count = (n, one, many) => `${n} ${n === 1 ? one : many}`
 // os eventos não levam recibo.
 // Cada linha esconde-se a 0 e abre Receber no separador certo; tudo a 0 → "Tudo em dia".
 export default function TasksBlock() {
-  const { receivables, googlePending, valuePending, loadingPhases, gcalStatus } = useStore()
+  const { receivables, googlePending, valuePending, gcalGone, loadingPhases, gcalStatus } = useStore()
   const late = receivables.overdue.length
   const gPast = googlePending.past.length
   const gNext = googlePending.upcoming.length
-  const vPast = valuePending.past.length
+  const vPast = valuePending.past.filter((e) => !gcalGone.has(e.id)).length
+  const gone = gcalGone.size
 
   const link = (to) => ({
     href: routeHref(to),
     onClick: (e) => { e.preventDefault(); navigate(to) },
   })
 
-  if (!late && !gPast && !gNext && !vPast) {
+  if (!late && !gPast && !gNext && !vPast && !gone) {
     // o Google e os anexos chegam na 2.ª fase: não dizer "Tudo em dia" antes do tempo
     const waiting = loadingPhases.phase2 || gcalStatus.refreshing
     return (
@@ -45,6 +46,10 @@ export default function TasksBlock() {
       {late > 0 && (
         <TaskRow tone="late" icon="alert" title="Em atraso" sub={`${count(late, 'evento', 'eventos')}${since}`}
           value={fmtMoney(receivables.overdueTotal, { cents: 'auto' })} {...link('#/receber/atraso')} />
+      )}
+      {gone > 0 && (
+        <TaskRow tone="late" icon="gcal" title="Já não estão no Google" sub="apagados no Google · Apagar ou Manter"
+          count={gone} {...link('#/receber/google')} />
       )}
       {vPast > 0 && (
         <TaskRow tone="gcal" icon="euro" title="Valor pendente" sub={`${count(vPast, 'evento já realizado', 'eventos já realizados')} sem valor`}

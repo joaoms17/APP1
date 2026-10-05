@@ -108,14 +108,14 @@ function MonthCard() {
 // Hoje (cartões + lede) · A tratar · Amanhã · Esta semana (até domingo) · meses, carregados por partes.
 // flash = { id, date }: evento acabado de criar/editar — a lista vai até ele e a linha pisca.
 export default function AgendaList({ flash = null, news = null }) {
-  const { today, eventsAsc, googleMatch, missing } = useStore()
+  const { today, eventsAsc, googleMatch, missing, eventState } = useStore()
   const now = useClock()
   const pending = googleMatch.pending
 
   const todayEvs = useMemo(() => eventsAsc.filter((e) => e.event_date === today), [eventsAsc, today])
   const todayGoogle = useMemo(() => pending.filter((g) => g.date === today), [pending, today])
   const todayMissing = todayEvs.reduce((a, e) => a + missing(e), 0)
-  const todayNoValue = todayEvs.filter((e) => !(Number(e.value) > 0.005) && !e.paid).length // valor pendente: não é "recebido"
+  const todayNoValue = todayEvs.filter((e) => eventState(e) === 'novalue').length // valor pendente: não é "recebido"
 
   const plan = useMemo(() => {
     const between = (from, to) => mergeItems(
@@ -165,7 +165,7 @@ export default function AgendaList({ flash = null, news = null }) {
   const group = (g, first = false) => (
     <div key={g.key} className="ag-group">
       <GroupHeader title={g.title} small={g.small} first={first}
-        summary={eventsSummary(g.items.filter((i) => i.ev).map((i) => i.ev), missing, g.items.filter((i) => i.g).length)} />
+        summary={eventsSummary(g.items.filter((i) => i.ev).map((i) => i.ev), missing, g.items.filter((i) => i.g).length, eventState)} />
       <div className="list"><ItemRows items={g.items} flashId={flashId} /></div>
     </div>
   )

@@ -85,6 +85,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
   })
   const s = summary(result.evs)
   const n = result.evs.length
+  const noValue = result.evs.filter((ev) => eventState(ev) === 'novalue').length // valor pendente: não é "recebido"
   const found = n + result.gs.length > 0
   const whenText = WHEN_TEXT[quando] || 'em todas as datas'
 
@@ -131,8 +132,9 @@ export default function SearchMode({ params, onExit, flash = null }) {
             {term ? <> com “{term}”</> : null}
             {proj ? ` de ${proj.name}` : ''}
             {` ${whenText}`}
-            {n > 0 && <>{' · '}{money(s.total, 'never')}{' · '}
+            {n > noValue && <>{' · '}{money(s.total, 'never')}{' · '}
               {s.missing > 0.005 ? <span className="late">falta {money(s.missing)}</span> : 'tudo recebido'}</>}
+            {noValue > 0 && ` · ${noValue} sem valor`}
             {result.gs.length > 0 && ` · ${result.gs.length} por registar`}
           </p>
           <Button variant="ghost" size="sm" onClick={clearAll}>Limpar</Button>
@@ -151,7 +153,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
       {result.groups.slice(0, shown).map((g, i) => (
         <div key={g.key} className="ag-group">
           <GroupHeader title={monthName(g.key)} small={g.key.slice(0, 4)} first={i === 0}
-            summary={eventsSummary(g.evs, missing, g.gs)} />
+            summary={eventsSummary(g.evs, missing, g.gs, eventState)} />
           <div className="list"><ItemRows items={g.items} hideProject={!!proj} flashId={flash?.id || null} /></div>
         </div>
       ))}

@@ -221,9 +221,12 @@ function GoogleGone() {
   )
 }
 
+// os que já não estão no Google aparecem só na sua secção (nunca duas vezes, nem contados a dobrar)
+const notGone = (vp, gone) => ({ past: vp.past.filter((e) => !gone.has(e.id)), upcoming: vp.upcoming.filter((e) => !gone.has(e.id)) })
+
 function ValuePending({ first = true }) {
-  const { valuePending } = useStore()
-  const { past, upcoming } = valuePending
+  const { valuePending, gcalGone } = useStore()
+  const { past, upcoming } = notGone(valuePending, gcalGone)
   if (!past.length && !upcoming.length) return null
   const list = (evs) => (
     <div className="rc-list">
@@ -252,7 +255,8 @@ function Pending() {
   const { googlePending, gcalCalendars, gcalStatus, loadingPhases, today, valuePending, gcalGone } = useStore()
   const { past, upcoming } = googlePending
   const waiting = googleWaiting(loadingPhases, gcalStatus)
-  const values = valuePending.past.length + valuePending.upcoming.length + gcalGone.size
+  const vp = notGone(valuePending, gcalGone)
+  const values = vp.past.length + vp.upcoming.length + gcalGone.size
 
   if (!past.length && !upcoming.length && values) {
     return <><GoogleGone /><ValuePending first={!gcalGone.size} />{gcalCalendars.length > 0 && <GoogleSync />}</>
@@ -309,7 +313,8 @@ export default function Receber() {
   if (route.tab === 'receber') subRef.current = SUBS.includes(route.path[1]) ? route.path[1] : 'atraso'
   const sub = subRef.current
 
-  const gCount = googlePending.past.length + googlePending.upcoming.length + valuePending.past.length + valuePending.upcoming.length + gcalGone.size
+  const vp = notGone(valuePending, gcalGone)
+  const gCount = googlePending.past.length + googlePending.upcoming.length + vp.past.length + vp.upcoming.length + gcalGone.size
   const tabs = [
     { value: 'atraso', label: 'Em atraso', count: receivables.overdue.length, countTone: 'alert' },
     { value: 'google', label: 'Por completar', count: googleWaiting(loadingPhases, gcalStatus) && !gCount ? undefined : gCount },

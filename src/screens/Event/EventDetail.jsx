@@ -143,7 +143,9 @@ export default function EventDetail({ id, onClose }) {
           Foi apagado ou mudado no Google e não dá para saber para onde foi.
           <span className="ev-gone-acts">
             <Button size="sm" variant="danger" icon="trash" onClick={remove}>Apagar</Button>
-            <Button size="sm" variant="secondary" onClick={() => keepGcalGone(ev).catch(notifyError)}>Manter</Button>
+            <Button size="sm" variant="secondary" onClick={() => keepGcalGone(ev)
+              .then(() => document.getElementById(titleId)?.focus()) // o aviso sai: o foco vai para o título
+              .catch(notifyError)}>Manter</Button>
           </span>
         </Callout>
       )}

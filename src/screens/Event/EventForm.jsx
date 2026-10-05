@@ -257,9 +257,13 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       fields.lng = c?.lng ?? null
       if (fields.location && !c) lookup = fields.location
     }
+    // a procura começa depois de gravar e é partilhada: o "Mudar os N" (outros eventos com o mesmo local)
+    // espera por ela e grava as mesmas coordenadas
+    let found = null
     const findLater = (eventId) => {
       if (!lookup || !eventId) return
-      geocode(lookup).then((r) => r && setEventCoords([eventId], { lat: r.lat, lng: r.lng })).catch(() => {})
+      found = geocode(lookup).catch(() => null)
+      found.then((r) => r && setEventCoords([eventId], { lat: r.lat, lng: r.lng })).catch(() => {})
     }
 
     if (mode === 'edit') {
@@ -305,13 +309,18 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       const same = oldLoc && fields.location && fields.location !== oldLoc
         ? allEvents.filter((e) => e.id !== id && e.location?.trim() === oldLoc).map((e) => e.id) : []
       if (same.length) {
-        const locPatch = geoReady ? { location: fields.location, lat: fields.lat, lng: fields.lng } : { location: fields.location }
+        const locPatch = async () => {
+          if (!geoReady) return { location: fields.location }
+          if (fields.lat != null || !found) return { location: fields.location, lat: fields.lat, lng: fields.lng }
+          const r = await found // local escrito à mão: as coordenadas que a procura encontrar (ou nenhumas)
+          return { location: fields.location, lat: r?.lat ?? null, lng: r?.lng ?? null }
+        }
         notify({
           text: <>Local guardado. Há mais {same.length} {same.length === 1 ? 'evento' : 'eventos'} em <b>{oldLoc}</b>.</>,
           duration: 12000,
           action: {
             label: `Mudar ${same.length === 1 ? 'esse' : `os ${same.length}`}`,
-            run: () => setEventCoords(same, locPatch)
+            run: () => locPatch().then((lp) => setEventCoords(same, lp))
               .then(() => notify({ text: <>{same.length} {same.length === 1 ? 'evento passou' : 'eventos passaram'} para <b>{fields.location}</b></> }))
               .catch((ex) => notifyError(ex)),
           },

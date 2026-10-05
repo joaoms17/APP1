@@ -17,11 +17,13 @@ export default function GroupHeader({ title, small, summary, first = false, acti
 // Resumo de um grupo de eventos pela regra única (spec §9.9):
 // tudo recebido → "1 242 € · recebido" · nada → "969,50 € por receber" · misto → "920 € · falta 770 €"
 // só Google → "1 por registar". missingFn = missing do store.
-// eventos sem valor ("valor pendente": 0 € e nada recebido) contam à parte — não são "recebido"
-const pendingValue = (e) => !(Number(e.value) > 0.005) && !e.paid
+// eventos sem valor ("valor pendente": o estado 'novalue' — 0 €, sem pagamentos nem marcado como recebido)
+// contam à parte, não como "recebido". stateFn = eventState do store (sem ele, aproxima sem os pagamentos)
+const pendingValueOf = (stateFn) => (e) => (stateFn ? stateFn(e) === 'novalue' : !(Number(e.value) > 0.005) && !e.paid)
 
-export function eventsSummary(evs, missingFn, googleCount = 0) {
+export function eventsSummary(evs, missingFn, googleCount = 0, stateFn = null) {
   if (!evs?.length) return googleCount ? `${googleCount} por registar` : null
+  const pendingValue = pendingValueOf(stateFn)
   const pend = evs.filter(pendingValue).length
   const pendTxt = pend ? `${pend} sem valor` : null
   const valued = evs.filter((e) => !pendingValue(e))

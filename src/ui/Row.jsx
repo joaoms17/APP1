@@ -72,6 +72,7 @@ export function EventRow({
     showsMissing ? null : money(ev.value),
     STATE_PHRASE[st](money(mis)) + (showsMissing && (st === 'overdue' || st === 'due') ? `, falta ${money(mis)}` : ''),
     marks ? receiptWord : null, hasAtt ? 'tem anexo' : null,
+    store.gcalGone?.has(ev.id) ? 'já não está no Google' : null,
   ].filter(Boolean).join(', ')
 
   const open = () => (onOpen ? onOpen(ev) : openSheet('evento', ev.id))

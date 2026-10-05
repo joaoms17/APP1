@@ -2,7 +2,15 @@ import ICAL from 'ical.js'
 
 const pad = (n) => String(n).padStart(2, '0')
 const ymdOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const hmOf = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
+// dia e hora sempre na hora de Portugal, seja qual for o fuso do telemóvel: a chave do Google
+// (calendário|dia|hora|uid) não muda quando a Joana viaja (senão todos os eventos pareciam "mudados")
+const LISBON = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+})
+const lisbonOf = (d) => {
+  const p = Object.fromEntries(LISBON.formatToParts(d).map((x) => [x.type, x.value]))
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` }
+}
 
 // Expande um feed iCal do Google Calendar numa janela de -3 a +13 meses à volta de `now`.
 // Devolve [{uid, date:'yyyy-mm-dd', time:'HH:MM'|null, title, location}] ordenado.
@@ -20,10 +28,12 @@ export function parseGoogleIcs(text, now = new Date()) {
   const out = []
   const push = (jsDate, ev, isDate) => {
     if (jsDate < start || jsDate >= end) return
+    // dia inteiro: a data do próprio evento (toJSDate dá a meia-noite local desse dia)
+    const at = isDate ? { date: ymdOf(jsDate), time: null } : lisbonOf(jsDate)
     out.push({
       uid: ev.uid || null,
-      date: ymdOf(jsDate),
-      time: isDate ? null : hmOf(jsDate),
+      date: at.date,
+      time: at.time,
       title: ev.summary || '(sem título)',
       location: ev.location || null,
     })
