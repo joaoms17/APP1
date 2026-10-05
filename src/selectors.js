@@ -177,7 +177,7 @@ export function kindSplitOf(events, projects, year, today) {
   const kindOf = new Map(projects.map((p) => [p.id, p.kind === 'hair' ? 'hair' : 'music']))
   const cur = yearOf(today) === year
   const md = today.slice(4)
-  const mk = (key, label) => ({ key, label, byMonth: Array(12).fill(0), net: 0, count: 0, prevNet: 0, ytd: 0, prevYtd: 0 })
+  const mk = (key, label) => ({ key, label, byMonth: Array(12).fill(0), net: 0, count: 0, valued: 0, prevNet: 0, ytd: 0, prevYtd: 0 })
   const k = { hair: mk('hair', 'Penteados'), music: mk('music', 'Música') }
   for (const e of events) {
     const x = k[kindOf.get(e.project_id) || 'music']
@@ -185,6 +185,7 @@ export function kindSplitOf(events, projects, year, today) {
     const v = num(e.value)
     if (y === year) {
       x.byMonth[monthOf(e.event_date)] += v; x.net += v; x.count++
+      if (v > EPS) x.valued++
       if (cur && e.event_date <= `${year}${md}`) x.ytd += v
     } else if (y === year - 1) {
       x.prevNet += v
@@ -197,7 +198,8 @@ export function kindSplitOf(events, projects, year, today) {
     key: x.key, label: x.label, count: x.count,
     byMonth: x.byMonth.map(cents), net: cents(x.net), prevNet: cents(x.prevNet),
     share: total > EPS ? x.net / total : 0,
-    avg: x.count ? cents(x.net / x.count) : null,
+    // média por evento só dos eventos com valor (os "valor pendente" não valem 0 €)
+    avg: x.valued ? cents(x.net / x.valued) : null,
     delta: cur ? pct(cents(x.ytd), cents(x.prevYtd)) : pct(cents(x.net), cents(x.prevNet)),
   }))
 }
@@ -315,46 +317,60 @@ export function projectAverages(events, today) {
   return out
 }
 
-// números de cada projeto num ano (+ o ano anterior, até ao mesmo dia no ano corrente)
-// → [{ project_id, count, total, avg, prevTotal, delta }] ordenado pelo total
-export function projectStatsOf(events, year, today) {
-  const ty = yearOf(today)
-  const limitPrev = year === ty ? `${year - 1}${today.slice(4)}` : `${year - 1}-12-31`
+// números de cada projeto num ano. A média e o total só contam eventos com valor (os "valor pendente"
+// ficam à parte em pending). Variação: no ano corrente, até hoje vs o ano anterior até ao mesmo dia
+// (como a capa e o Penteados vs música); noutros anos, ano inteiro vs ano inteiro.
+// → [{ project_id, count, total, valued, avg, pending, prevTotal, prevCount, delta }] ordenado pelo total
+export function projectStatsOf(events, year, today, pbe) {
+  const cur = yearOf(today) === year
+  const md = today.slice(4)
   const m = new Map()
-  const get = (pid) => m.get(pid) || m.set(pid, { project_id: pid, count: 0, total: 0, valued: 0, pending: 0, prevTotal: 0 }).get(pid)
+  const get = (pid) => m.get(pid) || m.set(pid, { project_id: pid, count: 0, total: 0, valued: 0, pending: 0, ytd: 0, prevTotal: 0, prevCount: 0 }).get(pid)
   for (const e of events) {
     const y = yearOf(e.event_date)
+    const v = num(e.value)
     if (y === year) {
       const s = get(e.project_id)
       s.count++
-      if (num(e.value) > EPS) { s.total += num(e.value); s.valued++ } else if (!e.paid) s.pending++
-    } else if (y === year - 1 && e.event_date <= limitPrev) get(e.project_id).prevTotal += num(e.value)
+      if (v > EPS) { s.total += v; s.valued++; if (cur && e.event_date <= today) s.ytd += v } else if (noValueOf(e, pbe)) s.pending++
+    } else if (y === year - 1) {
+      const s = get(e.project_id)
+      s.prevCount++
+      if (!cur || e.event_date <= `${year - 1}${md}`) s.prevTotal += v
+    }
   }
   const pct = (a, b) => (b > EPS ? Math.round(((a - b) / b) * 100) : null)
   return [...m.values()]
     .filter((s) => s.count > 0)
-    .map((s) => ({ ...s, total: cents(s.total), prevTotal: cents(s.prevTotal), avg: s.valued ? cents(s.total / s.valued) : null, delta: pct(s.total, s.prevTotal) }))
+    .map((s) => ({
+      project_id: s.project_id, count: s.count, valued: s.valued, pending: s.pending, prevCount: s.prevCount,
+      total: cents(s.total), prevTotal: cents(s.prevTotal),
+      avg: s.valued ? cents(s.total / s.valued) : null,
+      // sem nenhum valor ainda no ano não há variação a mostrar (não é −100 %)
+      delta: s.valued ? pct(cents(cur ? s.ytd : s.total), cents(s.prevTotal)) : null,
+    }))
     .sort((a, b) => b.total - a.total || b.count - a.count)
 }
 
 // previsão de um ano: o que já tem valor + os eventos sem valor estimados pela média do projeto.
 // → { done, booked, estimated, estimatedCount, unknownCount, total, byMonth: [{ done, booked, estimated }] }
 //   done = eventos até hoje com valor · booked = eventos futuros com valor · estimated = sem valor × média
-export function forecastOf(events, year, today, averages) {
+export function forecastOf(events, year, today, averages, pbe) {
   const byMonth = Array.from({ length: 12 }, () => ({ done: 0, booked: 0, estimated: 0, count: 0 }))
   let estimatedCount = 0, unknownCount = 0
+  const unknown = new Set()
   for (const e of events) {
     if (yearOf(e.event_date) !== year) continue
     const mo = byMonth[monthOf(e.event_date)]
     mo.count++
     const v = num(e.value)
     if (v > EPS) { if (e.event_date <= today) mo.done += v; else mo.booked += v; continue }
-    if (e.paid) continue // 0 € marcado como recebido: é mesmo 0
+    if (!noValueOf(e, pbe)) continue // 0 € com pagamentos ou marcado como recebido: não é "valor pendente"
     const a = averages.get(e.project_id)
-    if (a) { mo.estimated += a.avg; estimatedCount++ } else unknownCount++
+    if (a) { mo.estimated += a.avg; estimatedCount++ } else { unknownCount++; unknown.add(e.project_id) }
   }
   for (const mo of byMonth) { mo.done = cents(mo.done); mo.booked = cents(mo.booked); mo.estimated = cents(mo.estimated); mo.total = cents(mo.done + mo.booked + mo.estimated) }
   const sum = (k) => cents(byMonth.reduce((s, mo) => s + mo[k], 0))
   const done = sum('done'), booked = sum('booked'), estimated = sum('estimated')
-  return { year, done, booked, estimated, estimatedCount, unknownCount, total: cents(done + booked + estimated), byMonth }
+  return { year, done, booked, estimated, estimatedCount, unknownCount, unknownProjects: unknown.size, total: cents(done + booked + estimated), byMonth }
 }
