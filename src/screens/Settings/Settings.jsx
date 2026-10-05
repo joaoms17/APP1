@@ -23,7 +23,7 @@ const PricesSection = lazy(() => import('../Documents/index.jsx').then((m) => ({
 
 const money = (n) => fmtMoney(n, { cents: 'never' })
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
-// " · média 150 €" (só quando há eventos)
+// " · média 150 €" (só quando há eventos com valor)
 const avg = (total, n) => (n > 0 ? ` · média ${money(total / n)}` : '')
 
 // ---------- ajudas partilhadas com as folhas do projeto e do calendário ----------------------
@@ -81,16 +81,17 @@ function Projects() {
   const stats = useMemo(() => {
     const m = new Map()
     for (const e of events) {
-      const s = m.get(e.project_id) || { n: 0, total: 0, nAll: 0, all: 0 }
+      const s = m.get(e.project_id) || { n: 0, total: 0, nAll: 0, all: 0, valued: 0, valuedAll: 0 }
       const v = Number(e.value) || 0
       s.nAll += 1
       s.all += v
-      if (e.event_date.startsWith(year)) { s.n += 1; s.total += v }
+      if (v > 0.005) s.valuedAll += 1 // a média só conta eventos com valor ("valor pendente" não é 0 €)
+      if (e.event_date.startsWith(year)) { s.n += 1; s.total += v; if (v > 0.005) s.valued += 1 }
       m.set(e.project_id, s)
     }
     return m
   }, [events, year])
-  const statOf = (p) => stats.get(p.id) || { n: 0, total: 0, nAll: 0, all: 0 }
+  const statOf = (p) => stats.get(p.id) || { n: 0, total: 0, nAll: 0, all: 0, valued: 0, valuedAll: 0 }
   const hasGoogle = (p) => gcalCalendars.some((c) => c.project_id === p.id)
 
   const active = projects.filter((p) => isProjectActive(p, Number(year)))
@@ -105,7 +106,7 @@ function Projects() {
           const kind = kindLabel(p)
           return (
             <SettingsRow key={p.id} avatar={<ProjectAvatar project={p} />} title={p.name}
-              sub={<>{kind !== p.name && `${kind} · `}{plural(s.n, 'evento', 'eventos')} em {year}{avg(s.total, s.n)}{hasGoogle(p) && <> · {gtag}</>}</>}
+              sub={<>{kind !== p.name && `${kind} · `}{plural(s.n, 'evento', 'eventos')} em {year}{avg(s.total, s.valued)}{hasGoogle(p) && <> · {gtag}</>}</>}
               value={money(s.total)} onClick={() => openSheet('projeto', p.id)} />
           )
         })}
@@ -126,7 +127,7 @@ function Projects() {
               const kind = kindLabel(p)
               return (
                 <SettingsRow key={p.id} avatar={<ProjectAvatar project={p} />} title={p.name}
-                  sub={<>{kind !== p.name && `${kind} · `}{plural(s.nAll, 'evento', 'eventos')}{avg(s.all, s.nAll)} <Badge tone="neutral">{periodLabel(p)}</Badge></>}
+                  sub={<>{kind !== p.name && `${kind} · `}{plural(s.nAll, 'evento', 'eventos')}{avg(s.all, s.valuedAll)} <Badge tone="neutral">{periodLabel(p)}</Badge></>}
                   value={<>{money(s.all)}<small>desde sempre</small></>} onClick={() => openSheet('projeto', p.id)} />
               )
             })}

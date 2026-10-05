@@ -158,30 +158,45 @@
 
 /* ---- Previsão e Por projeto ---- */
 .db-sec-title { font-family: var(--font-display); font-size: var(--fs-meta); font-weight: 600; color: var(--muted); margin-bottom: 4px; }
-.db-fc, .db-proj { padding: 16px 14px; }
-.db-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.db-fc, .db-proj { padding: 16px 14px; min-width: 0; }
+/* uma só cor (a do total), distinguida pelo preenchimento: feito = cheio · marcado = claro com contorno ·
+   estimado = riscado. Não usa a 2.ª cor, que no Painel é a da Música. */
+.db-sw { flex: none; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
 .db-sw.done, .db-fc-months .done { background: var(--chart-1); }
-.db-sw.booked, .db-fc-months .booked { background: color-mix(in srgb, var(--chart-1) 55%, var(--surface)); }
-.db-sw.est, .db-fc-months .est { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--chart-1) 35%, var(--surface)) 0 3px, var(--surface) 3px 6px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-1) 45%, var(--surface)); }
+.db-sw.booked, .db-fc-months .booked {
+  background: color-mix(in srgb, var(--chart-1) 30%, var(--surface)); box-shadow: inset 0 0 0 1.5px var(--chart-1);
+}
+.db-sw.est, .db-fc-months .est {
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--chart-1) 45%, var(--surface)) 0 2px, var(--surface) 2px 5px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chart-1) 60%, var(--surface));
+}
 .db-fc-parts { display: grid; gap: 6px; margin: 10px 0 0; }
-.db-fc-parts > div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.db-fc-parts dt { font-size: var(--fs-meta); color: var(--ink-2); font-weight: 600; }
+.db-fc-parts > div { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 12px; align-items: baseline; }
+.db-fc-parts dt { display: inline-flex; align-items: center; white-space: nowrap; font-size: var(--fs-meta); color: var(--ink-2); font-weight: 600; }
 .db-fc-parts dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-.db-fc-parts dd small { display: block; font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
-.db-fc-note { font-size: var(--fs-caption); color: var(--muted); margin-top: 6px; }
-.db-fc-months { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: .5px solid var(--line); display: grid; gap: 8px; }
-.db-fc-months li { display: grid; grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto; gap: 10px; align-items: center; }
-.db-fc-months .m { font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
-.db-fc-months .bar { display: flex; height: 10px; border-radius: 4px; overflow: hidden; background: var(--surface-sunken); }
-.db-fc-months .bar i { display: block; height: 100%; }
-.db-fc-months .v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-meta); }
-.db-fc-months .v small { display: block; font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
+.db-fc-parts .db-fc-sub { flex-basis: 100%; margin: 0; text-align: left; font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
+.db-fc-note { font-size: var(--fs-caption); color: var(--muted); margin-top: 6px; line-height: 1.4; }
+/* cada mês: nome e total numa linha, a barra por baixo com a largura toda (escala comum a todos os meses) */
+.db-fc-months { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: .5px solid var(--line); display: grid; gap: 12px; }
+.db-fc-months li.past { grid-template-areas: 'm v' 'd d'; }
+.db-fc-months li { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'm v' 'bar bar' 'd d'; row-gap: 5px; column-gap: 10px; }
+.db-fc-months .m { grid-area: m; font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2); }
+.db-fc-months .v { grid-area: v; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; font-size: var(--fs-meta); }
+.db-fc-months .bar { grid-area: bar; display: flex; gap: 2px; height: 10px; border-radius: 4px; overflow: hidden; background: var(--surface-sunken); }
+.db-fc-months .bar i { display: block; height: 100%; flex: 0 1 auto; min-width: 3px; border-radius: 2px; }
+.db-fc-months .d { grid-area: d; font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
+.db-proj-note { font-size: var(--fs-caption); color: var(--muted); font-weight: 600; margin-bottom: 2px; }
 .db-proj ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; }
 .db-proj li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: .5px solid var(--line); }
 .db-proj li:first-child { border-top: 0; }
 .db-proj .txt { display: grid; min-width: 0; }
-.db-proj .txt b { font-weight: 700; }
+.db-proj .txt b { font-weight: 700; overflow-wrap: anywhere; }
 .db-proj .txt small { font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
-.db-proj .v { display: grid; justify-items: end; gap: 2px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.db-proj .txt .pend { color: var(--ink-2); }
+.db-proj .v { display: grid; justify-items: end; gap: 2px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .db-proj .v small { font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
 .db-proj .v .delta { font-size: var(--fs-caption); }
+@media (min-width: 1024px) {
+  .db-fc, .db-proj { grid-column: span 2; padding: 18px 18px 16px; }
+  .db-proj.solo { grid-column: span 4; } /* anos passados: sem previsão ao lado */
+}

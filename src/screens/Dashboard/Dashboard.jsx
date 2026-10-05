@@ -45,11 +45,11 @@ function Hero({ t, thisYear, desktop }) {
   const v = exp
     ? { label: 'Saldo líquido', value: t.saldo, prev: t.saldoPrev, delta: t.deltaSaldo, ytd: ytd?.saldo, ytdPrev: ytd?.saldoPrev, ytdDelta: ytd?.deltaSaldo }
     : { label: 'Receita líquida', value: t.net, prev: t.netPrev, delta: t.deltaNet, ytd: ytd?.net, ytdPrev: ytd?.netPrev, ytdDelta: ytd?.deltaNet }
-  let best = t.bestMonth
-  if (!exp) {
-    const m = t.byMonth.net.reduce((b, x, i) => (x > 0 && (b < 0 || x > t.byMonth.net[b]) ? i : b), -1)
-    best = m < 0 ? null : { month: m, saldo: t.byMonth.net[m] }
-  }
+  // melhor mês: só entre os meses que já começaram (um concerto marcado para dezembro não é "o melhor mês")
+  const lastMonth = t.year < thisYear ? 11 : t.year === thisYear ? t.closedMonths : -1
+  const series = exp ? t.byMonth.saldo : t.byMonth.net
+  const m = series.reduce((b, x, i) => (i <= lastMonth && x > 0 && (b < 0 || x > series[b]) ? i : b), -1)
+  const best = m < 0 ? null : { month: m, saldo: series[m] }
   return (
     <Card as="section" className="hero db-hero" aria-labelledby={titleId}>
       <h2 className="label" id={titleId}>{v.label} {t.year}</h2>
@@ -206,7 +206,7 @@ export default function Dashboard() {
         {FEATURES.expenses && <Kpis t={t} />}
         <OverdueTile t={t} lateCount={t.overdueYearCount} />
         {fc && <ForecastCard f={fc} thisYear={thisYear} curMonth={curMonth} />}
-        {stats?.length > 0 && <ProjectsCard stats={stats} year={year} thisYear={thisYear} today={today} />}
+        {stats?.length > 0 && <ProjectsCard stats={stats} year={year} thisYear={thisYear} today={today} solo={!fc} />}
         <Boundary resetKey={year} fallback={(error, retry) => <ChartsError retry={retry} />}>
           <Suspense fallback={<ChartsFallback />}>
             <DashCharts t={t} split={split} projects={projects} month={month} onPick={onPick} thisYear={thisYear} curMonth={curMonth} />
