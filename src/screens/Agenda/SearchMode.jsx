@@ -7,7 +7,7 @@ import { eventMatches, googleMatches, isProjectActive } from '../../selectors.js
 import { ItemRows, mergeItems, monthName, rowClass, useProgressive } from './AgendaList.jsx'
 
 // Procurar e filtrar — modo da Lista (spec §10.4). Estado na rota:
-//   #/agenda/lista?q=<texto>&quando=anteriores|proximos&estado=atraso|sinal|porreceber|recebidos&p=<projeto>
+//   #/agenda/lista?q=<texto>&quando=anteriores|proximos&estado=atraso|sinal|porreceber|semvalor|recebidos&p=<projeto>
 // Pesquisa sem acentos em título, local e notas, em todas as datas, e também nos pendentes do Google.
 // flash = { id, date }: evento acabado de editar ou registar a partir dos resultados — o Procurar fica
 // (texto e chips) e a linha pisca.
@@ -15,9 +15,9 @@ import { ItemRows, mergeItems, monthName, rowClass, useProgressive } from './Age
 const QUANDO = { anteriores: 'anteriores', passados: 'anteriores', proximos: 'proximos', 'próximos': 'proximos', futuros: 'proximos' }
 const ESTADO = {
   atraso: 'atraso', 'em-atraso': 'atraso', sinal: 'sinal',
-  porreceber: 'porreceber', 'por-receber': 'porreceber', recebidos: 'recebidos', recebido: 'recebidos',
+  porreceber: 'porreceber', 'por-receber': 'porreceber', recebidos: 'recebidos', recebido: 'recebidos', semvalor: 'semvalor', 'sem-valor': 'semvalor',
 }
-const ESTADO_WORD = { atraso: 'em atraso', sinal: 'com sinal', porreceber: 'por receber', recebidos: 'recebidos' }
+const ESTADO_WORD = { atraso: 'em atraso', sinal: 'com sinal', porreceber: 'por receber', semvalor: 'sem valor', recebidos: 'recebidos' }
 const WHEN_TEXT = { anteriores: 'antes de hoje', proximos: 'de hoje em diante' }
 
 const money = (n, cents = 'auto') => fmtMoney(n, { cents })
@@ -42,7 +42,9 @@ export default function SearchMode({ params, onExit, flash = null }) {
     const tests = {
       atraso: (ev) => ['overdue', 'partial-overdue'].includes(eventState(ev)),
       sinal: (ev) => ['partial', 'partial-overdue'].includes(eventState(ev)),
-      porreceber: (ev) => eventState(ev) !== 'paid',
+      // por receber = há valor e falta receber; os sem valor têm o seu filtro
+      porreceber: (ev) => !['paid', 'novalue'].includes(eventState(ev)),
+      semvalor: (ev) => eventState(ev) === 'novalue',
       recebidos: (ev) => eventState(ev) === 'paid',
     }
     const when = (d) => (quando === 'anteriores' ? d < today : quando === 'proximos' ? d >= today : true)
@@ -83,6 +85,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
   })
   const s = summary(result.evs)
   const n = result.evs.length
+  const noValue = result.evs.filter((ev) => eventState(ev) === 'novalue').length // valor pendente: não é "recebido"
   const found = n + result.gs.length > 0
   const whenText = WHEN_TEXT[quando] || 'em todas as datas'
 
@@ -111,6 +114,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
           <Chip selected={estado === 'atraso'} count={receivables.overdue.length} onClick={() => toggle('estado', 'atraso', estado)}>Em atraso</Chip>
           <Chip selected={estado === 'sinal'} onClick={() => toggle('estado', 'sinal', estado)}>Sinal</Chip>
           <Chip selected={estado === 'porreceber'} onClick={() => toggle('estado', 'porreceber', estado)}>Por receber</Chip>
+          <Chip selected={estado === 'semvalor'} onClick={() => toggle('estado', 'semvalor', estado)}>Sem valor</Chip>
           <Chip selected={estado === 'recebidos'} onClick={() => toggle('estado', 'recebidos', estado)}>Recebidos</Chip>
         </ChipRow>
         <ChipRow label="Filtrar por projeto">
@@ -128,8 +132,9 @@ export default function SearchMode({ params, onExit, flash = null }) {
             {term ? <> com “{term}”</> : null}
             {proj ? ` de ${proj.name}` : ''}
             {` ${whenText}`}
-            {n > 0 && <>{' · '}{money(s.total, 'never')}{' · '}
+            {n > noValue && <>{' · '}{money(s.total, 'never')}{' · '}
               {s.missing > 0.005 ? <span className="late">falta {money(s.missing)}</span> : 'tudo recebido'}</>}
+            {noValue > 0 && estado !== 'semvalor' && ` · ${noValue} sem valor`}
             {result.gs.length > 0 && ` · ${result.gs.length} por registar`}
           </p>
           <Button variant="ghost" size="sm" onClick={clearAll}>Limpar</Button>
@@ -148,7 +153,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
       {result.groups.slice(0, shown).map((g, i) => (
         <div key={g.key} className="ag-group">
           <GroupHeader title={monthName(g.key)} small={g.key.slice(0, 4)} first={i === 0}
-            summary={eventsSummary(g.evs, missing, g.gs)} />
+            summary={eventsSummary(g.evs, missing, g.gs, eventState)} />
           <div className="list"><ItemRows items={g.items} hideProject={!!proj} flashId={flash?.id || null} /></div>
         </div>
       ))}

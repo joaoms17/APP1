@@ -77,3 +77,4 @@
 .ev-place-list li.on { background: var(--surface-sunken); }
 @media (hover: hover) { .ev-place-list li:hover { background: var(--surface-sunken); } }
 .ev-proj-fixed { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: var(--fs-body); }
+.ev-gone-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

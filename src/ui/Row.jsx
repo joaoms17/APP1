@@ -72,6 +72,7 @@ export function EventRow({
     showsMissing ? null : money(ev.value),
     STATE_PHRASE[st](money(mis)) + (showsMissing && (st === 'overdue' || st === 'due') ? `, falta ${money(mis)}` : ''),
     marks ? receiptWord : null, hasAtt ? 'tem anexo' : null,
+    store.gcalGone?.has(ev.id) ? 'já não está no Google' : null,
   ].filter(Boolean).join(', ')
 
   const open = () => (onOpen ? onOpen(ev) : openSheet('evento', ev.id))
@@ -84,10 +85,12 @@ export function EventRow({
   const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
   const receiptShown = marks && !!ev.receipt_issued
   const locPending = marks && !ev.location?.trim()
-  const hasTags = badgeShown || receiptShown || hasAtt || locPending
+  const gone = !!store.gcalGone?.has(ev.id) // já não está no Google
+  const hasTags = badgeShown || receiptShown || hasAtt || locPending || gone
   const tags = (
     <>
       {badgeShown && <StatusBadge ev={ev} />}
+      {gone && <Badge tone="overdue" icon="gcal">Já não está no Google</Badge>}
       {locPending && <Badge tone="neutral">Local pendente</Badge>}
       {receiptShown && <ReceiptMark ev={ev} />}
       {hasAtt && <span className="mark"><Icon name="paperclip" /><span className="sr-only">tem anexo</span></span>}

@@ -13,7 +13,7 @@ const isEditable = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SE
 // Agenda › Mês (spec §10.5): calendário + o dia selecionado (hora à esquerda) + "A seguir · próximos 7 dias".
 // O dia vive na rota (#/agenda/mes/<ymd>); mudar de mês seleciona o dia 1 (ou hoje, no mês atual).
 export default function MonthView({ day, active = false, flashId = null }) {
-  const { today, eventsAsc, googleByDay, missing, projects } = useStore()
+  const { today, eventsAsc, googleByDay, missing, projects, eventState } = useStore()
   const year = Number(day.slice(0, 4))
   const month = Number(day.slice(5, 7))
 
@@ -115,7 +115,7 @@ export default function MonthView({ day, active = false, flashId = null }) {
         )}
 
         <GroupHeader title="A seguir" small="próximos 7 dias"
-          summary={eventsSummary(nextEvs, missing, nextItems.length - nextEvs.length)} />
+          summary={eventsSummary(nextEvs, missing, nextItems.length - nextEvs.length, eventState)} />
         {nextItems.length > 0 && <div className="list"><ItemRows items={nextItems} flashId={flashId} /></div>}
         <p className="ag-end-note">
           <Icon name="check" />

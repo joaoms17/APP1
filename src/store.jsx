@@ -3,7 +3,8 @@ import { db } from './supabase'
 import { fetchGoogleEvents } from './gcal'
 import { compressImage } from './img'
 import { FEATURES } from './features.js'
-import { todayYMD, toYMD, fmtMoney } from './format.js'
+import { todayYMD, toYMD, fmtMoney, fmtDM } from './format.js'
+import { gcalSyncPlan, googleKey, legacyKey, skipByKeys } from './gcalMatch.js'
 import * as S from './selectors.js'
 import { humanError, userError, isSetupError } from './errors.js'
 import { useToast, detailsAction } from './ui/Toast.jsx'
@@ -104,6 +105,8 @@ export function StoreProvider({ children }) {
   const [pendingUndo, setPendingUndo] = useState(null) // {kind:'event'|'expense', row} (compatibilidade v1)
   const [hidden, setHidden] = useState(NO_HIDDEN)
   const [overrides, setOverrides] = useState({}) // event_id → campos otimistas (paid, receipt_issued…)
+  const overridesRef = useRef(overrides)
+  overridesRef.current = overrides
   const [ghosts, setGhosts] = useState([]) // pagamentos a gravar (aparecem logo; pending: true)
   const ghostRef = useRef([])
   const [today, setToday] = useState(todayYMD)
@@ -185,7 +188,9 @@ export function StoreProvider({ children }) {
   // eventos do Google ignorados ("não é trabalho"); sem a tabela (SQL por correr) fica vazio, sem aviso
   const loadGcalIgnored = useCallback(async () => {
     try {
-      setGcalIgnored(new Set(rowsOrThrow(await db.from('gcal_ignored').select('key')).map((r) => r.key)))
+      // junta (não substitui): uma chave ignorada agora mesmo (ex.: remoção retomada no arranque) não se perde
+      const keys = rowsOrThrow(await db.from('gcal_ignored').select('key')).map((r) => r.key)
+      setGcalIgnored((s) => new Set([...s, ...keys]))
     } catch { /* tabela por criar ou falha de leitura: nada ignorado à mão */ }
   }, [])
 
@@ -224,11 +229,15 @@ export function StoreProvider({ children }) {
     }
     const resume = resumePending.current?.(evRows)
     setPhase1(false)
+    // as despesas só se leem com a funcionalidade ligada; uma falha a lê-las nunca tira a agenda do ecrã
     const [ex, att, gc] = await Promise.allSettled([
-      loadExpenses(), loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null, loadGcalIgnored(),
+      FEATURES.expenses ? loadExpenses() : null, loadAttachments(), loadGcalCalendars(), FEATURES.docs ? loadQuotes() : null, loadGcalIgnored(),
     ])
-    if (ex.status === 'rejected') fail(ex.reason)
-    else warnLoadFailed(att.status === 'rejected', gc.status === 'rejected')
+    if (ex.status === 'rejected') {
+      toast.notify({ text: 'Não foi possível carregar as despesas.', icon: 'alert', tone: 'error', duration: 10000,
+        action: { label: 'Tentar de novo', run: () => loadExpenses().catch((e) => toast.notifyError(e)) } })
+    }
+    warnLoadFailed(att.status === 'rejected', gc.status === 'rejected')
     setPhase2(false)
     await resume
   }, [loadPayments, loadExpenses, loadAttachments, loadGcalCalendars, loadQuotes, loadGcalIgnored])
@@ -549,7 +558,7 @@ export function StoreProvider({ children }) {
   // Usada no fim do toast e no arranque (remoções que ficaram por gravar quando a página saiu).
   const commitRemoval = async (it, evRows) => {
     if (it.kind === 'event' || it.kind === 'expense') {
-      await finalizeUndo({ kind: it.kind, row: { id: it.id } })
+      await finalizeUndo({ kind: it.kind, row: { id: it.id, gcal_key: it.gcal_key } })
       if (it.kind === 'event') {
         setEvents((es) => es.filter((e) => e.id !== it.id))
         setPayments((ps) => ps.filter((p) => p.event_id !== it.id))
@@ -616,7 +625,9 @@ export function StoreProvider({ children }) {
     })()
   }
 
-  const softDelete = (kind, row) => deferRemoval({ kind, id: row.id }, {
+  // a chave do Google vai com a remoção pendente: se a app fechar antes de gravar, o arranque seguinte
+  // ainda a marca como ignorada (senão o evento voltava a entrar sozinho)
+  const softDelete = (kind, row) => deferRemoval({ kind, id: row.id, ...(row.gcal_key ? { gcal_key: row.gcal_key } : {}) }, {
     text: kind === 'event' ? 'Evento apagado' : 'Despesa apagada',
     run: async () => { setPendingUndo({ kind, row }); return row },
     undo: async () => { setPendingUndo(null) },
@@ -768,6 +779,34 @@ export function StoreProvider({ children }) {
     setProjects(data)
   }, [])
 
+  // de volta à app (a app instalada fica dias aberta): passados 2 min fora, relê em silêncio projetos,
+  // eventos e pagamentos — o que foi registado noutro aparelho aparece sem ser preciso recarregar
+  const hiddenAt = useRef(0)
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt.current = Date.now(); return }
+      if (!hiddenAt.current || Date.now() - hiddenAt.current < 2 * 60 * 1000) { hiddenAt.current = 0; return }
+      hiddenAt.current = 0
+      // eventos e ignorados do Google lidos juntos e aplicados no mesmo render: um evento apagado noutro
+      // aparelho nunca fica um instante "por registar" (senão voltava a entrar sozinho)
+      Promise.allSettled([
+        loadProjects(),
+        loadPayments(),
+        loadGcalCalendars(),
+        Promise.all([
+          db.from('events').select('*').order('event_date', { ascending: false }),
+          db.from('gcal_ignored').select('key').then((r) => r, () => ({ data: null })),
+        ]).then(([ev, ig]) => {
+          if (ev.error) throw ev.error
+          if (ig?.data) setGcalIgnored((s) => new Set([...s, ...ig.data.map((r) => r.key)]))
+          setEvents(ev.data)
+        }),
+      ])
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [loadProjects, loadEvents, loadPayments, loadGcalCalendars])
+
   const saveProject = async (p) => {
     const { data, error } = p.id
       ? await db.from('projects').update(p).eq('id', p.id).select()
@@ -806,11 +845,10 @@ export function StoreProvider({ children }) {
   const agingGroups = useMemo(() => S.agingGroups(receivables.overdue, today, pbe), [receivables, today, pbe])
   // eventos que vieram do Google (gcal_key): o evento do Google correspondente nunca volta a ficar por registar
   const gcalLinkReady = rawEvents.length > 0 && 'gcal_key' in rawEvents[0]
-  const gcalSkip = useMemo(() => {
-    const s = new Set(gcalIgnored)
-    for (const e of rawEvents) if (e.gcal_key) s.add(e.gcal_key)
-    return s
-  }, [gcalIgnored, rawEvents])
+  // fora do "por registar": chaves ignoradas e ligadas, pela chave e pela identidade (gid) — um evento ligado
+  // ou ignorado continua de fora mesmo depois de mudar de dia/hora no Google
+  const gcalSkip = useMemo(() => skipByKeys([...gcalIgnored, ...rawEvents.map((e) => e.gcal_key).filter(Boolean)]),
+    [gcalIgnored, rawEvents])
   const googleMatch = useMemo(() => S.matchGoogle(events, googleEvents, gcalSkip), [events, googleEvents, gcalSkip])
   const googlePending = useMemo(() => S.googlePendingOf(googleMatch.pending, today), [googleMatch, today])
   const googleByDay = googleMatch.byDay
@@ -834,21 +872,8 @@ export function StoreProvider({ children }) {
   const expenseById = useCallback((id) => expenses.find((x) => x.id === id) || null, [expenses])
   const attachmentById = useCallback((id) => attachments.find((a) => a.id === id) || null, [attachments])
   const findGoogle = useCallback((key) => googleMatch.pending.find((g) => g.key === key)
-    || googleEvents.find((g) => g.key === key || `${g.calendar_id || ''}|${g.date}|${g.time || ''}|${g.uid || g.title}` === key) || null,
+    || googleEvents.find((g) => g.key === key || googleKey(g) === key || legacyKey(g) === key) || null,
   [googleMatch, googleEvents])
-
-  // Receber: ponto de novidades — algo que passou a Em atraso ou um Google já realizado depois da
-  // última visita (spec §3.1). Os recibos não entram: por omissão os eventos não levam recibo.
-  const receberHasNews = useMemo(() => {
-    const { overdue } = receivables
-    const past = googlePending.past
-    if (!receberSeenAt) return overdue.length > 0 || past.length > 0
-    const seenMs = Date.parse(receberSeenAt)
-    if (Number.isNaN(seenMs)) return overdue.length > 0
-    const seenDay = toYMD(new Date(seenMs))
-    if (overdue.some((e) => e.event_date >= seenDay)) return true
-    return past.some((g) => g.date >= seenDay)
-  }, [receivables, googlePending, receberSeenAt])
 
   const markReceberSeen = useCallback(() => {
     const now = nowIso()
@@ -904,7 +929,8 @@ export function StoreProvider({ children }) {
 
   // regista um pagamento (sinal, parte ou o resto) → linha inserida; Anular apaga-a.
   // Depois do INSERT nada volta a lançar (o "Tentar de novo" só existe se o INSERT falhou).
-  const recordPayment = async (ev, amount, date, { retry, pbe: pbeIn } = {}) => {
+  // fresh: ev acabou de ser lido da base de dados (o "Recebi") — usa-o em vez do evento do último render
+  const recordPayment = async (ev, amount, date, { retry, pbe: pbeIn, fresh = false } = {}) => {
     const amt = Math.round(Number(amount) * 100) / 100
     if (!(amt > 0)) throw userError('O valor tem de ser maior do que 0 €.')
     const again = retry || (() => recordPayment(ev, amount, date))
@@ -912,7 +938,7 @@ export function StoreProvider({ children }) {
     if (!pbeNow) {
       try { pbeNow = await ensurePayments() } catch (ex) { return paymentsUnreadable(ex, again) }
     }
-    const cur = liveEvent(ev)
+    const cur = fresh ? ev : liveEvent(ev)
     const got = liveGot(cur, pbeNow)
     const miss = liveMissing(cur, pbeNow)
     const text = amt >= miss - EPS
@@ -947,14 +973,63 @@ export function StoreProvider({ children }) {
   }
 
   // "Recebi 370 €": regista o que falta, com a data de hoje
+  // antes do "Recebi": relê este evento e os pagamentos dele — outro aparelho (ou a outra pessoa) pode já
+  // ter registado o pagamento ou mudado o valor, e a app fica dias aberta
+  const freshEvent = async (ev, pbeNow) => {
+    const [er, pr] = await Promise.all([
+      db.from('events').select('*').eq('id', ev.id).maybeSingle(),
+      db.from('payments').select('*').eq('event_id', ev.id).order('paid_at'),
+    ])
+    if (er.error) throw er.error
+    if (pr.error) throw pr.error
+    if (!er.data) return { gone: true }
+    putEventsLocal(er.data)
+    const ov = overridesRef.current[ev.id] // valores otimistas à espera de gravar (ex.: pagamento a apagar com Anular)
+    const hiddenP = live.current.hidden.payments
+    const rows = (pr.data || []).filter((p) => !hiddenP.has(p.id))
+    setPayments((ps) => [...ps.filter((p) => p.event_id !== ev.id || hiddenP.has(p.id)), ...rows])
+    const pbe = new Map(pbeNow)
+    pbe.set(ev.id, rows)
+    return { cur: { ...liveEvent(ev), ...er.data, ...(ov || {}) }, pbe }
+  }
+
+  // um "Recebi" de cada vez por evento: a leitura de rede vem antes do pagamento otimista, por isso um
+  // toque duplo não pode passar duas vezes
+  const receiving = useRef(new Set())
   const receiveRemaining = async (ev) => {
+    if (receiving.current.has(ev.id)) return null
+    receiving.current.add(ev.id)
+    try { return await receiveRemainingNow(ev) } finally { receiving.current.delete(ev.id) }
+  }
+  const receiveRemainingNow = async (ev) => {
     const retry = () => receiveRemaining(ev)
-    let pbeNow
-    try { pbeNow = await ensurePayments() } catch (ex) { return paymentsUnreadable(ex, retry) }
-    const cur = liveEvent(ev)
+    const shown = liveMissing(liveEvent(ev), live.current.pbe) // o valor que o botão mostrava
+    let pbeNow, cur
+    try {
+      const fresh = await freshEvent(ev, await ensurePayments())
+      if (fresh.gone) {
+        toast.notify({ text: 'Este evento já não existe (foi apagado noutro aparelho).', icon: 'alert', tone: 'error' })
+        await reloadAfterWrite(loadEvents, loadPayments)
+        return null
+      }
+      pbeNow = fresh.pbe
+      cur = fresh.cur
+    } catch (ex) { return paymentsUnreadable(ex, retry) }
     const miss = liveMissing(cur, pbeNow)
-    if (miss <= EPS) return null
-    return recordPayment(cur, miss, live.current.today, { retry, pbe: pbeNow })
+    if (miss <= EPS) {
+      if (shown > EPS) toast.notify({ text: <><b>{cur.title}</b> já estava recebido (registado noutro aparelho).</>, icon: 'checkCircle' })
+      return null
+    }
+    // o que falta mudou noutro aparelho desde que o botão foi desenhado: não grava às cegas, pergunta
+    if (Math.abs(miss - shown) > EPS) {
+      toast.notify({
+        text: <>O valor mudou noutro aparelho: falta agora <b>{fmtMoney(miss, { cents: 'auto' })}</b> de {cur.title}.</>,
+        icon: 'alert', duration: 12000,
+        action: { label: `Recebi ${fmtMoney(miss, { cents: 'auto' })}`, run: () => recordPayment(cur, miss, live.current.today, { retry, pbe: pbeNow, fresh: true }) },
+      })
+      return null
+    }
+    return recordPayment(cur, miss, live.current.today, { retry, pbe: pbeNow, fresh: true })
   }
 
   // sobe os ficheiros um a um → { rows (gravados), failed: [{ file, error }] }
@@ -1057,24 +1132,149 @@ export function StoreProvider({ children }) {
   // apagado, passa a ignorado. Sem a coluna (SQL por correr), fica o "Registar" de antes.
   const [gcalImported, setGcalImported] = useState(false)
   const importTried = useRef(new Set())
+
+  // Sincronização com o Google (gcalSyncPlan): mudou de dia/hora no Google → o evento da app vai atrás
+  // (mantém valor, pagamentos, local e notas); já não está no Google → "Já não está no Google" (Apagar ou
+  // Manter). Só com calendários lidos sem erro.
+  const gcalOk = useMemo(() => new Map(gcalCalendars.filter((c) => gcalData[c.id]?.ok).map((c) => [c.id, gcalData[c.id].at])),
+    [gcalCalendars, gcalData])
+  const gcalPlan = useMemo(() => (googleSettled && gcalLinkReady
+    ? gcalSyncPlan(events, googleAll, gcalOk)
+    : { moves: [], relink: [], gone: [] }), [googleSettled, gcalLinkReady, events, googleAll, gcalOk])
+  const [gcalTick, setGcalTick] = useState(0) // volta a correr a sincronização depois de gravar (mesmo com falhas)
+  const gcalGone = useMemo(() => new Set(gcalPlan.gone.map((e) => e.id)), [gcalPlan])
+
+  // Receber: ponto de novidades — algo que passou a Em atraso, um evento já realizado ainda sem valor ou
+  // um Google já realizado depois da última visita (spec §3.1). Os recibos não entram: por omissão os eventos não levam recibo.
+  const receberHasNews = useMemo(() => {
+    const { overdue } = receivables
+    const past = googlePending.past
+    const noValue = valuePending.past // já aconteceram e ainda sem valor (ex.: vieram do Google)
+    if (gcalGone.size) return true // há eventos que já não estão no Google: decidir Apagar ou Manter
+    if (!receberSeenAt) return overdue.length > 0 || past.length > 0 || noValue.length > 0
+    const seenMs = Date.parse(receberSeenAt)
+    if (Number.isNaN(seenMs)) return overdue.length > 0 || noValue.length > 0
+    const seenDay = toYMD(new Date(seenMs))
+    if (overdue.some((e) => e.event_date >= seenDay)) return true
+    if (noValue.some((e) => e.event_date >= seenDay)) return true
+    return past.some((g) => g.date >= seenDay)
+  }, [receivables, googlePending, valuePending, gcalGone, receberSeenAt])
+
+  // grava só se o evento ainda tiver a chave que este aparelho viu: se outro aparelho já mudou (ou anulou),
+  // não se pisa — relê-se
+  const writeIfKey = async (id, oldKey, patch) => {
+    const { data, error } = await db.from('events').update(patch).eq('id', id).eq('gcal_key', oldKey).select('id')
+    if (error) throw error
+    return !!data?.length
+  }
+  const gcalTried = useRef(new Set())
+  const applyGcalSync = async ({ moves, relink }) => {
+    let stale = false
+    for (const { event: e, to } of relink) {
+      try {
+        if (await writeIfKey(e.id, e.gcal_key, { gcal_key: to.key })) patchEventLocal(e.id, { gcal_key: to.key })
+        else stale = true
+      } catch (ex) { if (ex?.code === '23505') stale = true } // outro evento já tem essa chave: reler
+    }
+    const done = []
+    for (const { event: e, to } of moves) {
+      const patch = { event_date: to.date, start_time: to.time || null, gcal_key: to.key, updated_at: nowIso() }
+      try {
+        if (await writeIfKey(e.id, e.gcal_key, patch)) { patchEventLocal(e.id, patch); done.push({ e, to }) } else stale = true
+      } catch (ex) { if (ex?.code === '23505') stale = true } // outro evento já tem essa chave: reler
+    }
+    if (stale) await reloadAfterWrite(loadEvents)
+    if (done.length === 1) {
+      const { e, to } = done[0]
+      const was = e.start_time ? String(e.start_time).slice(0, 5) : null
+      const what = to.date !== e.event_date
+        ? <>{e.title} passou de {fmtDM(e.event_date)} para <b>{fmtDM(to.date)}{to.time ? ` às ${to.time}` : ''}</b> no Google</>
+        : !to.time ? <>{e.title} passou a <b>dia inteiro</b> no Google</>
+        : was ? <>{e.title} passou das {was} para as <b>{to.time}</b> no Google</>
+        : <>{e.title} passou a ser às <b>{to.time}</b> no Google</>
+      toast.notify({
+        text: what, icon: 'gcal', duration: 12000,
+        // Anular: o evento volta ao dia/hora de antes e continua ligado ao Google (só segue a próxima mudança)
+        action: { label: 'Anular', run: () => undoGcalMove(e, to).catch((ex) => toast.notifyError(ex)) },
+      })
+    } else if (done.length > 1) {
+      toast.notify({ text: `${done.length} eventos mudaram de dia ou hora no Google e foram atualizados.`, icon: 'gcal', duration: 8000 })
+    }
+  }
+  const undoGcalMove = async (e, to) => {
+    const back = { event_date: e.event_date, start_time: e.start_time ?? null, updated_at: nowIso() }
+    if (await writeIfKey(e.id, to.key, back)) patchEventLocal(e.id, back)
+    else { await reloadAfterWrite(loadEvents); toast.notify({ text: 'Este evento mudou noutro aparelho entretanto.', icon: 'alert' }) }
+  }
+  // "Manter" um evento que já não está no Google: deixa de estar ligado ao Google (fica como evento da app)
+  // A ocorrência do Google fica ignorada: se uma leitura atrasada do feed ainda a trouxer, não entra outra vez.
+  const keeping = useRef(new Set())
+  const keepGcalGone = async (ev) => {
+    const key = ev.gcal_key
+    if (!key || keeping.current.has(ev.id)) return
+    keeping.current.add(ev.id)
+    try {
+      if (!(await writeIfKey(ev.id, key, { gcal_key: null, updated_at: nowIso() }))) {
+        await reloadAfterWrite(loadEvents)
+        toast.notify({ text: 'Este evento mudou noutro aparelho entretanto.', icon: 'alert' })
+        return
+      }
+      setIgnored(key, true)
+      patchEventLocal(ev.id, { gcal_key: null })
+      toast.notify({ text: <><b>{ev.title}</b> fica na agenda</>, icon: 'checkCircle' })
+      await db.from('gcal_ignored').upsert({ key, title: ev.title, event_date: ev.event_date }).then(() => {}, () => {})
+    } finally {
+      keeping.current.delete(ev.id)
+    }
+  }
+
   useEffect(() => {
     if (!googleSettled || !gcalLinkReady) return
+    // primeiro acertar os eventos ligados (mudanças de dia/hora, chaves antigas); depois importar os novos
+    // cada leitura nova do calendário pode voltar a tentar o que falhou na anterior
+    const sig = (m) => `${m.event.id}|${m.event.gcal_key}>${m.to.key}@${gcalOk.get(m.to.calendar_id) || ''}`
+    const moves = gcalPlan.moves.filter((m) => !gcalTried.current.has(sig(m)))
+    const relink = gcalPlan.relink.filter((m) => !gcalTried.current.has(sig(m)))
+    if (moves.length || relink.length) {
+      ;[...moves, ...relink].forEach((m) => gcalTried.current.add(sig(m)))
+      applyGcalSync({ moves, relink }).catch(() => {}).finally(() => setGcalTick((n) => n + 1))
+      return
+    }
     const todo = googleMatch.pending.filter((g) => !importTried.current.has(g.key))
     if (!todo.length) { setGcalImported(true); return }
     todo.forEach((g) => importTried.current.add(g.key))
+    // antes de gravar, relê da base de dados os ignorados e as chaves ligadas (pela chave e pela identidade): um
+    // evento apagado, ignorado, importado ou mudado noutro aparelho não entra duas vezes
+    const local = new Set(rawEvents.map((e) => e.gcal_key).filter(Boolean))
+    const retry = () => todo.forEach((g) => importTried.current.delete(g.key))
+    Promise.all([
+      db.from('gcal_ignored').select('key').then((r) => r, () => ({ data: null })),
+      db.from('events').select('gcal_key').not('gcal_key', 'is', null),
+    ]).then(async ([ig, ev]) => {
+      if (ev.error) return retry() // sem saber o que já está ligado não se importa: fica para a próxima
+      const ignored = (ig.data || []).map((r) => r.key)
+      const linked = (ev.data || []).map((r) => r.gcal_key).filter(Boolean)
+      if (ignored.length) setGcalIgnored((s) => new Set([...s, ...ignored]))
+      // ligados noutro aparelho: trazê-los antes de importar (uma releitura depois apagaria os importados agora)
+      if (linked.some((k) => !local.has(k))) await reloadAfterWrite(loadEvents)
+      const skip = skipByKeys([...gcalIgnored, ...ignored, ...local, ...linked])
+      return importGoogleRows(todo.filter((g) => !skip(g)))
+    }, retry).finally(() => setGcalImported(true))
+  }, [googleSettled, gcalLinkReady, googleMatch, gcalPlan, gcalTick]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const importGoogleRows = async (todo) => {
+    if (!todo.length) return
     const rows = todo.map((g) => ({
       project_id: g.project_id, title: g.title, event_date: g.date, start_time: g.time || null,
       location: g.location?.trim() || null, value: 0, gross_value: null, paid: false, paid_at: null,
       receipt_issued: false, notes: null, gcal_key: g.key, updated_at: nowIso(),
     }))
-    db.from('events').upsert(rows, { onConflict: 'gcal_key', ignoreDuplicates: true }).select()
-      .then(({ data, error }) => {
-        if (error) throw error
-        if (data?.length) putEventsLocal(...data)
-      })
-      .catch(() => { /* fica como "por registar" até à próxima vez */ })
-      .finally(() => setGcalImported(true))
-  }, [googleSettled, gcalLinkReady, googleMatch]) // eslint-disable-line react-hooks/exhaustive-deps
+    const { data, error } = await db.from('events').upsert(rows, { onConflict: 'gcal_key', ignoreDuplicates: true }).select()
+    if (error) return // fica como "por registar" até à próxima vez
+    if (data?.length) putEventsLocal(...data)
+    // alguns já existiam (importados noutro aparelho entretanto): trazê-los
+    if ((data?.length || 0) < rows.length) await reloadAfterWrite(loadEvents)
+  }
 
   const swept = useRef(false)
   useEffect(() => {
@@ -1176,7 +1376,7 @@ export function StoreProvider({ children }) {
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
       geoReady, geoSweep,
-      googlePending, googleByDay, googleMatch, valuePending, gcalLinkReady, findGoogle, projectsByUsage, projectOptions, lastProjectId,
+      googlePending, googleByDay, googleMatch, valuePending, gcalLinkReady, gcalGone, keepGcalGone, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, kindSplit, projectStats, forecast, projectAvgs, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações

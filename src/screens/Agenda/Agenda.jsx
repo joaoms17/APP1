@@ -42,13 +42,19 @@ function useFlash(events, { visible, sheetOpen, view, asked }) {
   const [pending, setPending] = useState(null)
   const [flash, setFlash] = useState(null)
 
+  const prevKeys = useRef(new Map())
   useEffect(() => {
     const now = new Map(events.map((e) => [e.id, signature(e)]))
+    const keys = new Map(events.map((e) => [e.id, e.gcal_key || null]))
     const old = prev.current
+    const oldKeys = prevKeys.current
     prev.current = now
+    prevKeys.current = keys
     if (!old || !shown.current) return
-    // um evento que entrou sozinho do Google (gcal_key, novo) não faz saltar a Agenda
-    const changed = events.filter((e) => old.get(e.id) !== now.get(e.id) && !(e.gcal_key && !old.has(e.id)))
+    // o que o Google fez sozinho não faz saltar a Agenda: um evento novo que entrou do Google (gcal_key) ou
+    // um que mudou de dia/hora no Google (a chave do Google mudou com ele)
+    const fromGoogle = (e) => e.gcal_key && (!old.has(e.id) || oldKeys.get(e.id) !== e.gcal_key)
+    const changed = events.filter((e) => old.get(e.id) !== now.get(e.id) && !fromGoogle(e))
     if (changed.length === 1) setPending({ id: changed[0].id, date: changed[0].event_date })
   }, [events])
 
