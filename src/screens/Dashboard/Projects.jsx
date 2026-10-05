@@ -6,7 +6,6 @@ import { MONTHS_ABBR, MONTHS_LONG, cap, fmtDM, fmtMoney } from '../../format.js'
 
 const eur = (n) => fmtMoney(n, { cents: 'never' })
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
-const AVG_NOTE = 'média do projeto nos últimos 12 meses'
 
 // parcelas arredondadas ao euro que somam o total arredondado (maiores restos primeiro)
 function roundParts(parts, total) {
@@ -19,8 +18,9 @@ function roundParts(parts, total) {
 }
 
 // Previsão do ano: o que já está feito + o que está marcado com valor + os eventos sem valor
-// estimados pela média do projeto (últimos 12 meses). Por baixo, os meses já passados num só total
-// e depois mês a mês até ao fim do ano: as linhas somam o total.
+// estimados pela média do projeto (últimos 12 meses; sem nenhum valor nesse período, a média de sempre).
+// Por baixo, os meses já passados num só total e depois mês a mês até ao fim do ano; arredondadas ao
+// euro, as linhas somam o total. As barras usam a escala dos meses que faltam (a linha dos passados não tem barra).
 export function ForecastCard({ f, thisYear, curMonth }) {
   const titleId = useId()
   const [done, booked, estimated] = roundParts([f.done, f.booked, f.estimated], f.total)
@@ -33,7 +33,8 @@ export function ForecastCard({ f, thisYear, curMonth }) {
     ...f.byMonth.map((m, i) => ({ ...m, key: i, i, name: cap(MONTHS_LONG[i]) + (i === curMonth && f.year === thisYear ? ' (este mês)' : '') }))
       .slice(first).filter((m) => m.total > 0.005 || m.i === first),
   ]
-  const max = Math.max(1, ...rows.map((m) => m.total))
+  const shown = roundParts(rows.map((m) => m.total), f.total) // linhas arredondadas que somam o total
+  const max = Math.max(1, ...rows.filter((m) => m.key !== 'past').map((m) => m.total))
   const detail = (m) => {
     const bits = [m.done > 0.005 && `${eur(m.done)} feito`, m.booked > 0.005 && `${eur(m.booked)} marcado`, m.estimated > 0.005 && `${eur(m.estimated)} estimado`]
       .filter(Boolean)
@@ -50,7 +51,10 @@ export function ForecastCard({ f, thisYear, curMonth }) {
         <div>
           <dt><i className="db-sw est" />Estimado</dt>
           <dd>{eur(estimated)}</dd>
-          <p className="db-fc-sub">{plural(f.estimatedCount, 'evento sem valor', 'eventos sem valor')} × {AVG_NOTE}</p>
+          <dd className="db-fc-sub">
+            {plural(f.estimatedCount, 'evento sem valor', 'eventos sem valor')} × média do projeto nos últimos 12 meses
+            {f.estimatedOld > 0 && ` (${f.estimatedOld} com a média de sempre: o projeto não teve valores nesse período)`}
+          </dd>
         </div>
       </dl>
       {f.unknownCount > 0 && (
@@ -60,15 +64,15 @@ export function ForecastCard({ f, thisYear, curMonth }) {
         </p>
       )}
       <ul className="db-fc-months" aria-label="Previsão por mês">
-        {rows.map((m) => (
-          <li key={m.key}>
+        {rows.map((m, k) => (
+          <li key={m.key} className={m.key === 'past' ? 'past' : undefined}>
             <span className="m">{m.name}</span>
-            <span className="v">{eur(m.total)}</span>
-            <span className="bar" aria-hidden="true">
+            <span className="v">{eur(shown[k])}</span>
+            {m.key !== 'past' && <span className="bar" aria-hidden="true">
               {m.done > 0.005 && <i className="done" style={{ width: `${(m.done / max) * 100}%` }} />}
               {m.booked > 0.005 && <i className="booked" style={{ width: `${(m.booked / max) * 100}%` }} />}
               {m.estimated > 0.005 && <i className="est" style={{ width: `${(m.estimated / max) * 100}%` }} />}
-            </span>
+            </span>}
             {detail(m) && <small className="d">{detail(m)}</small>}
           </li>
         ))}
@@ -79,17 +83,17 @@ export function ForecastCard({ f, thisYear, curMonth }) {
 
 // Por projeto: eventos, total e média do ano (só eventos com valor), os sem valor (com a estimativa que
 // a Previsão usa, no ano corrente e seguintes) e a variação face ao ano anterior.
-export function ProjectsCard({ stats, year, thisYear, today }) {
+export function ProjectsCard({ stats, year, thisYear, today, solo = false }) {
   const { projectById, projectAvgs } = useStore()
   const titleId = useId()
   const cur = year === thisYear
   const prevNote = cur ? `vs ${year - 1} até ${fmtDM(today)}` : `vs ${year - 1}`
   const estimates = year >= thisYear
   return (
-    <Card as="section" className="db-proj" aria-labelledby={titleId}>
+    <Card as="section" className={solo ? 'db-proj solo' : 'db-proj'} aria-labelledby={titleId}>
       <h2 className="db-sec-title" id={titleId}>Por projeto · {year}</h2>
       <p className="db-proj-note">
-        Média por evento com valor{estimates && ' · sem valor ≈ média dos últimos 12 meses'} · variação {prevNote}
+        Média por evento com valor · variação {prevNote}
       </p>
       <ul>
         {stats.map((s) => {
@@ -98,7 +102,7 @@ export function ProjectsCard({ stats, year, thisYear, today }) {
           let pending = null
           if (s.pending > 0) {
             pending = !estimates ? `${s.pending} sem valor`
-              : a ? `${s.pending} sem valor ≈ ${eur(s.pending * a.avg)}`
+              : a ? `${s.pending} sem valor ≈ ${eur(s.pending * a.avg)}${a.recent ? '' : ' (média de sempre)'}`
               : `${s.pending} sem valor (sem média para estimar)`
           }
           return (
