@@ -47,8 +47,8 @@ function initialOf({ mode, ev, g, preset, today, defaultProject }) {
     return {
       ...base, coords: coordsOf(ev), project_id: ev.project_id, title: ev.title || '', event_date: ev.event_date,
       start_time: fmtTime(ev.start_time), location: ev.location || '', notes: ev.notes || '',
-      // sem valor (0 €, nada recebido): o campo fica vazio, não "0"
-      ...(Number(ev.value) || ev.paid ? moneyFields(ev.gross_value, ev.value) : { gross: '', net: '' }),
+      // sem valor (0 €, nada recebido): o campo fica vazio, não "0" — só um evento de 0 € confirmado mostra "0"
+      ...(Number(ev.value) || ev.paid || ev.zero_confirmed ? moneyFields(ev.gross_value, ev.value) : { gross: '', net: '' }),
     }
   }
   if (mode === 'google') {
@@ -62,7 +62,8 @@ function initialOf({ mode, ev, g, preset, today, defaultProject }) {
     ...base, project_id: p.project_id || defaultProject, title: p.title || '', event_date: p.data || p.event_date || today,
     start_time: fmtTime(p.start_time), location: p.location || '', notes: p.notes || '',
     files: Array.isArray(p.files) ? p.files : [], coords: coordsOf(p),
-    ...moneyFields(p.gross_value, p.value),
+    // cópia de um evento sem valor: o campo fica vazio (0 € só se o original era um 0 € confirmado)
+    ...(Number(p.value) > EPS || p.zero_confirmed ? moneyFields(p.gross_value, p.value) : { gross: '', net: '' }),
   }
 }
 
@@ -153,6 +154,8 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const gross = parseMoney(f.gross)
   const net = parseMoney(f.net)
   const value = Number.isFinite(net) ? net : Number.isFinite(gross) ? gross : 0
+  // 0 € escrito (não o campo vazio, que é "valor pendente"): um evento de 0 € a sério — confirma-se antes de gravar
+  const typedZero = !(value > EPS) && (Number.isFinite(gross) || Number.isFinite(net))
   const deposit = parseMoney(f.payAmount)
 
   // pagamento já recebido (Editar): o aviso acompanha o valor enquanto se escreve
@@ -245,7 +248,20 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       location: f.location.trim() || null,
       gross_value: gross ?? (Number.isFinite(net) ? net : null), // vazio = valor por definir
       value,
+      zero_confirmed: typedZero, // o store só o grava com a coluna (events_zero.sql)
       notes: f.notes.trim() || null,
+    }
+    // 0 € escrito: pergunta sempre antes de gravar (não sai do "Valor pendente" por engano)
+    const confirmZero = async () => {
+      const ok = await confirmDialog({
+        title: 'Guardar com 0 €?',
+        text: 'Este evento fica com 0 € e deixa de aparecer em Valor pendente. Se ainda não sabes o valor, deixa o campo vazio.',
+        confirmLabel: 'Guardar com 0 €',
+        cancelLabel: 'Corrigir',
+        primary: 'cancel',
+      })
+      if (!ok) { refs.gross.current?.focus(); return false }
+      return alive.current // a folha fechou enquanto a pergunta estava aberta (ex.: voltar + Descartar)
     }
     // coordenadas para o mapa (só se a base de dados já tiver as colunas): a sugestão escolhida ou um link
     // do Google Maps ficam logo; um local escrito à mão é procurado DEPOIS de gravar — o Guardar nunca
@@ -277,7 +293,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
       if (f.event_date !== init.event_date) patch.event_date = fields.event_date
       if ((f.start_time || '') !== (init.start_time || '')) patch.start_time = fields.start_time
       if (f.notes.trim() !== init.notes.trim()) patch.notes = fields.notes
-      if (moneyChanged) { patch.gross_value = fields.gross_value; patch.value = fields.value }
+      if (moneyChanged) { patch.gross_value = fields.gross_value; patch.value = fields.value; patch.zero_confirmed = fields.zero_confirmed }
       if (locChanged) {
         patch.location = fields.location
         if (geoReady) { patch.lat = fields.lat; patch.lng = fields.lng }
@@ -294,7 +310,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
         })
         if (!ok) { refs.gross.current?.focus(); return }
         if (!alive.current) return // a folha fechou enquanto a pergunta estava aberta (ex.: voltar + Descartar)
-      }
+      } else if (moneyChanged && typedZero && !(await confirmZero())) return
       setBusy(true)
       try {
         await updateEventFields(id, patch)
@@ -335,6 +351,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
     const payment = f.pay === 'deposit' ? { kind: 'deposit', amount: deposit, date: f.payDate }
       : f.pay === 'full' ? { kind: 'full', amount: value, date: f.payDate }
       : { kind: 'none' }
+    if (typedZero && !(await confirmZero())) return
     setBusy(true)
     let newId
     try {

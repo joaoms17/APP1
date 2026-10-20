@@ -41,6 +41,7 @@ export function datePhrase(ymd, today) {
 // estado por extenso para os nomes acessíveis (linhas, cartão de hoje)
 export const STATE_PHRASE = {
   novalue: () => 'valor pendente',
+  zero: () => 'nada a receber',
   paid: () => 'recebido',
   partial: (m) => `sinal recebido, falta ${m}`,
   'partial-overdue': (m) => `em atraso, falta ${m}`,
@@ -82,7 +83,7 @@ export function EventRow({
   }
 
   // a 3.ª linha só existe quando há algo a assinalar (mesmas regras do StatusBadge/ReceiptMark)
-  const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due')
+  const badgeShown = end === 'value' && (st === 'paid' ? ev.event_date >= today : st !== 'due' && st !== 'zero')
   const receiptShown = marks && !!ev.receipt_issued
   const locPending = marks && !ev.location?.trim()
   const gone = !!store.gcalGone?.has(ev.id) // já não está no Google

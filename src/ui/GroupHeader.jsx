@@ -31,7 +31,7 @@ export function eventsSummary(evs, missingFn, googleCount = 0, stateFn = null) {
   const tot = valued.reduce((a, e) => a + (Number(e.value) || 0), 0)
   const miss = valued.reduce((a, e) => a + missingFn(e), 0)
   const tail = pendTxt ? ` · ${pendTxt}` : ''
-  if (miss < 0.005) return <><b>{money(tot)}</b> · recebido{tail}</>
+  if (miss < 0.005) return tot < 0.005 ? <><b>{money(0)}</b>{tail}</> : <><b>{money(tot)}</b> · recebido{tail}</> // só eventos de 0 €
   if (Math.abs(miss - tot) < 0.005) return <><b>{money(tot)}</b> por receber{tail}</>
   return <><b>{money(tot)}</b> · falta {money(miss)}{tail}</>
 }
