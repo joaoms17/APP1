@@ -121,7 +121,7 @@ function dirtyText(changes, mode) {
 function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const {
     today, projects, projectById, projectOptions, lastProjectId, paymentsByEvent, paidAmount,
-    createEvent, updateEventFields, setLastProjectId, notify, notifyError, geoReady, events: allEvents, setEventCoords,
+    createEvent, updateEventFields, setLastProjectId, notify, notifyError, geoReady, zeroReady, events: allEvents, setEventCoords,
   } = useStore()
   // depois de gravar só fecha/navega se o formulário ainda estiver aberto; o erro sai com ele
   const { alive, fail } = useFormSave()
@@ -154,8 +154,9 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
   const gross = parseMoney(f.gross)
   const net = parseMoney(f.net)
   const value = Number.isFinite(net) ? net : Number.isFinite(gross) ? gross : 0
-  // 0 € escrito (não o campo vazio, que é "valor pendente"): um evento de 0 € a sério — confirma-se antes de gravar
-  const typedZero = !(value > EPS) && (Number.isFinite(gross) || Number.isFinite(net))
+  // 0 € escrito (não o campo vazio, que é "valor pendente"): um evento de 0 € a sério — confirma-se antes de gravar.
+  // Sem a coluna (events_zero.sql por correr) um 0 continua a ser "valor pendente", como antes
+  const typedZero = zeroReady && !(value > EPS) && (Number.isFinite(gross) || Number.isFinite(net))
   const deposit = parseMoney(f.payAmount)
 
   // pagamento já recebido (Editar): o aviso acompanha o valor enquanto se escreve
@@ -457,7 +458,7 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
 
         {mode === 'edit' ? (
           <>
-            <PaymentNote ev={ev} got={got} value={value} legacy={legacy} payments={payRows.length} />
+            <PaymentNote ev={ev} got={got} value={value} zero={typedZero} legacy={legacy} payments={payRows.length} />
             <Field label="Notas">
               <TextArea ref={refs.notes} value={f.notes} onChange={set('notes')} placeholder="Ex.: confirmar hora com a noiva" enterKeyHint="done" />
             </Field>
@@ -515,10 +516,11 @@ function EventFormBody({ mode, id, ev, g, preset, focus, onClose, onDelete }) {
 }
 
 // Editar: estado do pagamento só de leitura (os pagamentos gravam-se no Detalhe, com Anular)
-function PaymentNote({ ev, got, value, legacy, payments }) {
+function PaymentNote({ ev, got, value, zero, legacy, payments }) {
   const miss = Math.max(0, value - got)
   let head
   if (legacy) head = 'Pagamento: marcado como recebido, sem pagamentos registados.'
+  else if (zero && got <= EPS) head = 'Pagamento: evento de 0 € — nada a receber.'
   else if (got <= EPS && !(value > EPS)) head = 'Pagamento: ainda sem valor — escreve-o quando souberes.'
   else if (got <= EPS) head = `Pagamento: nada recebido · falta ${money(miss)}.`
   else if (value < got - EPS) head = `Pagamento: já recebeste ${money(got)}, mais do que o valor novo (${money(value)}).`

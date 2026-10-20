@@ -189,7 +189,7 @@ export function kindSplitOf(events, projects, year, today) {
     const v = num(e.value)
     if (y === year) {
       x.byMonth[monthOf(e.event_date)] += v; x.net += v; x.count++
-      if (v > EPS) x.valued++
+      if (v > EPS || e.zero_confirmed) x.valued++ // 0 € confirmado conta na média; "valor pendente" não
       if (cur && e.event_date <= `${year}${md}`) x.ytd += v
     } else if (y === year - 1) {
       x.prevNet += v
@@ -308,7 +308,7 @@ export function projectAverages(events, today) {
   const all = new Map()
   const add = (m, e) => { const s = m.get(e.project_id) || { sum: 0, n: 0 }; s.sum += num(e.value); s.n++; m.set(e.project_id, s) }
   for (const e of events) {
-    if (num(e.value) <= EPS) continue
+    if (num(e.value) <= EPS && !e.zero_confirmed) continue // "valor pendente" fica de fora; 0 € confirmado conta
     add(all, e)
     if (e.event_date >= from && e.event_date <= today) add(recent, e)
   }
@@ -336,7 +336,7 @@ export function projectStatsOf(events, year, today, pbe) {
     if (y === year) {
       const s = get(e.project_id)
       s.count++
-      if (v > EPS) { s.total += v; s.valued++; if (cur && e.event_date <= today) { s.ytd += v; s.valuedYtd++ } } else if (noValueOf(e, pbe)) s.pending++
+      if (v > EPS || e.zero_confirmed) { s.total += v; s.valued++; if (cur && e.event_date <= today) { s.ytd += v; s.valuedYtd++ } } else if (noValueOf(e, pbe)) s.pending++
     } else if (y === year - 1) {
       const s = get(e.project_id)
       s.prevCount++
