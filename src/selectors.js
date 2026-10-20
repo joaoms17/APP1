@@ -356,6 +356,42 @@ export function projectStatsOf(events, year, today, pbe) {
     .sort((a, b) => b.total - a.total || b.count - a.count)
 }
 
+// visão de um mês (Painel): o que já entrou, o que falta receber (a receber e em atraso) e a estimativa dos
+// eventos sem valor (média do projeto, como a Previsão). Um sinal conta no recebido e o resto no que falta,
+// por isso um evento com sinal aparece nas duas listas.
+// → { received, due, overdue, estimated, valued, total, count, paidCount, depositCount, unknownCount,
+//     groups: { received, due, overdue, novalue, zero } com [{ ev, est }] por data }
+export function monthOverviewOf(events, year, month, today, averages, pbe) {
+  const groups = { received: [], due: [], overdue: [], novalue: [], zero: [] }
+  let received = 0, due = 0, overdue = 0, estimated = 0, count = 0, paidCount = 0, depositCount = 0, unknownCount = 0
+  for (const e of events) {
+    if (yearOf(e.event_date) !== year || monthOf(e.event_date) !== month) continue
+    count++
+    const st = eventStateOf(e, pbe, today)
+    if (st === 'novalue') {
+      const a = averages?.get(e.project_id)
+      if (a) estimated += a.avg; else unknownCount++
+      groups.novalue.push({ ev: e, est: a ? a.avg : null })
+      continue
+    }
+    if (st === 'zero') { groups.zero.push({ ev: e, est: null }); continue }
+    const got = Math.min(num(e.value), paidAmountOf(e, pbe))
+    const miss = missingOf(e, pbe)
+    if (got > EPS) { received += got; groups.received.push({ ev: e, est: null }) }
+    if (st === 'paid') { paidCount++; continue }
+    if (got > EPS) depositCount++
+    if (st === 'overdue' || st === 'partial-overdue') { overdue += miss; groups.overdue.push({ ev: e, est: null }) }
+    else { due += miss; groups.due.push({ ev: e, est: null }) }
+  }
+  for (const k of Object.keys(groups)) groups[k].sort((a, b) => compareAsc(a.ev, b.ev))
+  received = cents(received); due = cents(due); overdue = cents(overdue); estimated = cents(estimated)
+  const valued = cents(received + due + overdue)
+  return {
+    year, month, received, due, overdue, estimated, valued, total: cents(valued + estimated),
+    count, paidCount, depositCount, unknownCount, groups,
+  }
+}
+
 // previsão de um ano: o que já tem valor + os eventos sem valor estimados pela média do projeto.
 // → { done, booked, estimated, estimatedCount, unknownCount, total, byMonth: [{ done, booked, estimated }] }
 //   done = eventos até hoje com valor · booked = eventos futuros com valor · estimated = sem valor × média

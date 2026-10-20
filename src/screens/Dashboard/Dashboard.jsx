@@ -6,6 +6,7 @@ import { MONTHS_LONG, fmtDM, fmtMoney, fmtPct } from '../../format.js'
 import { Boundary, lazyWithPreload } from '../../shell/lazy.jsx'
 import SummaryTable from './SummaryTable.jsx'
 import { ForecastCard, ProjectsCard } from './Projects.jsx'
+import MonthCard from './Month.jsx'
 import { FEATURES } from '../../features.js'
 import './Dashboard.css'
 
@@ -177,6 +178,8 @@ export default function Dashboard() {
   const [pick, setPick] = useState(null)
   const month = pick?.year === year ? pick.month : year === thisYear ? curMonth : year < thisYear ? 11 : 0
   const onPick = (m) => setPick({ year, month: m })
+  // setas do cartão do Mês: de dezembro passa a janeiro do ano seguinte (e o Painel muda de ano)
+  const goMonth = (y, m) => { setPick({ year: y, month: m }); if (y !== year) goYear(y) }
 
   // despesas ainda a chegar: os totais ainda não estão certos. O memo evita que os gráficos
   // voltem a animar a cada render do store (só mudam quando mudam os dados ou o ano).
@@ -205,6 +208,7 @@ export default function Dashboard() {
         <Hero t={t} thisYear={thisYear} desktop={desktop} />
         {FEATURES.expenses && <Kpis t={t} />}
         <OverdueTile t={t} lateCount={t.overdueYearCount} />
+        <MonthCard year={year} month={month} onMonth={goMonth} />
         {fc && <ForecastCard f={fc} thisYear={thisYear} curMonth={curMonth} />}
         {stats?.length > 0 && <ProjectsCard stats={stats} year={year} thisYear={thisYear} today={today} solo={!fc} />}
         <Boundary resetKey={year} fallback={(error, retry) => <ChartsError retry={retry} />}>
