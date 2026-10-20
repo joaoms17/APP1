@@ -182,7 +182,8 @@ export default function AgendaList({ flash = null, news = null }) {
             <p className="ag-lede">
               {nEvents(todayEvs.length)} · {todayMissing > 0.005
                 ? <><b>{money(todayMissing)}</b> ainda por receber{todayNoValue ? ` · ${todayNoValue} sem valor` : ''}.</>
-                : todayNoValue ? `${todayNoValue} sem valor.` : 'tudo recebido.'}
+                : todayNoValue ? `${todayNoValue} sem valor.`
+                : todayEvs.every((e) => eventState(e) === 'zero') ? 'nada a receber.' : 'tudo recebido.'}
             </p>
             <div className="ag-today-list">
               {todayEvs.map((ev) => (

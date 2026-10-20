@@ -1059,6 +1059,7 @@ export function StoreProvider({ children }) {
     const { id: _id, paid: _p, paid_at: _pa, ...rest } = fields || {}
     const row = { ...cleanEvent(rest), paid: false, paid_at: null, updated_at: nowIso() }
     if (blank(row.value)) row.value = row.gross_value ?? 0
+    zeroFlag(row)
     const { data, error } = await db.from('events').insert(row).select().single()
     if (error) throw error
     const id = data.id
@@ -1112,7 +1113,17 @@ export function StoreProvider({ children }) {
     if ('value' in rest && blank(rest.value)) {
       rest.value = !blank(rest.gross_value) ? rest.gross_value : liveEvent(id)?.gross_value ?? 0
     }
+    zeroFlag(rest)
     await saveEvent({ id, ...rest })
+  }
+
+  // 0 € confirmado (zero_confirmed): só existe com a coluna (SQL events_zero.sql) e só com o valor a 0 €.
+  // Quem grava o valor grava sempre o flag com ele: um valor novo (ou vazio) deixa de ser "0 € confirmado".
+  const zeroReady = rawEvents.length > 0 && 'zero_confirmed' in rawEvents[0]
+  const zeroFlag = (row) => {
+    if (!zeroReady) { delete row.zero_confirmed; return }
+    if ('value' in row) row.zero_confirmed = !!row.zero_confirmed && !(Number(row.value) > EPS)
+    else delete row.zero_confirmed
   }
 
   // coordenadas do local (mapa): só lat/lng, sem mexer no updated_at nem recarregar tudo
@@ -1375,7 +1386,7 @@ export function StoreProvider({ children }) {
       // v2 — estado
       loadingPhases: { phase1, phase2 }, errorInfo, reload: load, payments, attachments,
       today, eventsAsc, eventState, missing, receivables, agingGroups,
-      geoReady, geoSweep,
+      geoReady, geoSweep, zeroReady,
       googlePending, googleByDay, googleMatch, valuePending, gcalLinkReady, gcalGone, keepGcalGone, findGoogle, projectsByUsage, projectOptions, lastProjectId,
       expenseCategories, yearTotals, kindSplit, projectStats, forecast, projectAvgs, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,

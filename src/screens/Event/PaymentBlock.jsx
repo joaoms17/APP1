@@ -109,18 +109,22 @@ export default function PaymentBlock({ ev, adding, onAdding, onDraft }) {
   const legacy = !!ev.paid && ps.length === 0 && total > 0
   const pct = total > 0 ? Math.min(100, Math.round((got / total) * 100)) : 100
 
-  // sem valor ainda: nada a receber nem "Recebido" — só o convite para pôr o valor
+  // sem valor ainda (ou 0 € confirmado): nada a receber nem "Recebido" — só o convite para pôr ou mudar o valor
   if (total <= EPS && ps.length === 0 && !ev.paid) {
+    const zero = !!ev.zero_confirmed
     return (
       <div ref={cardRef} className="card ev-pay" tabIndex={-1}>
         <div className="ev-pay-top">
           <div>
-            <div className="k">Sem valor</div>
-            <p className="help">Ainda não tem valor, por isso não conta como recebido nem por receber.</p>
+            <div className="k">{zero ? 'Evento de 0 €' : 'Sem valor'}</div>
+            <p className="help">
+              {zero ? 'Confirmaste que este evento é de 0 €: não há nada a receber.'
+                : 'Ainda não tem valor, por isso não conta como recebido nem por receber.'}
+            </p>
           </div>
         </div>
         <div className="ev-pay-add">
-          <Button variant="ghost" icon="pencil" onClick={() => openSheet('evento-editar', ev.id)}>Pôr o valor</Button>
+          <Button variant="ghost" icon="pencil" onClick={() => openSheet('evento-editar', ev.id)}>{zero ? 'Mudar o valor' : 'Pôr o valor'}</Button>
         </div>
       </div>
     )

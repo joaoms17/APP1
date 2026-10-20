@@ -43,7 +43,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
       atraso: (ev) => ['overdue', 'partial-overdue'].includes(eventState(ev)),
       sinal: (ev) => ['partial', 'partial-overdue'].includes(eventState(ev)),
       // por receber = há valor e falta receber; os sem valor têm o seu filtro
-      porreceber: (ev) => !['paid', 'novalue'].includes(eventState(ev)),
+      porreceber: (ev) => !['paid', 'novalue', 'zero'].includes(eventState(ev)),
       semvalor: (ev) => eventState(ev) === 'novalue',
       recebidos: (ev) => eventState(ev) === 'paid',
     }
@@ -133,7 +133,7 @@ export default function SearchMode({ params, onExit, flash = null }) {
             {proj ? ` de ${proj.name}` : ''}
             {` ${whenText}`}
             {n > noValue && <>{' · '}{money(s.total, 'never')}{' · '}
-              {s.missing > 0.005 ? <span className="late">falta {money(s.missing)}</span> : 'tudo recebido'}</>}
+              {s.missing > 0.005 ? <span className="late">falta {money(s.missing)}</span> : s.total > 0.005 ? 'tudo recebido' : 'nada a receber'}</>}
             {noValue > 0 && estado !== 'semvalor' && ` · ${noValue} sem valor`}
             {result.gs.length > 0 && ` · ${result.gs.length} por registar`}
           </p>

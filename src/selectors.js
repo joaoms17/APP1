@@ -35,15 +35,19 @@ export const paidAmountOf = (ev, pbe) => {
 
 export const missingOf = (ev, pbe) => Math.max(0, num(ev.value) - paidAmountOf(ev, pbe))
 
-// sem valor ainda (0 €, sem pagamentos nem marcado como recebido): não é "Recebido" — falta pôr o valor
-export const noValueOf = (ev, pbe) => num(ev.value) <= EPS && !ev.paid && !(pbe?.get(ev.id)?.length)
+// sem valor ainda (0 €, sem pagamentos nem marcado como recebido): não é "Recebido" — falta pôr o valor.
+// Um evento de 0 € confirmado na app (zero_confirmed) tem valor: é mesmo 0 €.
+export const noValueOf = (ev, pbe) => num(ev.value) <= EPS && !ev.paid && !ev.zero_confirmed && !(pbe?.get(ev.id)?.length)
+// evento de 0 € confirmado: nada a receber, mas também nada recebido (não é "Recebido")
+export const zeroOf = (ev, pbe) => num(ev.value) <= EPS && !!ev.zero_confirmed && !ev.paid && !(pbe?.get(ev.id)?.length)
 
-// 'novalue' | 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
+// 'novalue' | 'zero' | 'paid' | 'partial' | 'due' | 'overdue' | 'partial-overdue' — o evento de hoje NÃO está em atraso.
 // Recebido = não falta nada (spec §9.1). O flag paid só conta sem pagamentos (legado, via
 // paidAmountOf): com pagamentos manda a soma, mesmo que o flag tenha ficado desatualizado.
 // Um evento de 0 € não tem nada a receber (nunca fica "Em atraso").
 export const eventStateOf = (ev, pbe, today) => {
   if (noValueOf(ev, pbe)) return 'novalue'
+  if (zeroOf(ev, pbe)) return 'zero'
   const got = paidAmountOf(ev, pbe)
   const total = num(ev.value)
   if (got >= total - EPS) return 'paid'
@@ -185,7 +189,7 @@ export function kindSplitOf(events, projects, year, today) {
     const v = num(e.value)
     if (y === year) {
       x.byMonth[monthOf(e.event_date)] += v; x.net += v; x.count++
-      if (v > EPS) x.valued++
+      if (v > EPS || e.zero_confirmed) x.valued++ // 0 € confirmado conta na média; "valor pendente" não
       if (cur && e.event_date <= `${year}${md}`) x.ytd += v
     } else if (y === year - 1) {
       x.prevNet += v
@@ -304,7 +308,7 @@ export function projectAverages(events, today) {
   const all = new Map()
   const add = (m, e) => { const s = m.get(e.project_id) || { sum: 0, n: 0 }; s.sum += num(e.value); s.n++; m.set(e.project_id, s) }
   for (const e of events) {
-    if (num(e.value) <= EPS) continue
+    if (num(e.value) <= EPS && !e.zero_confirmed) continue // "valor pendente" fica de fora; 0 € confirmado conta
     add(all, e)
     if (e.event_date >= from && e.event_date <= today) add(recent, e)
   }
@@ -332,7 +336,7 @@ export function projectStatsOf(events, year, today, pbe) {
     if (y === year) {
       const s = get(e.project_id)
       s.count++
-      if (v > EPS) { s.total += v; s.valued++; if (cur && e.event_date <= today) { s.ytd += v; s.valuedYtd++ } } else if (noValueOf(e, pbe)) s.pending++
+      if (v > EPS || e.zero_confirmed) { s.total += v; s.valued++; if (cur && e.event_date <= today) { s.ytd += v; s.valuedYtd++ } } else if (noValueOf(e, pbe)) s.pending++
     } else if (y === year - 1) {
       const s = get(e.project_id)
       s.prevCount++

@@ -91,7 +91,7 @@ export default function EventDetail({ id, onClose }) {
     kind: 'evento',
     preset: {
       project_id: ev.project_id, title: ev.title, data: ev.event_date, start_time: ev.start_time,
-      location: ev.location, gross_value: ev.gross_value, value: ev.value, notes: ev.notes,
+      location: ev.location, gross_value: ev.gross_value, value: ev.value, zero_confirmed: !!ev.zero_confirmed, notes: ev.notes,
     },
   }))
   // Documentos (escondidos com FEATURES.docs = false): cronograma do dia e orçamento ligado
