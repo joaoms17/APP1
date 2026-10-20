@@ -8,7 +8,7 @@ const eur = (n) => fmtMoney(n, { cents: 'never' })
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
 // parcelas arredondadas ao euro que somam o total arredondado (maiores restos primeiro)
-function roundParts(parts, total) {
+export function roundParts(parts, total) {
   const target = Math.round(total)
   const floors = parts.map((v) => Math.floor(v + 1e-9))
   let left = target - floors.reduce((s, v) => s + v, 0)

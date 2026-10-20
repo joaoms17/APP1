@@ -51,8 +51,10 @@ export const STATE_PHRASE = {
 
 // ---------- evento ---------------------------------------------------------------
 // lead: 'date' | 'time' | 'month' · end: 'value' | 'missing' | 'recebi'
+// endText/endLabel: outro valor no fim da linha e a frase dele para o nome acessível (Painel › Mês:
+// o recebido de um evento com sinal, a estimativa de um evento sem valor)
 export function EventRow({
-  ev, lead = 'date', blank = false, end = 'value', hideProject = false, meta, marks = true,
+  ev, lead = 'date', blank = false, end = 'value', hideProject = false, meta, marks = true, endText, endLabel,
   flash = false, onOpen, onAction, className = '', ...rest
 }) {
   const store = useStore()
@@ -70,7 +72,7 @@ export function EventRow({
   const receiptWord = ev.receipt_issued ? 'recibo emitido' : null
   const label = [
     ev.title, datePhrase(ev.event_date, today), t, p?.name, ev.location,
-    showsMissing ? null : money(ev.value),
+    endLabel ?? (showsMissing ? null : money(ev.value)),
     STATE_PHRASE[st](money(mis)) + (showsMissing && (st === 'overdue' || st === 'due') ? `, falta ${money(mis)}` : ''),
     marks ? receiptWord : null, hasAtt ? 'tem anexo' : null,
     store.gcalGone?.has(ev.id) ? 'já não está no Google' : null,
@@ -129,7 +131,7 @@ export function EventRow({
   return (
     <button type="button" className={cls} {...pvOf(p?.color)} {...rest} aria-label={label} onClick={open}>
       {content}
-      <span className="end"><span className="money">{st === 'novalue' ? '—' : money(end === 'missing' ? mis : ev.value)}</span></span>
+      <span className="end"><span className="money">{endText ?? (st === 'novalue' ? '—' : money(end === 'missing' ? mis : ev.value))}</span></span>
     </button>
   )
 }

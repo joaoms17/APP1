@@ -865,6 +865,9 @@ export function StoreProvider({ children }) {
   const projectAvgs = useMemo(() => S.projectAverages(events, today), [events, today])
   const projectStats = useCallback((year) => S.projectStatsOf(events, Number(year), today, pbe), [events, today, pbe])
   const forecast = useCallback((year) => S.forecastOf(events, Number(year), today, projectAvgs, pbe), [events, today, projectAvgs, pbe])
+  // estimativa só no ano corrente e seguintes (como o Por projeto e a Previsão)
+  const monthOverview = useCallback((year, month) => S.monthOverviewOf(events, Number(year), Number(month), today,
+    Number(year) >= Number(today.slice(0, 4)) ? projectAvgs : null, pbe), [events, today, projectAvgs, pbe])
   const kindSplit = useCallback((year) => S.kindSplitOf(events, projects, Number(year), today), [events, projects, today])
   const summary = useCallback((evs) => S.summaryOf(evs, pbe), [pbe])
 
@@ -1388,7 +1391,7 @@ export function StoreProvider({ children }) {
       today, eventsAsc, eventState, missing, receivables, agingGroups,
       geoReady, geoSweep, zeroReady,
       googlePending, googleByDay, googleMatch, valuePending, gcalLinkReady, gcalGone, keepGcalGone, findGoogle, projectsByUsage, projectOptions, lastProjectId,
-      expenseCategories, yearTotals, kindSplit, projectStats, forecast, projectAvgs, summary, eventById, expenseById, attachmentById,
+      expenseCategories, yearTotals, kindSplit, projectStats, forecast, monthOverview, projectAvgs, summary, eventById, expenseById, attachmentById,
       gcalStatus, receberHasNews, markReceberSeen, loadFailures: loadFailed, retryLoads,
       // v2 — ações
       recordPayment, receiveRemaining, createEvent, createExpense, updateEventFields, setReceipt, markUnpaid,
