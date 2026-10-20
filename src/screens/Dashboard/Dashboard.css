@@ -198,7 +198,7 @@
 .db-proj .v .delta { font-size: var(--fs-caption); }
 @media (min-width: 1024px) {
   .db-fc, .db-proj { grid-column: span 2; padding: 18px 18px 16px; }
-  .db-proj.solo { grid-column: span 4; } /* anos passados: sem previsão ao lado */
+  .db-proj.solo { grid-column: span 4; } /* este ano: o Mês e a Previsão fazem par na linha de cima */
 }
 
 /* ---- Mês: total do mês e de onde vem (recebido · por receber · em atraso · estimado), com os eventos ---- */
@@ -232,9 +232,13 @@
 .db-mo-row .s { grid-area: s; font-size: var(--fs-caption); color: var(--muted); font-weight: 600; }
 .db-mo-row:focus-visible { outline: 2px solid var(--focus, var(--chart-1)); outline-offset: 2px; border-radius: 6px; }
 .db-mo-list { display: grid; margin: 0 -4px 10px; padding: 0 8px 0 6px; background: var(--surface-sunken); border-radius: var(--radius-md); }
+.db-mo-list[hidden] { display: none; }
 .db-mo-item { position: relative; }
 .db-mo-item + .db-mo-item > .row::after {
   content: ''; position: absolute; top: 0; left: var(--row-inset); right: 0; height: .5px; background: var(--line);
 }
 @media (prefers-reduced-motion: reduce) { .db-mo-row .x { transition: none; } }
-@media (min-width: 1024px) { .db-mo { grid-column: span 2; padding: 16px 18px 10px; } }
+@media (min-width: 1024px) {
+  .db-mo { grid-column: span 2; padding: 16px 18px 10px; }
+  .db-mo.solo { grid-column: span 4; }
+}

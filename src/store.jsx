@@ -865,8 +865,9 @@ export function StoreProvider({ children }) {
   const projectAvgs = useMemo(() => S.projectAverages(events, today), [events, today])
   const projectStats = useCallback((year) => S.projectStatsOf(events, Number(year), today, pbe), [events, today, pbe])
   const forecast = useCallback((year) => S.forecastOf(events, Number(year), today, projectAvgs, pbe), [events, today, projectAvgs, pbe])
-  const monthOverview = useCallback((year, month) => S.monthOverviewOf(events, Number(year), Number(month), today, projectAvgs, pbe),
-    [events, today, projectAvgs, pbe])
+  // estimativa só no ano corrente e seguintes (como o Por projeto e a Previsão)
+  const monthOverview = useCallback((year, month) => S.monthOverviewOf(events, Number(year), Number(month), today,
+    Number(year) >= Number(today.slice(0, 4)) ? projectAvgs : null, pbe), [events, today, projectAvgs, pbe])
   const kindSplit = useCallback((year) => S.kindSplitOf(events, projects, Number(year), today), [events, projects, today])
   const summary = useCallback((evs) => S.summaryOf(evs, pbe), [pbe])
 
