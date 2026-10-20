@@ -85,8 +85,9 @@ function Projects() {
       const v = Number(e.value) || 0
       s.nAll += 1
       s.all += v
-      if (v > 0.005) s.valuedAll += 1 // a média só conta eventos com valor ("valor pendente" não é 0 €)
-      if (e.event_date.startsWith(year)) { s.n += 1; s.total += v; if (v > 0.005) s.valued += 1 }
+      const valued = v > 0.005 || !!e.zero_confirmed // a média só conta eventos com valor ("valor pendente" não é 0 €)
+      if (valued) s.valuedAll += 1
+      if (e.event_date.startsWith(year)) { s.n += 1; s.total += v; if (valued) s.valued += 1 }
       m.set(e.project_id, s)
     }
     return m
