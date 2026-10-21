@@ -464,8 +464,8 @@ dialog.confirm .acts { display: grid; gap: 6px; margin-top: 8px; }
 .attach-grid { display: flex; gap: 10px; flex-wrap: wrap; }
 .thumb { width: 84px; display: grid; gap: 4px; text-align: left; }
 .thumb .img { width: 84px; height: 84px; border-radius: var(--radius-md); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); display: grid; place-items: center; overflow: hidden; color: var(--muted); }
-.thumb .img.receipt { background: linear-gradient(180deg, #f8f4fb, #ece4f3); }
-.thumb .img.receipt i { display: block; width: 46px; height: 58px; background: #fff; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.12); background-image: repeating-linear-gradient(to bottom, transparent 0 9px, #d8cee3 9px 11px); background-size: 34px 100%; background-repeat: no-repeat; background-position: 6px 8px; }
+.thumb .img.receipt { background: linear-gradient(180deg, #f8f3f2, #efe5ea); }
+.thumb .img.receipt i { display: block; width: 46px; height: 58px; background: #fff; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.12); background-image: repeating-linear-gradient(to bottom, transparent 0 9px, #ddd0d7 9px 11px); background-size: 34px 100%; background-repeat: no-repeat; background-position: 6px 8px; }
 .thumb small { font-size: var(--fs-caption); font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .thumb-add { width: 84px; height: 84px; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1.5px var(--field-border); border: 0; display: grid; place-items: center; align-content: center; gap: 2px; color: var(--accent-text); font-size: var(--fs-caption); font-weight: 600; background-image: none; outline: 1.5px dashed var(--field-border); outline-offset: -1.5px; box-shadow: none; }
 .thumb-add:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; } /* o tracejado não é anel de foco */
