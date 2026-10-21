@@ -9,7 +9,7 @@
 .lg-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
 
 .lg-brand { text-align: center; padding-bottom: 10px; }
-/* logótipo (Wordmark, empilhado): o desenho por cima do nome, centrado; sobre a faixa do Entrar o nome usa a
+/* logótipo (Wordmark, empilhado): o ícone por cima do nome, centrado; sobre a faixa do Entrar o nome usa a
    cor do texto da faixa (--brand-ink passa a --top-ink só aqui) */
 .lg-wrap { --brand-ink: var(--top-ink); }
 .lg-brand h1 { display: flex; justify-content: center; color: var(--brand-ink); }

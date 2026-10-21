@@ -99,17 +99,12 @@ svg.i.lg { width: 24px; height: 24px; }
 
 .sidebar { display: none; }
 
-/* logótipo (src/ui/Wordmark.jsx): desenho + nome; o tamanho vem do font-size de quem o usa */
+/* logótipo (src/ui/Wordmark.jsx): ícone + nome; o tamanho vem do font-size de quem o usa */
 .wordmark { display: inline-flex; align-items: center; gap: .5em; color: var(--brand-ink); font-family: var(--font-display);
   font-weight: 800; line-height: 1.1; letter-spacing: -.01em; white-space: nowrap; }
-.wordmark-mark { height: 1.9em; width: auto; flex: none; }
+.wordmark-mark { height: 1.9em; width: 1.9em; flex: none; border-radius: 22%; } /* cantos como os do ícone no iPhone */
 .wordmark.stacked { flex-direction: column; gap: .45em; white-space: normal; }
-.wordmark.stacked .wordmark-mark { height: 2.6em; }
-.wm-page { fill: var(--accent); }
-.wm-head { fill: var(--accent-2); }
-.wm-ring { fill: currentColor; }
-.wm-paper { fill: #f8f3f0; } /* papel: igual em claro e em escuro, como no ícone */
-.wm-euro { stroke: var(--accent); }
+.wordmark.stacked .wordmark-mark { height: 2.6em; width: 2.6em; }
 
 /* ---- botões ---------------------------------------------------------- */
 .btn {
