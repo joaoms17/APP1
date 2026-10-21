@@ -1,5 +1,5 @@
 /* =====================================================================
-   Duet — CSS base + componentes partilhados (→ src/styles/ui.css)
+   Gestão Financeira — CSS base + componentes partilhados (→ src/styles/ui.css)
    Regras: nada de style inline exceto custom properties dinâmicas
    (style={projectVars(cor)} com data-p). Cada ecrã tem o seu .css próprio
    para layout específico; tudo o que é partilhado vive aqui.

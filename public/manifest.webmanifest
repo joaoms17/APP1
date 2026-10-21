@@ -1,7 +1,7 @@
 {
-  "name": "Duet — Gigs & Brides",
-  "short_name": "Duet",
-  "description": "Gestão financeira para os teus sonhos",
+  "name": "Gestão Financeira",
+  "short_name": "Gestão Financeira",
+  "description": "Agenda, cachets e pagamentos",
   "lang": "pt-PT",
   "start_url": "/",
   "display": "standalone",

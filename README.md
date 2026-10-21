@@ -1,4 +1,4 @@
-# Duet — Gigs & Brides
+# Gestão Financeira
 
 App de gestão do calendário e das finanças da Joana, cobrindo os dois trabalhos:
 **Cabelos/penteados** e **Música** (Banda do Algarve, Noventamente (que inclui o antigo Oitentamente),
