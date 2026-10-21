@@ -82,7 +82,7 @@ export default function Login() {
     <main className="lg-wrap">
       <form className="lg-form" aria-labelledby="lg-title" onSubmit={submit} noValidate>
         <div className="lg-brand">
-          <h1 id="lg-title"><Wordmark /></h1>
+          <h1 id="lg-title"><Wordmark stacked /></h1>
           <p>Agenda, cachets e pagamentos</p>
         </div>
         <div className="card lg-card">
