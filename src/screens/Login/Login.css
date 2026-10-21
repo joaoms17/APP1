@@ -9,12 +9,11 @@
 .lg-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
 
 .lg-brand { text-align: center; padding-bottom: 10px; }
-/* logótipo (Wordmark): 68 px de altura no telemóvel, centrado; o h1 só segura o nome "Duet" do SVG.
-   Sobre a beringela do Entrar a palavra fica clara (--brand-ink passa a --top-ink só aqui) e os traços
-   continuam magenta (--brand-ray, ≥ 3:1 sobre --top-bg — scripts/contrast.mjs) */
+/* logótipo (Wordmark, empilhado): o desenho por cima do nome, centrado; sobre a faixa do Entrar o nome usa a
+   cor do texto da faixa (--brand-ink passa a --top-ink só aqui) */
 .lg-wrap { --brand-ink: var(--top-ink); }
-.lg-brand h1 { display: flex; justify-content: center; line-height: 0; color: var(--brand-ink); }
-.lg-brand h1 .wordmark { height: calc(68 * var(--u)); }
+.lg-brand h1 { display: flex; justify-content: center; color: var(--brand-ink); }
+.lg-brand h1 .wordmark { font-size: calc(28 * var(--u)); }
 /* lema como na referência: maiúsculas pequenas, espaçadas, claras sobre a beringela */
 .lg-brand p {
   margin-top: 14px;

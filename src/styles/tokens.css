@@ -77,7 +77,7 @@
   --accent-2: #b36a7b;         /* 2.º accent, PAU-ROSA (antigo --gold): filetes, anel do avatar, brilho do Entrar (decorativo) */
   --accent-2-text: #97505e;    /* texto pau-rosa: kicker fora da faixa do topo (computador) */
   --focus: #7b5479;
-  /* marca: logótipo Duet (src/ui/Wordmark.jsx) — palavra ameixa e traços pau-rosa (≥ 3:1 sobre page/surface/top-bg) */
+  /* marca: logótipo (src/ui/Wordmark.jsx) — nome e argolas em ameixa (≥ 3:1 sobre page/surface/top-bg) */
   --brand-ink: #3c2a37;
   --brand-ray: #b26678;
 

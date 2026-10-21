@@ -1,5 +1,5 @@
 /* =====================================================================
-   Duet — CSS base + componentes partilhados (→ src/styles/ui.css)
+   Gestão Financeira — CSS base + componentes partilhados (→ src/styles/ui.css)
    Regras: nada de style inline exceto custom properties dinâmicas
    (style={projectVars(cor)} com data-p). Cada ecrã tem o seu .css próprio
    para layout específico; tudo o que é partilhado vive aqui.
@@ -99,9 +99,17 @@ svg.i.lg { width: 24px; height: 24px; }
 
 .sidebar { display: none; }
 
-/* logótipo Duet (src/ui/Wordmark.jsx): a altura vem de quem o usa, a largura segue o viewBox */
-.wordmark { display: block; width: auto; color: var(--brand-ink); }
-.wordmark-rays { fill: var(--brand-ray); }
+/* logótipo (src/ui/Wordmark.jsx): desenho + nome; o tamanho vem do font-size de quem o usa */
+.wordmark { display: inline-flex; align-items: center; gap: .5em; color: var(--brand-ink); font-family: var(--font-display);
+  font-weight: 800; line-height: 1.1; letter-spacing: -.01em; white-space: nowrap; }
+.wordmark-mark { height: 1.9em; width: auto; flex: none; }
+.wordmark.stacked { flex-direction: column; gap: .45em; white-space: normal; }
+.wordmark.stacked .wordmark-mark { height: 2.6em; }
+.wm-page { fill: var(--accent); }
+.wm-head { fill: var(--accent-2); }
+.wm-ring { fill: currentColor; }
+.wm-paper { fill: #f8f3f0; } /* papel: igual em claro e em escuro, como no ícone */
+.wm-euro { stroke: var(--accent); }
 
 /* ---- botões ---------------------------------------------------------- */
 .btn {
@@ -538,7 +546,7 @@ table.tbl .x { width: 28px; color: var(--muted); }
     padding: 28px 16px 18px; background: var(--surface); border-right: 1px solid var(--line); z-index: var(--z-nav);
   }
   .sidebar .brand { padding: 0 10px 22px; }
-  .sidebar .brand .wordmark { display: block; height: 38px; }
+  .sidebar .brand .wordmark { font-size: 16px; }
   .sidebar .brand small { display: block; margin-top: 8px; font-size: var(--fs-meta); font-weight: 400; letter-spacing: 0; line-height: 1.4; color: var(--muted); }
   .sidebar .new { margin: 0 0 14px; }
   .nav-item { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-md); color: var(--ink-2); font-weight: 600; text-decoration: none; position: relative; }

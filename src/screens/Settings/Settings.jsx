@@ -291,7 +291,7 @@ export default function Settings() {
           </div>
         </Section>
 
-        <p className="st-ver"><i aria-hidden="true" />Duet · versão 2.0</p>
+        <p className="st-ver"><i aria-hidden="true" />Gestão Financeira · versão 2.0</p>
       </div>
     </div>
   )
